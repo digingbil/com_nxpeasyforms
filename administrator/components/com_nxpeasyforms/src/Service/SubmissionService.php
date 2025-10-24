@@ -495,6 +495,8 @@ final class SubmissionService
 
             $dispatcher->dispatch($settings, $form, $payload, $context, $fieldMeta);
         }
+
+        $this->integrationQueue->process($this->integrationManager);
     }
 
     private function generateUuid(): string

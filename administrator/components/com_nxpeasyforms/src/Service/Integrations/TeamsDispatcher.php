@@ -87,7 +87,7 @@ final class TeamsDispatcher implements IntegrationDispatcherInterface
         ];
 
         try {
-            $this->client->post($endpoint, $body, ['Content-Type' => 'application/json'], 10);
+            $this->client->sendJson($endpoint, $body, 'POST', [], 10);
         } catch (\Throwable $exception) {
             // TODO logging
         }

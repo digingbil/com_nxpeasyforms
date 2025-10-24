@@ -66,12 +66,7 @@ final class SlackDispatcher implements IntegrationDispatcherInterface
         }
 
         try {
-            $this->client->post(
-                $webhook,
-                ['text' => $message],
-                ['Content-Type' => 'application/json'],
-                10
-            );
+            $this->client->sendJson($webhook, ['text' => $message], 'POST', [], 10);
         } catch (\Throwable $exception) {
             // TODO: logging
         }

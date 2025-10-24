@@ -43,7 +43,7 @@ final class SubmissionServiceTest extends TestCase
             new FileUploader(),
             new EmailService(new MailerStub(), new Registry()),
             new IntegrationManager(),
-            new IntegrationQueue()
+            new IntegrationQueue(new Psr16Cache(new ArrayAdapter()))
         );
 
         $this->expectException(SubmissionException::class);
@@ -77,7 +77,7 @@ final class SubmissionServiceTest extends TestCase
             new FileUploader(),
             new EmailService(new MailerStub(), new Registry()),
             new IntegrationManager(),
-            new IntegrationQueue()
+            new IntegrationQueue(new Psr16Cache(new ArrayAdapter()))
         );
 
         $result = $service->handle(1, ['_token' => '', 'name' => 'Alice'], ['skip_token_validation' => true]);
