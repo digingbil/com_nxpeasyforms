@@ -16,9 +16,12 @@ use Joomla\Component\Nxpeasyforms\Administrator\Service\File\FileUploader;
 use Joomla\Component\Nxpeasyforms\Administrator\Service\Email\EmailService;
 use Joomla\Component\Nxpeasyforms\Administrator\Service\Integrations\GenericWebhookDispatcher;
 use Joomla\Component\Nxpeasyforms\Administrator\Service\Integrations\HttpClient;
+use Joomla\Component\Nxpeasyforms\Administrator\Service\Integrations\HubspotDispatcher;
 use Joomla\Component\Nxpeasyforms\Administrator\Service\Integrations\IntegrationManager;
 use Joomla\Component\Nxpeasyforms\Administrator\Service\Integrations\IntegrationQueue;
+use Joomla\Component\Nxpeasyforms\Administrator\Service\Integrations\MailchimpDispatcher;
 use Joomla\Component\Nxpeasyforms\Administrator\Service\Integrations\SlackDispatcher;
+use Joomla\Component\Nxpeasyforms\Administrator\Service\Integrations\SalesforceDispatcher;
 use Joomla\Component\Nxpeasyforms\Administrator\Service\Integrations\TeamsDispatcher;
 use Joomla\Component\Nxpeasyforms\Administrator\Service\Integrations\WebhookDispatcher;
 use Joomla\Component\Nxpeasyforms\Administrator\Service\Repository\FormRepository;
@@ -29,6 +32,8 @@ use Joomla\Component\Nxpeasyforms\Administrator\Service\Security\RateLimiter;
 use Joomla\Component\Nxpeasyforms\Administrator\Service\SubmissionService;
 use Joomla\Component\Nxpeasyforms\Administrator\Service\Validation\FieldValidator;
 use Joomla\Component\Nxpeasyforms\Administrator\Service\Validation\FileValidator;
+use Joomla\Component\Nxpeasyforms\Administrator\Service\Rendering\MessageFormatter;
+use Joomla\Component\Nxpeasyforms\Administrator\Service\Rendering\TemplateRenderer;
 use Joomla\Database\DatabaseDriver;
 
 return static function (Container $container): void {
@@ -106,6 +111,18 @@ return static function (Container $container): void {
     );
 
     $container->share(
+        TemplateRenderer::class,
+        static fn (): TemplateRenderer => new TemplateRenderer()
+    );
+
+    $container->share(
+        MessageFormatter::class,
+        static function (Container $container): MessageFormatter {
+            return new MessageFormatter($container->get(TemplateRenderer::class));
+        }
+    );
+
+    $container->share(
         WebhookDispatcher::class,
         static function (Container $container): WebhookDispatcher {
             return new WebhookDispatcher(
@@ -124,16 +141,57 @@ return static function (Container $container): void {
     );
 
     $container->share(
+        MailchimpDispatcher::class,
+        static function (Container $container): MailchimpDispatcher {
+            return new MailchimpDispatcher(
+                $container->get(HttpClient::class),
+                $container->get(TemplateRenderer::class),
+                null
+            );
+        }
+    );
+
+    $container->share(
+        HubspotDispatcher::class,
+        static function (Container $container): HubspotDispatcher {
+            return new HubspotDispatcher(
+                $container->get(HttpClient::class),
+                $container->get(TemplateRenderer::class),
+                null
+            );
+        }
+    );
+
+    $container->share(
+        SalesforceDispatcher::class,
+        static function (Container $container): SalesforceDispatcher {
+            return new SalesforceDispatcher(
+                $container->get(HttpClient::class),
+                $container->get(TemplateRenderer::class),
+                null
+            );
+        }
+    );
+
+    $container->share(
         SlackDispatcher::class,
         static function (Container $container): SlackDispatcher {
-            return new SlackDispatcher($container->get(HttpClient::class));
+            return new SlackDispatcher(
+                $container->get(HttpClient::class),
+                $container->get(MessageFormatter::class),
+                $container->get(TemplateRenderer::class)
+            );
         }
     );
 
     $container->share(
         TeamsDispatcher::class,
         static function (Container $container): TeamsDispatcher {
-            return new TeamsDispatcher($container->get(HttpClient::class));
+            return new TeamsDispatcher(
+                $container->get(HttpClient::class),
+                $container->get(MessageFormatter::class),
+                $container->get(TemplateRenderer::class)
+            );
         }
     );
 
@@ -151,6 +209,9 @@ return static function (Container $container): void {
             $manager->register('make', $container->get(GenericWebhookDispatcher::class));
             $manager->register('slack', $container->get(SlackDispatcher::class));
             $manager->register('teams', $container->get(TeamsDispatcher::class));
+            $manager->register('mailchimp', $container->get(MailchimpDispatcher::class));
+            $manager->register('hubspot', $container->get(HubspotDispatcher::class));
+            $manager->register('salesforce', $container->get(SalesforceDispatcher::class));
 
             return $manager;
         }

@@ -21,7 +21,22 @@ class Http
 {
     public function post(string $url, $body = '', array $headers = [], int $timeout = 10): Response
     {
-        return new Response(200, '{"success":true,"score":1.0}');
+        return new Response();
+    }
+
+    public function put(string $url, $body = '', array $headers = [], int $timeout = 10): Response
+    {
+        return new Response();
+    }
+
+    public function get(string $url, array $headers = [], int $timeout = 10): Response
+    {
+        return new Response();
+    }
+
+    public function delete(string $url, array $headers = [], int $timeout = 10): Response
+    {
+        return new Response();
     }
 }
 
