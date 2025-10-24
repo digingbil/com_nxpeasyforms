@@ -1,0 +1,435 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Joomla\Component\Nxpeasyforms\Site\Helper;
+
+use Joomla\CMS\Filter\InputFilter;
+use Joomla\CMS\Language\Text;
+use Joomla\CMS\Session\Session;
+use Joomla\Component\Nxpeasyforms\Administrator\Helper\FormDefaults;
+use Joomla\Component\Nxpeasyforms\Administrator\Service\SubmissionService;
+
+use function array_map;
+use function array_replace_recursive;
+use function htmlspecialchars;
+use function implode;
+use function in_array;
+use function is_array;
+use function is_string;
+use function sprintf;
+use function trim;
+use function uniqid;
+
+final class FormRenderer
+{
+    private InputFilter $filter;
+
+    /**
+     * @var array<int, bool>
+     */
+    private static array $stylesRendered = [];
+
+    public function __construct(?InputFilter $filter = null)
+    {
+        $this->filter = $filter ?? InputFilter::getInstance();
+    }
+
+    /**
+     * @param array<string, mixed> $form
+     */
+    public function render(array $form): string
+    {
+        $config = $this->mergeConfig($form['config'] ?? []);
+        $fields = $config['fields'];
+        $options = $config['options'];
+
+        if (!$this->containsButton($fields)) {
+            $fields[] = [
+                'type' => 'button',
+                'label' => Text::_('JSUBMIT'),
+            ];
+        }
+
+        $formId = (int) ($form['id'] ?? 0);
+        $successMessage = $this->escapeAttr($options['success_message'] ?? Text::_('COM_NXPEASYFORMS_MESSAGE_SUBMISSION_SUCCESS'));
+        $errorMessage = $this->escapeAttr($options['error_message'] ?? Text::_('COM_NXPEASYFORMS_ERROR_VALIDATION'));
+
+        $messageContainer = '<div class="nxp-easy-form__messages" aria-live="polite"></div>';
+        $fieldsMarkup = $this->renderFields($fields);
+        $captchaMarkup = $this->renderCaptcha($options['captcha'] ?? []);
+        $hiddenInputs = $this->renderHiddenFields($formId);
+
+        $enctype = $this->containsFileField($fields) ? ' enctype="multipart/form-data"' : '';
+
+        $formTag = sprintf(
+            '<form class="nxp-easy-form__form" method="post" novalidate role="form" data-success-message="%s" data-error-message="%s"%s>%s%s%s%s</form>',
+            $successMessage,
+            $errorMessage,
+            $enctype,
+            $messageContainer,
+            $fieldsMarkup,
+            $captchaMarkup,
+            $hiddenInputs
+        );
+
+        $customCss = $this->renderCustomCss($formId, $options['custom_css'] ?? '');
+
+        return sprintf(
+            '<div class="nxp-easy-form" data-form-id="%d">%s%s<noscript>%s</noscript></div>',
+            $formId,
+            $formTag,
+            $customCss,
+            $this->escape(Text::_('COM_NXPEASYFORMS_FORM_REQUIRES_JAVASCRIPT'))
+        );
+    }
+
+    /**
+     * @param array<int, array<string, mixed>> $fields
+     */
+    private function renderFields(array $fields): string
+    {
+        $output = [];
+
+        foreach ($fields as $field) {
+            $type = is_string($field['type'] ?? null) ? $field['type'] : 'text';
+
+            switch ($type) {
+                case 'button':
+                    $output[] = $this->renderButton($field);
+                    break;
+                case 'checkbox':
+                    $output[] = $this->renderCheckbox($field);
+                    break;
+                case 'textarea':
+                    $output[] = $this->renderTextarea($field);
+                    break;
+                case 'custom_text':
+                    $output[] = $this->renderCustomText($field);
+                    break;
+                case 'select':
+                    $output[] = $this->renderSelect($field);
+                    break;
+                case 'radio':
+                    $output[] = $this->renderRadio($field);
+                    break;
+                case 'file':
+                    $output[] = $this->renderFile($field);
+                    break;
+                case 'date':
+                    $output[] = $this->renderDate($field);
+                    break;
+                case 'hidden':
+                    $output[] = $this->renderHidden($field);
+                    break;
+                default:
+                    $output[] = $this->renderInput($field);
+                    break;
+            }
+        }
+
+        return implode('', $output);
+    }
+
+    /**
+     * @param array<string, mixed> $field
+     */
+    private function renderInput(array $field): string
+    {
+        $id = $this->escapeAttr($field['id'] ?? $field['name'] ?? uniqid('nxp', true));
+        $name = $this->escapeAttr($field['name'] ?? $id);
+        $label = $this->escape($field['label'] ?? '');
+        $placeholder = $this->escapeAttr($field['placeholder'] ?? '');
+        $required = !empty($field['required']);
+
+        $type = 'text';
+        if (in_array($field['type'], ['email', 'tel', 'password'], true)) {
+            $type = $field['type'];
+        }
+
+        return sprintf(
+            '<div class="nxp-easy-form__group"><label class="nxp-easy-form__label" for="%1$s">%2$s%5$s</label><input class="nxp-easy-form__input" type="%6$s" id="%1$s" name="%3$s" placeholder="%4$s" %7$s /><p class="nxp-easy-form__error" data-error-for="%3$s" role="alert"></p></div>',
+            $id,
+            $label,
+            $name,
+            $placeholder,
+            $required ? '<span class="nxp-easy-form__required">*</span>' : '',
+            $this->escapeAttr($type),
+            $required ? 'required' : ''
+        );
+    }
+
+    /**
+     * @param array<string, mixed> $field
+     */
+    private function renderTextarea(array $field): string
+    {
+        $id = $this->escapeAttr($field['id'] ?? $field['name'] ?? uniqid('nxp', true));
+        $name = $this->escapeAttr($field['name'] ?? $id);
+        $label = $this->escape($field['label'] ?? '');
+        $placeholder = $this->escapeAttr($field['placeholder'] ?? '');
+        $required = !empty($field['required']);
+
+        return sprintf(
+            '<div class="nxp-easy-form__group"><label class="nxp-easy-form__label" for="%1$s">%2$s%4$s</label><textarea class="nxp-easy-form__textarea" id="%1$s" name="%3$s" placeholder="%5$s" %6$s></textarea><p class="nxp-easy-form__error" data-error-for="%3$s" role="alert"></p></div>',
+            $id,
+            $label,
+            $name,
+            $required ? '<span class="nxp-easy-form__required">*</span>' : '',
+            $placeholder,
+            $required ? 'required' : ''
+        );
+    }
+
+    /**
+     * @param array<string, mixed> $field
+     */
+    private function renderCheckbox(array $field): string
+    {
+        $id = $this->escapeAttr($field['id'] ?? $field['name'] ?? uniqid('nxp', true));
+        $name = $this->escapeAttr($field['name'] ?? $id);
+        $label = $this->escape($field['label'] ?? '');
+
+        return sprintf(
+            '<div class="nxp-easy-form__group nxp-easy-form__group--checkbox"><label class="nxp-easy-form__checkbox"><input type="checkbox" id="%1$s" name="%2$s" value="1" /> <span>%3$s</span></label><p class="nxp-easy-form__error" data-error-for="%2$s" role="alert"></p></div>',
+            $id,
+            $name,
+            $label
+        );
+    }
+
+    /**
+     * @param array<string, mixed> $field
+     */
+    private function renderSelect(array $field): string
+    {
+        $id = $this->escapeAttr($field['id'] ?? $field['name'] ?? uniqid('nxp', true));
+        $name = $this->escapeAttr($field['name'] ?? $id);
+        $label = $this->escape($field['label'] ?? '');
+        $options = is_array($field['options'] ?? null) ? $field['options'] : [];
+        $multiple = !empty($field['multiple']);
+
+        $optionMarkup = implode('', array_map(function ($option) {
+            $value = $this->escapeAttr(is_string($option) ? $option : ($option['value'] ?? ''));
+            $text = $this->escape(is_string($option) ? $option : ($option['label'] ?? $value));
+
+            return sprintf('<option value="%s">%s</option>', $value, $text);
+        }, $options));
+
+        $nameAttribute = $multiple ? $name . '[]' : $name;
+        $multipleAttr = $multiple ? ' multiple' : '';
+
+        return sprintf(
+            '<div class="nxp-easy-form__group"><label class="nxp-easy-form__label" for="%1$s">%2$s</label><select class="nxp-easy-form__select" id="%1$s" name="%3$s"%4$s>%5$s</select><p class="nxp-easy-form__error" data-error-for="%6$s" role="alert"></p></div>',
+            $id,
+            $label,
+            $this->escapeAttr($nameAttribute),
+            $multipleAttr,
+            $optionMarkup,
+            $this->escapeAttr($name)
+        );
+    }
+
+    /**
+     * @param array<string, mixed> $field
+     */
+    private function renderRadio(array $field): string
+    {
+        $name = $this->escapeAttr($field['name'] ?? uniqid('nxp', true));
+        $label = $this->escape($field['label'] ?? '');
+        $options = is_array($field['options'] ?? null) ? $field['options'] : [];
+
+        $choices = [];
+        foreach ($options as $index => $option) {
+            $value = $this->escapeAttr(is_string($option) ? $option : ($option['value'] ?? ''));
+            $text = $this->escape(is_string($option) ? $option : ($option['label'] ?? $value));
+            $choiceId = $name . '-' . $index;
+            $choices[] = sprintf('<label class="nxp-easy-form__radio"><input type="radio" name="%1$s" id="%2$s" value="%3$s" /> <span>%4$s</span></label>', $name, $choiceId, $value, $text);
+        }
+
+        return sprintf(
+            '<div class="nxp-easy-form__group"><span class="nxp-easy-form__label">%1$s</span><div class="nxp-easy-form__choices">%2$s</div><p class="nxp-easy-form__error" data-error-for="%3$s" role="alert"></p></div>',
+            $label,
+            implode('', $choices),
+            $name
+        );
+    }
+
+    /**
+     * @param array<string, mixed> $field
+     */
+    private function renderFile(array $field): string
+    {
+        $id = $this->escapeAttr($field['id'] ?? $field['name'] ?? uniqid('nxp', true));
+        $name = $this->escapeAttr($field['name'] ?? $id);
+        $label = $this->escape($field['label'] ?? '');
+        $required = !empty($field['required']);
+
+        return sprintf(
+            '<div class="nxp-easy-form__group"><label class="nxp-easy-form__label" for="%1$s">%2$s%4$s</label><input class="nxp-easy-form__input" type="file" id="%1$s" name="%3$s" %5$s /><p class="nxp-easy-form__error" data-error-for="%3$s" role="alert"></p></div>',
+            $id,
+            $label,
+            $name,
+            $required ? '<span class="nxp-easy-form__required">*</span>' : '',
+            $required ? 'required' : ''
+        );
+    }
+
+    /**
+     * @param array<string, mixed> $field
+     */
+    private function renderDate(array $field): string
+    {
+        $id = $this->escapeAttr($field['id'] ?? $field['name'] ?? uniqid('nxp', true));
+        $name = $this->escapeAttr($field['name'] ?? $id);
+        $label = $this->escape($field['label'] ?? '');
+        $required = !empty($field['required']);
+
+        return sprintf(
+            '<div class="nxp-easy-form__group"><label class="nxp-easy-form__label" for="%1$s">%2$s%4$s</label><input class="nxp-easy-form__input" type="date" id="%1$s" name="%3$s" %5$s /><p class="nxp-easy-form__error" data-error-for="%3$s" role="alert"></p></div>',
+            $id,
+            $label,
+            $name,
+            $required ? '<span class="nxp-easy-form__required">*</span>' : '',
+            $required ? 'required' : ''
+        );
+    }
+
+    /**
+     * @param array<string, mixed> $field
+     */
+    private function renderHidden(array $field): string
+    {
+        $name = $this->escapeAttr($field['name'] ?? uniqid('nxp', true));
+        $value = $this->escapeAttr($field['value'] ?? '');
+
+        return sprintf('<input type="hidden" name="%s" value="%s" />', $name, $value);
+    }
+
+    /**
+     * @param array<string, mixed> $field
+     */
+    private function renderButton(array $field): string
+    {
+        $label = $this->escape($field['label'] ?? Text::_('JSUBMIT'));
+
+        return sprintf('<div class="nxp-easy-form__actions"><button type="submit" class="nxp-easy-form__button">%s</button></div>', $label);
+    }
+
+    /**
+     * @param array<string, mixed> $field
+     */
+    private function renderCustomText(array $field): string
+    {
+        $content = is_string($field['content'] ?? null) ? $field['content'] : '';
+        $sanitised = $this->filter->clean($content, 'HTML');
+
+        return sprintf('<div class="nxp-easy-form__custom">%s</div>', $sanitised);
+    }
+
+    private function renderCaptcha(array $config): string
+    {
+        $provider = is_string($config['provider'] ?? null) ? $config['provider'] : 'none';
+        $siteKey = is_string($config['site_key'] ?? null) ? $config['site_key'] : '';
+
+        $hidden = '<input type="hidden" name="_nxp_captcha_token" value="" />';
+
+        if ($provider === 'turnstile' && $siteKey !== '') {
+            return sprintf('<div class="cf-turnstile" data-sitekey="%s" data-theme="auto"></div>%s', $this->escapeAttr($siteKey), $hidden);
+        }
+
+        if ($provider === 'friendlycaptcha' && $siteKey !== '') {
+            return sprintf('<div class="frc-captcha" data-sitekey="%s"></div>%s', $this->escapeAttr($siteKey), $hidden);
+        }
+
+        return $hidden;
+    }
+
+    private function renderHiddenFields(int $formId): string
+    {
+        $tokenField = Session::getFormToken();
+        $tokenInput = sprintf('<input type="hidden" name="%s" value="1" />', $tokenField);
+        $formIdInput = sprintf('<input type="hidden" name="formId" value="%d" />', $formId);
+
+        $honeypotName = SubmissionService::honeypotFieldName($formId);
+        $timestampName = SubmissionService::timestampFieldName($formId);
+
+        $honeypot = sprintf(
+            '<div class="nxp-easy-form__nxp_f" aria-hidden="true"><label><input type="text" name="%1$s" tabindex="-1" autocomplete="off" /></label></div><input type="hidden" name="%2$s" value="%3$d" />',
+            $this->escapeAttr($honeypotName),
+            $this->escapeAttr($timestampName),
+            time()
+        );
+
+        return $tokenInput . $formIdInput . $honeypot;
+    }
+
+    private function renderCustomCss(int $formId, ?string $css): string
+    {
+        $css = trim((string) $css);
+
+        if ($css === '') {
+            return '';
+        }
+
+        try {
+            $encoded = json_encode($css, JSON_THROW_ON_ERROR);
+        } catch (\JsonException $exception) {
+            return '';
+        }
+
+        return sprintf('<style id="nxp-easy-form-style-%d">%s</style>', $formId, json_decode($encoded, true));
+    }
+
+    /**
+     * @param array<int, array<string, mixed>> $fields
+     */
+    private function containsFileField(array $fields): bool
+    {
+        foreach ($fields as $field) {
+            if (($field['type'] ?? '') === 'file') {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @param array<int, array<string, mixed>> $fields
+     */
+    private function containsButton(array $fields): bool
+    {
+        foreach ($fields as $field) {
+            if (($field['type'] ?? '') === 'button') {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @param array<string, mixed> $config
+     * @return array<string, mixed>
+     */
+    private function mergeConfig(array $config): array
+    {
+        $defaults = FormDefaults::builderConfig();
+
+        return [
+            'fields' => is_array($config['fields'] ?? null) ? $config['fields'] : $defaults['fields'],
+            'options' => array_replace_recursive($defaults['options'], is_array($config['options'] ?? null) ? $config['options'] : []),
+        ];
+    }
+
+    private function escape(?string $value): string
+    {
+        return htmlspecialchars($value ?? '', ENT_QUOTES, 'UTF-8');
+    }
+
+    private function escapeAttr(?string $value): string
+    {
+        return htmlspecialchars($value ?? '', ENT_QUOTES, 'UTF-8');
+    }
+}

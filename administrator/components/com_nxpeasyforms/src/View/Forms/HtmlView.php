@@ -25,7 +25,7 @@ final class HtmlView extends BaseHtmlView
     /**
      * @var array<int,FormListItem>
      */
-    protected array $items = [];
+    protected $items = [];
 
     protected $pagination;
 

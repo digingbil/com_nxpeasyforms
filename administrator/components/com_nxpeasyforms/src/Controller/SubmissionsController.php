@@ -12,9 +12,9 @@ use Joomla\CMS\MVC\Model\BaseDatabaseModel;
  */
 final class SubmissionsController extends AdminController
 {
-    protected string $text_prefix = 'COM_NXPEASYFORMS';
+    protected $text_prefix = 'COM_NXPEASYFORMS';
 
-    protected string $view_list = 'submissions';
+    protected $view_list = 'submissions';
 
     /**
      * {@inheritDoc}

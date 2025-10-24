@@ -4,10 +4,15 @@ declare(strict_types=1);
 
 namespace Joomla\Component\Nxpeasyforms\Administrator\View\Form;
 
+use Joomla\CMS\Factory;
+use Joomla\CMS\HTML\HTMLHelper;
 use Joomla\CMS\Language\Text;
 use Joomla\CMS\MVC\View\HtmlView as BaseHtmlView;
 use Joomla\CMS\Router\Route;
 use Joomla\CMS\Toolbar\ToolbarHelper;
+use Joomla\CMS\Session\Session;
+use Joomla\Component\Nxpeasyforms\Administrator\Helper\AssetHelper;
+use Joomla\Component\Nxpeasyforms\Administrator\Helper\FormDefaults;
 
 /**
  * HTML View class for a single form (builder container).
@@ -22,8 +27,6 @@ final class HtmlView extends BaseHtmlView
 
     private string $action = '';
 
-    private string $builderPayload = '{}';
-
     /**
      * {@inheritDoc}
      */
@@ -33,7 +36,7 @@ final class HtmlView extends BaseHtmlView
         $this->item = $this->get('Item');
         $this->state = $this->get('State');
         $this->action = Route::_('index.php?option=com_nxpeasyforms&task=form.save');
-        $this->builderPayload = $this->encodeBuilderPayload($this->item);
+        $this->initialiseBuilder();
 
         if ($errors = $this->get('Errors')) {
             throw new \RuntimeException(implode("\n", $errors), 500);
@@ -49,9 +52,42 @@ final class HtmlView extends BaseHtmlView
         return $this->action;
     }
 
-    public function getBuilderPayload(): string
+    private function initialiseBuilder(): void
     {
-        return $this->builderPayload;
+        $document = $this->document ?? Factory::getDocument();
+        AssetHelper::registerEntry('src/admin/main.js');
+        HTMLHelper::_('stylesheet', 'com_nxpeasyforms/css/admin-joomla.css', ['version' => 'auto', 'relative' => true]);
+
+        $document->addScriptOptions(
+            'com_nxpeasyforms.builder',
+            [
+                'restUrl' => Route::_('index.php?option=com_nxpeasyforms&task=ajax.route&format=json', false),
+                'nonce' => Session::getFormToken(),
+                'formId' => isset($this->item->id) ? (int) $this->item->id : 0,
+                'builderUrl' => Route::_('index.php?option=com_nxpeasyforms&view=form'),
+                'defaults' => FormDefaults::builderConfig(),
+                'integrationsMeta' => [],
+                'wpData' => [
+                    'postTypes' => [],
+                    'postStatuses' => [],
+                    'taxonomies' => [],
+                ],
+                'woo' => [
+                    'active' => false,
+                ],
+                'i18n' => [
+                    'formSaved' => Text::_('COM_NXPEASYFORMS_FORM_SAVED'),
+                    'formCreated' => Text::_('COM_NXPEASYFORMS_FORM_CREATED'),
+                    'saving' => Text::_('COM_NXPEASYFORMS_FORM_SAVING'),
+                    'defaultTitle' => Text::_('COM_NXPEASYFORMS_UNTITLED_FORM'),
+                ],
+            ]
+        );
+
+        $document->addScriptDeclaration(
+            'window.nxpEasyForms = window.nxpEasyForms || {};'
+            . 'window.nxpEasyForms.builder = Joomla.getOptions("com_nxpeasyforms.builder");'
+        );
     }
 
     private function addToolbar(): void
@@ -67,28 +103,5 @@ final class HtmlView extends BaseHtmlView
         ToolbarHelper::save('form.save');
         ToolbarHelper::save2new('form.save2new');
         ToolbarHelper::cancel('form.cancel');
-    }
-
-    /**
-     * @param mixed $item
-     */
-    private function encodeBuilderPayload($item): string
-    {
-        if ($item === null) {
-            return '{}';
-        }
-
-        try {
-            return json_encode(
-                $item,
-                JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE | JSON_PRESERVE_ZERO_FRACTION
-            );
-        } catch (\JsonException $exception) {
-            throw new \RuntimeException(
-                'COM_NXPEASYFORMS_ERROR_JSON_ENCODE_FORM_ITEM',
-                0,
-                $exception
-            );
-        }
     }
 }

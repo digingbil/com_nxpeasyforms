@@ -1,0 +1,87 @@
+.nxp-easy-forms-builder .button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.4rem 0.8rem;
+    border: 1px solid #ced4da;
+    border-radius: 0.25rem;
+    background-color: #f8f9fa;
+    color: #212529;
+    font-size: 0.95rem;
+    cursor: pointer;
+    text-decoration: none;
+}
+
+.nxp-easy-forms-builder .button:hover {
+    background-color: #e9ecef;
+}
+
+.nxp-easy-forms-builder .button.button-primary {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+    color: #fff;
+}
+
+.nxp-easy-forms-builder .button.button-primary:hover {
+    background-color: #0b5ed7;
+    border-color: #0a58ca;
+}
+
+.nxp-easy-forms-builder .button.button-secondary {
+    background-color: #ffffff;
+    border-color: #adb5bd;
+    color: #212529;
+}
+
+.nxp-easy-forms-builder .button.button-secondary:hover {
+    background-color: #f1f3f5;
+    border-color: #adb5bd;
+}
+
+.nxp-easy-forms-builder .notice {
+    display: block;
+    margin: 1rem 0;
+    padding: 0.75rem 1rem;
+    border-radius: 0.25rem;
+    border-left: 4px solid #0d6efd;
+    background-color: #f1f5ff;
+    color: #1c2a4d;
+}
+
+.nxp-easy-forms-builder .notice.notice-error {
+    border-left-color: #dc3545;
+    background-color: #f8d7da;
+    color: #58151c;
+}
+
+.nxp-easy-forms-builder .notice.notice-success {
+    border-left-color: #198754;
+    background-color: #d1e7dd;
+    color: #0f5132;
+}
+
+.nxp-easy-forms-builder .notice-dismiss {
+    margin-left: 1rem;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    color: inherit;
+}
+
+.nxp-easy-forms-builder .dashicons {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.5rem;
+    height: 1.5rem;
+    border-radius: 50%;
+    background-color: #0d6efd;
+    color: #fff;
+    font-size: 0.9rem;
+    font-style: normal;
+    font-weight: 600;
+}
+
+.nxp-easy-forms-builder .dashicons::before {
+    content: '•';
+}

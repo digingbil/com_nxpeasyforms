@@ -1,0 +1,728 @@
+import { defineStore } from 'pinia';
+import { FIELD_LIBRARY, findFieldByType } from '@/admin/constants/fields';
+import { apiFetch } from '@/admin/utils/http';
+import { __ } from '@/utils/i18n';
+
+const settings = window.nxpEasyForms?.builder || {};
+const defaults = settings.defaults || { fields: [], options: {} };
+
+const isObject = (value) =>
+    value !== null && typeof value === 'object' && !Array.isArray(value);
+
+const createRowId = () => Math.random().toString(36).slice(2, 10);
+
+function baseIntegrations() {
+    return {
+        zapier: {
+            enabled: false,
+            webhook_url: '',
+        },
+        make: {
+            enabled: false,
+            webhook_url: '',
+        },
+        slack: {
+            enabled: false,
+            webhook_url: '',
+            message_template: '',
+        },
+        teams: {
+            enabled: false,
+            webhook_url: '',
+            card_title: '',
+            message_template: '',
+        },
+        wordpress_post: {
+            enabled: false,
+            post_type: 'post',
+            post_status: 'pending',
+            author_mode: 'current_user',
+            fixed_author_id: 0,
+            map: {
+                title: '',
+                content: '',
+                excerpt: '',
+                featured_image: '',
+            },
+            taxonomies: [],
+            meta: [],
+        },
+        mailchimp: {
+            enabled: false,
+            api_key: '',
+            api_key_set: false,
+            list_id: '',
+            double_opt_in: false,
+            email_field: '',
+            first_name_field: '',
+            last_name_field: '',
+            tags: [],
+        },
+        salesforce: {
+            enabled: false,
+            org_id: '',
+            lead_source: '',
+            assignment_rule_id: '',
+            debug_email: '',
+            mappings: [],
+        },
+        hubspot: {
+            enabled: false,
+            access_token: '',
+            access_token_set: false,
+            portal_id: '',
+            form_guid: '',
+            email_field: '',
+            field_mappings: [],
+            legal_consent: false,
+            consent_text: '',
+        },
+        woocommerce: {
+            enabled: false,
+            product_mode: 'static',
+            static_products: [],
+            product_field: '',
+            quantity_field: '',
+            variation_field: '',
+            price_field: '',
+            order_status: 'wc-pending',
+            create_customer: true,
+            customer: {
+                email_field: '',
+                first_name_field: '',
+                last_name_field: '',
+                phone_field: '',
+                company_field: '',
+                billing: {
+                    line1_field: '',
+                    line2_field: '',
+                    city_field: '',
+                    state_field: '',
+                    postcode_field: '',
+                    country_field: '',
+                },
+                shipping: {
+                    use_billing: true,
+                    line1_field: '',
+                    line2_field: '',
+                    city_field: '',
+                    state_field: '',
+                    postcode_field: '',
+                    country_field: '',
+                },
+            },
+            metadata: [],
+        },
+    };
+}
+
+function mergeIntegrations(integrations = {}) {
+    const base = baseIntegrations();
+    const merged = {};
+
+    Object.keys(base).forEach((key) => {
+        const baseConfig = base[key];
+        const incoming = isObject(integrations[key]) ? integrations[key] : {};
+        merged[key] = {
+            ...baseConfig,
+            ...incoming,
+        };
+
+        if (Array.isArray(baseConfig.tags)) {
+            merged[key].tags = Array.isArray(incoming.tags)
+                ? [...incoming.tags]
+                : [];
+        }
+
+        if (Array.isArray(baseConfig.mappings)) {
+            merged[key].mappings = Array.isArray(incoming.mappings)
+                ? incoming.mappings.map((item) =>
+                      isObject(item)
+                          ? {
+                                id:
+                                    typeof item.id === 'string' &&
+                                    item.id !== ''
+                                        ? item.id
+                                        : createRowId(),
+                                salesforce_field: item.salesforce_field || '',
+                                form_field: item.form_field || '',
+                            }
+                          : { salesforce_field: '', form_field: '' }
+                  )
+                : [];
+        }
+
+        if (Array.isArray(baseConfig.field_mappings)) {
+            merged[key].field_mappings = Array.isArray(incoming.field_mappings)
+                ? incoming.field_mappings.map((item) =>
+                      isObject(item)
+                          ? {
+                                id:
+                                    typeof item.id === 'string' &&
+                                    item.id !== ''
+                                        ? item.id
+                                        : createRowId(),
+                                hubspot_field: item.hubspot_field || '',
+                                form_field: item.form_field || '',
+                            }
+                          : { hubspot_field: '', form_field: '' }
+                  )
+                : [];
+        }
+
+        if (Array.isArray(baseConfig.taxonomies)) {
+            merged[key].taxonomies = Array.isArray(incoming.taxonomies)
+                ? incoming.taxonomies.filter(isObject).map((item) => ({
+                      id:
+                          typeof item.id === 'string' && item.id !== ''
+                              ? item.id
+                              : createRowId(),
+                      taxonomy: item.taxonomy || '',
+                      field: item.field || '',
+                      mode: item.mode === 'ids' ? 'ids' : 'names',
+                  }))
+                : [];
+        }
+
+        if (Array.isArray(baseConfig.meta)) {
+            merged[key].meta = Array.isArray(incoming.meta)
+                ? incoming.meta.filter(isObject).map((item) => ({
+                      id:
+                          typeof item.id === 'string' && item.id !== ''
+                              ? item.id
+                              : createRowId(),
+                      key: item.key || '',
+                      field: item.field || '',
+                  }))
+                : [];
+        }
+
+        if (Array.isArray(baseConfig.static_products)) {
+            merged[key].static_products = Array.isArray(
+                incoming.static_products
+            )
+                ? incoming.static_products.filter(isObject).map((item) => ({
+                      id:
+                          typeof item.id === 'string' && item.id !== ''
+                              ? item.id
+                              : createRowId(),
+                      product_id: Number(item.product_id) || 0,
+                      variation_id: Number(item.variation_id) || 0,
+                      quantity: Number(item.quantity) || 1,
+                  }))
+                : [];
+        }
+
+        if (Array.isArray(baseConfig.metadata)) {
+            merged[key].metadata = Array.isArray(incoming.metadata)
+                ? incoming.metadata.filter(isObject).map((item) => ({
+                      id:
+                          typeof item.id === 'string' && item.id !== ''
+                              ? item.id
+                              : createRowId(),
+                      key: item.key || '',
+                      field: item.field || '',
+                  }))
+                : [];
+        }
+
+        if (isObject(baseConfig.map)) {
+            merged[key].map = {
+                ...baseConfig.map,
+                ...(isObject(incoming.map) ? incoming.map : {}),
+            };
+        }
+
+        if (isObject(baseConfig.customer)) {
+            const baseCustomer = baseConfig.customer;
+            const incomingCustomer = isObject(incoming.customer)
+                ? incoming.customer
+                : {};
+            const incomingBilling = isObject(incomingCustomer.billing)
+                ? incomingCustomer.billing
+                : {};
+            const incomingShipping = isObject(incomingCustomer.shipping)
+                ? incomingCustomer.shipping
+                : {};
+
+            merged[key].customer = {
+                ...baseCustomer,
+                ...incomingCustomer,
+                billing: {
+                    ...baseCustomer.billing,
+                    ...incomingBilling,
+                },
+                shipping: {
+                    ...baseCustomer.shipping,
+                    ...incomingShipping,
+                    use_billing:
+                        incomingShipping.use_billing === false ? false : true,
+                },
+            };
+        }
+    });
+
+    return merged;
+}
+
+function baseOptions() {
+    return {
+        store_submissions: true,
+        send_email: true,
+        email_recipient: '',
+        email_subject: '',
+        email_from_name: '',
+        email_from_address: '',
+        honeypot: true,
+        ip_storage: 'anonymous',
+        throttle: {
+            max_requests: 3,
+            per_seconds: 10,
+        },
+        success_message: __(
+            'Thanks! Your message has been sent.',
+            'nxp-easy-forms'
+        ),
+        error_message: __(
+            'Something went wrong. Please fix the errors and try again.',
+            'nxp-easy-forms'
+        ),
+        captcha: {
+            provider: 'none',
+            site_key: '',
+            secret_key: '',
+        },
+        email_delivery: {
+            provider: 'wordpress',
+            sendgrid: {
+                api_key: '',
+            },
+            mailpit: {
+                host: '127.0.0.1',
+                port: 1025,
+            },
+            smtp2go: {
+                api_key: '',
+            },
+            smtp: {
+                host: '',
+                port: 587,
+                encryption: 'tls',
+                username: '',
+                password: '',
+            },
+        },
+        custom_css: '',
+        webhooks: {
+            enabled: false,
+            endpoint: '',
+            secret: '',
+        },
+        integrations: baseIntegrations(),
+    };
+}
+
+function mergeOptions(options = {}) {
+    const base = baseOptions();
+    const incoming = options || {};
+
+    return {
+        ...base,
+        ...incoming,
+        throttle: {
+            ...base.throttle,
+            ...(incoming.throttle || {}),
+        },
+        captcha: {
+            ...base.captcha,
+            ...(incoming.captcha || {}),
+        },
+        email_delivery: {
+            ...base.email_delivery,
+            ...(incoming.email_delivery || {}),
+            sendgrid: {
+                ...base.email_delivery.sendgrid,
+                ...(incoming.email_delivery?.sendgrid || {}),
+            },
+            mailpit: {
+                ...base.email_delivery.mailpit,
+                ...(incoming.email_delivery?.mailpit || {}),
+            },
+            smtp2go: {
+                ...base.email_delivery.smtp2go,
+                ...(incoming.email_delivery?.smtp2go || {}),
+            },
+            smtp: {
+                ...base.email_delivery.smtp,
+                ...(incoming.email_delivery?.smtp || {}),
+            },
+        },
+        webhooks: {
+            ...base.webhooks,
+            ...(incoming.webhooks || {}),
+        },
+        integrations: mergeIntegrations(incoming.integrations || {}),
+    };
+}
+
+function makeOptions() {
+    return mergeOptions(defaults.options || {});
+}
+
+function generateFieldId(type) {
+    return `${type}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function generateFieldName(type) {
+    return `${type}_${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function createField(type) {
+    const template = findFieldByType(type);
+
+    if (!template) {
+        return null;
+    }
+
+    const field = {
+        id: generateFieldId(type),
+        type,
+        name: generateFieldName(type),
+        label: template.label,
+        placeholder: template.default?.placeholder || '',
+        required: template.default?.required ?? false,
+        options: template.default?.options ? [...template.default.options] : [],
+        multiple: template.default?.multiple ?? false,
+        content: template.default?.content || '',
+        accept: template.default?.accept || '',
+        value: template.default?.value ?? '',
+    };
+
+    if (type === 'file' && template.default?.maxFileSize) {
+        field.maxFileSize = template.default.maxFileSize;
+    }
+
+    // Include type-specific defaults
+    if (type === 'country') {
+        field.woocommerce_mode = template.default?.woocommerce_mode || 'all';
+    }
+
+    if (type === 'state') {
+        field.country_field = template.default?.country_field || '';
+        field.allow_text_input = template.default?.allow_text_input !== false;
+    }
+
+    return field;
+}
+
+export const useFormStore = defineStore('form', {
+    state: () => ({
+        formId: settings.formId || 0,
+        title:
+            settings.i18n?.defaultTitle ||
+            __('Untitled form', 'nxp-easy-forms'),
+        fields: [],
+        options: makeOptions(),
+        loading: false,
+        saving: false,
+        error: null,
+        notice: null,
+        hasUnsavedChanges: false,
+    }),
+    getters: {
+        isDirty: (state) => state.hasUnsavedChanges,
+    },
+    actions: {
+        async bootstrap() {
+            if (!this.formId) {
+                this.options = makeOptions();
+                return;
+            }
+
+            this.loading = true;
+
+            try {
+                const response = await apiFetch('forms/get', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ id: this.formId }),
+                });
+
+                const data = await response.json().catch(() => ({}));
+
+                if (!response.ok) {
+                    throw new Error(
+                        data?.message ||
+                            __('Unable to load form.', 'nxp-easy-forms')
+                    );
+                }
+                this.title = data.title;
+                this.fields = Array.isArray(data.config?.fields)
+                    ? data.config.fields.map((field) => ({
+                          ...field,
+                          // Preserve type-specific props and ensure booleans are sane
+                          multiple: field.multiple ?? false,
+                          woocommerce_mode:
+                              field.type === 'country'
+                                  ? field.woocommerce_mode || 'all'
+                                  : field.woocommerce_mode,
+                          country_field:
+                              field.type === 'state'
+                                  ? field.country_field || ''
+                                  : field.country_field,
+                          allow_text_input:
+                              field.type === 'state'
+                                  ? field.allow_text_input !== false
+                                  : field.allow_text_input,
+                      }))
+                    : [];
+                this.options = mergeOptions(data.config?.options || {});
+                this.hasUnsavedChanges = false;
+            } catch (error) {
+                this.error = error.message;
+            } finally {
+                this.loading = false;
+            }
+        },
+        setTitle(value) {
+            this.title = value;
+            this.hasUnsavedChanges = true;
+        },
+        addField(type, index = null) {
+            const field = createField(type);
+
+            if (!field) {
+                return;
+            }
+
+            if (index === null || index >= this.fields.length) {
+                this.fields.push(field);
+            } else {
+                this.fields.splice(index, 0, field);
+            }
+            this.hasUnsavedChanges = true;
+        },
+        removeField(id) {
+            const idx = this.fields.findIndex((field) => field.id === id);
+            if (idx >= 0) {
+                this.fields.splice(idx, 1);
+                this.hasUnsavedChanges = true;
+            }
+        },
+        duplicateField(id) {
+            const idx = this.fields.findIndex((field) => field.id === id);
+            if (idx === -1) return;
+            const source = this.fields[idx];
+            const copy = {
+                ...source,
+                id: generateFieldId(source.type),
+                name: generateFieldName(source.type),
+                options: Array.isArray(source.options)
+                    ? [...source.options]
+                    : [],
+                multiple: source.multiple ?? false,
+            };
+            this.fields.splice(idx + 1, 0, copy);
+            this.hasUnsavedChanges = true;
+        },
+        updateField(id, payload) {
+            const field = this.fields.find((item) => item.id === id);
+            if (!field) return;
+            Object.assign(field, payload);
+            this.hasUnsavedChanges = true;
+        },
+        updateFieldOrder(oldIndex, newIndex) {
+            if (oldIndex === newIndex) return;
+            const item = this.fields.splice(oldIndex, 1)[0];
+            this.fields.splice(newIndex, 0, item);
+            this.hasUnsavedChanges = true;
+        },
+        updateOptions(patch) {
+            this.options = {
+                ...this.options,
+                ...patch,
+            };
+            this.hasUnsavedChanges = true;
+        },
+        updateThrottle(patch) {
+            this.options.throttle = {
+                ...this.options.throttle,
+                ...patch,
+            };
+            this.hasUnsavedChanges = true;
+        },
+        applyTemplate(template) {
+            this.fields = template.fields.map((field) => {
+                const baseField = {
+                    id: generateFieldId(field.type),
+                    type: field.type,
+                    name: field.name || generateFieldName(field.type),
+                    label: field.label || '',
+                    placeholder: field.placeholder || '',
+                    required: field.required ?? false,
+                    options: Array.isArray(field.options)
+                        ? [...field.options]
+                        : [],
+                    multiple:
+                        field.type === 'select'
+                            ? Boolean(field.multiple)
+                            : false,
+                    content: field.content || '',
+                    accept: field.accept || '',
+                };
+
+                if (field.type === 'file' && field.maxFileSize) {
+                    baseField.maxFileSize = field.maxFileSize;
+                }
+
+                if (field.type === 'country') {
+                    baseField.woocommerce_mode =
+                        field.woocommerce_mode || 'all';
+                }
+
+                if (field.type === 'state') {
+                    baseField.country_field = field.country_field || '';
+                    baseField.allow_text_input =
+                        field.allow_text_input !== false;
+                }
+
+                return baseField;
+            });
+
+            if (template.options) {
+                this.options = {
+                    ...this.options,
+                    ...template.options,
+                };
+            }
+            this.hasUnsavedChanges = true;
+        },
+        clearNotice() {
+            this.notice = null;
+        },
+        async saveForm() {
+            if (this.saving) {
+                return;
+            }
+
+            this.saving = true;
+            this.error = null;
+            this.notice = null;
+
+            const payload = {
+                title:
+                    this.title ||
+                    settings.i18n?.defaultTitle ||
+                    __('Untitled form', 'nxp-easy-forms'),
+                config: {
+                    fields: this.fields.map((field) => {
+                        const mapped = {
+                            id: field.id,
+                            type: field.type,
+                            name: field.name,
+                            label: field.label,
+                            placeholder: field.placeholder,
+                            required: field.required,
+                            options: field.options || [],
+                            multiple: field.multiple ?? false,
+                            content: field.content || '',
+                            accept: field.accept || '',
+                        };
+
+                        if (field.type === 'file' && field.maxFileSize) {
+                            mapped.maxFileSize = field.maxFileSize;
+                        }
+
+                        // Include type-specific props so they persist
+                        if (field.type === 'country') {
+                            mapped.woocommerce_mode =
+                                field.woocommerce_mode || 'all';
+                        }
+                        if (field.type === 'state') {
+                            mapped.country_field = field.country_field || '';
+                            mapped.allow_text_input =
+                                field.allow_text_input !== false;
+                        }
+
+                        return mapped;
+                    }),
+                    options: this.options,
+                },
+            };
+
+            const wasNewForm = !this.formId;
+
+            try {
+                const response = await apiFetch('forms/save', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        id: this.formId || 0,
+                        ...payload,
+                    }),
+                });
+
+                const data = await response.json().catch(() => ({}));
+
+                if (!response.ok) {
+                    throw new Error(
+                        data?.message ||
+                            __('Unable to save form.', 'nxp-easy-forms')
+                    );
+                }
+                this.formId = data.id;
+
+                if (wasNewForm && this.formId && settings.builderUrl) {
+                    const target = `${settings.builderUrl}&form_id=${this.formId}`;
+                    this.hasUnsavedChanges = false;
+                    if (
+                        typeof window !== 'undefined' &&
+                        window.history?.replaceState
+                    ) {
+                        window.history.replaceState({}, '', target);
+                    }
+                    settings.formId = this.formId;
+                }
+
+                this.notice = this.formId
+                    ? settings.i18n?.formSaved
+                    : settings.i18n?.formCreated;
+                this.hasUnsavedChanges = false;
+            } catch (error) {
+                this.error = error.message;
+            } finally {
+                this.saving = false;
+            }
+        },
+        async sendTestEmail({ recipient, options, formId }) {
+            try {
+                const response = await apiFetch('emails/test', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ recipient, options, formId }),
+                });
+
+                const result = await response.json().catch(() => ({}));
+
+                if (!response.ok || !result.sent) {
+                    throw new Error(
+                        result.message ||
+                            __('Test email failed.', 'nxp-easy-forms')
+                    );
+                }
+
+                this.notice = result.message;
+            } catch (error) {
+                this.error = error.message;
+            }
+        },
+    },
+});
+
+// Intentionally do not re-export FIELD_LIBRARY to avoid tight coupling.

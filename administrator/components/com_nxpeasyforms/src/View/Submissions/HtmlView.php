@@ -14,7 +14,7 @@ use Joomla\CMS\Toolbar\ToolbarHelper;
  */
 final class HtmlView extends BaseHtmlView
 {
-    protected array $items = [];
+    protected $items = [];
 
     protected $pagination;
 

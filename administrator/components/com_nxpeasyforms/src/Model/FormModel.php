@@ -26,9 +26,27 @@ final class FormModel extends AdminModel
     /**
      * {@inheritDoc}
      */
-    public function getTable($type = 'Form', $prefix = 'Joomla\\Component\\Nxpeasyforms\\Administrator\\Table\\', $config = []): Table
+    public function getForm($data = [], $loadData = true)
     {
-        return Table::getInstance($type, $prefix, $config);
+        $form = $this->loadForm(
+            'com_nxpeasyforms.form',
+            'form',
+            ['control' => 'jform', 'load_data' => $loadData]
+        );
+
+        if (empty($form)) {
+            return false;
+        }
+
+        return $form;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function getTable($type = 'Form', $prefix = 'Joomla\\Component\\Nxpeasyforms\\Administrator\\Table\\', $config = [])
+    {
+        return parent::getTable($type, $prefix, $config);
     }
 
     /**

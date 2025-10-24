@@ -1,0 +1,17 @@
+{
+  "src/admin/main.js": {
+    "file": "js/admin.js",
+    "name": "admin",
+    "src": "src/admin/main.js",
+    "isEntry": true,
+    "css": [
+      "css/admin-trfcRtm1.css"
+    ]
+  },
+  "src/block/index.js": {
+    "file": "js/block.js",
+    "name": "block",
+    "src": "src/block/index.js",
+    "isEntry": true
+  }
+}

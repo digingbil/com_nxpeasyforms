@@ -11,5 +11,5 @@ use Joomla\CMS\MVC\Controller\FormController as JoomlaFormController;
  */
 final class FormController extends JoomlaFormController
 {
-    protected string $text_prefix = 'COM_NXPEASYFORMS';
+    protected $text_prefix = 'COM_NXPEASYFORMS';
 }

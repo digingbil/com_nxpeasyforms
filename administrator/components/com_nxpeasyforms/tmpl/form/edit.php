@@ -12,8 +12,7 @@ HTMLHelper::_('behavior.formvalidator');
 <form action="<?php echo htmlspecialchars($this->getAction(), ENT_QUOTES, 'UTF-8'); ?>" method="post" name="adminForm" id="adminForm" class="form-validate">
     <div class="card">
         <div class="card-body">
-            <div id="nxp-easy-forms-builder-root"
-                data-form='<?php echo htmlspecialchars($this->getBuilderPayload(), ENT_QUOTES, 'UTF-8'); ?>'>
+            <div id="nxp-easy-forms-builder" class="nxp-easy-forms-builder">
                 <p class="text-muted">
                     <?php echo Text::_('COM_NXPEASYFORMS_FORM_BUILDER_LOADING'); ?>
                 </p>

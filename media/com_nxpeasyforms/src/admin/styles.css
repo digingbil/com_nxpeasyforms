@@ -1,0 +1,17 @@
+.nxp-easy-forms-builder {
+    max-width: 1100px;
+    margin-top: 20px;
+}
+
+.nxp-easy-forms-builder .nxp-builder input,
+.nxp-easy-forms-builder .nxp-builder textarea,
+.nxp-easy-forms-builder .nxp-builder select {
+    border-radius: 6px;
+    border: 1px solid #dcdcde;
+    padding: 8px 10px;
+    font-size: 14px;
+}
+
+.nxp-easy-forms-builder .notice {
+    margin: 0;
+}

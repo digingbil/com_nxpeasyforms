@@ -67,4 +67,10 @@
         <folder>js</folder>
         <filename>index.html</filename>
     </media>
+
+    <fileset>
+        <files target="api" folder="api">
+            <folder>components/com_nxpeasyforms</folder>
+        </files>
+    </fileset>
 </extension>

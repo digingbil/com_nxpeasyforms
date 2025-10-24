@@ -14,24 +14,24 @@ use Joomla\Utilities\ArrayHelper;
  */
 final class SubmissionTable extends Table
 {
-    public int $id = 0;
+    public $id = 0;
 
-    public int $form_id = 0;
+    public $form_id = 0;
 
-    public string $submission_uuid = '';
+    public $submission_uuid = '';
 
     /**
      * JSON encoded submission payload.
      */
-    public string $data = '{}';
+    public $data = '{}';
 
-    public string $status = 'new';
+    public $status = 'new';
 
-    public ?string $ip_address = null;
+    public $ip_address = null;
 
-    public ?string $user_agent = null;
+    public $user_agent = null;
 
-    public ?string $created_at = null;
+    public $created_at = null;
 
     public function __construct(DatabaseDriver $db)
     {

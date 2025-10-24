@@ -12,11 +12,11 @@ use Joomla\CMS\MVC\Model\BaseDatabaseModel;
  */
 final class FormsController extends AdminController
 {
-    protected string $text_prefix = 'COM_NXPEASYFORMS';
+    protected $text_prefix = 'COM_NXPEASYFORMS';
 
-    protected string $view_list = 'forms';
+    protected $view_list = 'forms';
 
-    protected string $view_item = 'form';
+    protected $view_item = 'form';
 
     /**
      * {@inheritDoc}

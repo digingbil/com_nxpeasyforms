@@ -1,0 +1,20 @@
+{
+  "name": "@nexusplugins/nxp-easy-forms-joomla",
+  "version": "1.0.0",
+  "description": "Admin and frontend assets for the NXP Easy Forms Joomla component.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --config vite.config.js",
+    "build": "vite build --config vite.config.js",
+    "build:watch": "vite build --config vite.config.js --watch"
+  },
+  "dependencies": {
+    "pinia": "^2.1.7",
+    "sortablejs": "^1.15.2",
+    "vue": "^3.4.38"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^5.1.2",
+    "vite": "^5.2.11"
+  }
+}

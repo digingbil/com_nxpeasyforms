@@ -24,25 +24,25 @@ use Joomla\Utilities\ArrayHelper;
  */
 final class FormTable extends Table
 {
-    public int $id = 0;
+    public $id = 0;
 
-    public string $title = '';
+    public $title = '';
 
     /**
      * JSON encoded field definitions.
      */
-    public string $fields = '[]';
+    public $fields = '[]';
 
     /**
      * JSON encoded settings payload.
      */
-    public string $settings = '{}';
+    public $settings = '{}';
 
-    public int $active = 1;
+    public $active = 1;
 
-    public ?string $created_at = null;
+    public $created_at = null;
 
-    public ?string $updated_at = null;
+    public $updated_at = null;
 
     public function __construct(DatabaseDriver $db)
     {
