@@ -91,5 +91,33 @@
             description="COM_NXPEASYFORMS_CONFIG_EMAIL_REPLY_TO_DESC"
             default=""
         />
+
+        <field
+            name="email_provider"
+            type="list"
+            label="COM_NXPEASYFORMS_CONFIG_EMAIL_PROVIDER"
+            description="COM_NXPEASYFORMS_CONFIG_EMAIL_PROVIDER_DESC"
+            default="joomla"
+        >
+            <option value="joomla">COM_NXPEASYFORMS_CONFIG_EMAIL_PROVIDER_JOOMLA</option>
+            <option value="sendgrid">COM_NXPEASYFORMS_CONFIG_EMAIL_PROVIDER_SENDGRID</option>
+            <option value="smtp2go">COM_NXPEASYFORMS_CONFIG_EMAIL_PROVIDER_SMTP2GO</option>
+        </field>
+
+        <field
+            name="email_sendgrid_key"
+            type="password"
+            label="COM_NXPEASYFORMS_CONFIG_EMAIL_SENDGRID_KEY"
+            description="COM_NXPEASYFORMS_CONFIG_EMAIL_SENDGRID_KEY_DESC"
+            default=""
+        />
+
+        <field
+            name="email_smtp2go_key"
+            type="password"
+            label="COM_NXPEASYFORMS_CONFIG_EMAIL_SMTP2GO_KEY"
+            description="COM_NXPEASYFORMS_CONFIG_EMAIL_SMTP2GO_KEY_DESC"
+            default=""
+        />
     </fieldset>
 </form>

@@ -8,11 +8,14 @@ use Joomla\CMS\Component\ComponentHelper;
 use Joomla\CMS\Factory;
 use Joomla\CMS\Language\Text;
 use Joomla\CMS\Mail\MailerInterface;
+use Joomla\Component\Nxpeasyforms\Administrator\Service\Integrations\HttpClient;
+use Joomla\Component\Nxpeasyforms\Administrator\Support\Secrets;
 use Joomla\Registry\Registry;
 
 use function array_filter;
 use function array_key_exists;
 use function array_map;
+use function array_values;
 use function explode;
 use function filter_var;
 use function htmlspecialchars;
@@ -20,27 +23,32 @@ use function implode;
 use function is_array;
 use function is_string;
 use function nl2br;
+use function sprintf;
 use function trim;
 
 use const FILTER_VALIDATE_EMAIL;
 
-/**
- * Handles notification email delivery for submissions.
- */
 final class EmailService
 {
     private MailerInterface $mailer;
 
     private Registry $componentParams;
 
-    public function __construct(?MailerInterface $mailer = null, ?Registry $componentParams = null)
-    {
+    private HttpClient $httpClient;
+
+    public function __construct(
+        ?MailerInterface $mailer = null,
+        ?Registry $componentParams = null,
+        ?HttpClient $httpClient = null
+    ) {
         $container = Factory::getContainer();
 
         /** @var MailerInterface $mailerInstance */
         $mailerInstance = $mailer ?? $container->get(MailerInterface::class);
         $this->mailer = $mailerInstance;
+
         $this->componentParams = $componentParams ?? ComponentHelper::getParams('com_nxpeasyforms');
+        $this->httpClient = $httpClient ?? new HttpClient();
     }
 
     /**
@@ -48,7 +56,7 @@ final class EmailService
      * @param array<string, mixed> $submission
      * @param array<string, mixed> $context
      *
-     * @return array{sent: bool, message: string}
+     * @return array{sent: bool, message: string, error?: string|null}
      */
     public function dispatchSubmission(array $form, array $submission, array $context = []): array
     {
@@ -62,6 +70,7 @@ final class EmailService
             return [
                 'sent' => false,
                 'message' => Text::_('COM_NXPEASYFORMS_EMAIL_DISABLED'),
+                'error' => null,
             ];
         }
 
@@ -71,58 +80,37 @@ final class EmailService
             return [
                 'sent' => false,
                 'message' => Text::_('COM_NXPEASYFORMS_EMAIL_NO_RECIPIENT'),
+                'error' => null,
             ];
-        }
-
-        $mailer = clone $this->mailer;
-        $mailer->clearAllRecipients();
-        $mailer->clearReplyTos();
-        $mailer->clearCCs();
-        $mailer->clearBCCs();
-        $mailer->clearAttachments();
-
-        $mailer->setSender([$config['email_from_address'], $config['email_from_name']]);
-
-        foreach ($recipients as $recipient) {
-            $mailer->addRecipient($recipient);
         }
 
         $subject = $this->resolveSubject($config, $form);
-        $mailer->setSubject($subject);
-
         $fieldMeta = $context['field_meta'] ?? [];
-        $htmlBody = $this->buildHtmlBody($form, $fieldMeta, $submission, $context);
-        $mailer->isHtml(true);
-        $mailer->setBody($htmlBody);
+
+        $message = [
+            'recipients' => $recipients,
+            'subject' => $subject,
+            'html' => $this->buildHtmlBody($form, $fieldMeta, $submission, $context),
+            'text' => $this->buildPlainTextBody($form, $fieldMeta, $submission, $context, $subject),
+            'from_name' => $config['email_from_name'],
+            'from_email' => $config['email_from_address'],
+        ];
 
         $replyTo = $this->resolveReplyTo($config, $fieldMeta, $context);
-        if ($replyTo !== null) {
-            $mailer->addReplyTo($replyTo);
-        }
 
-        try {
-            $sent = (bool) $mailer->send();
-        } catch (\Throwable $exception) {
-            return [
-                'sent' => false,
-                'message' => Text::sprintf(
-                    'COM_NXPEASYFORMS_EMAIL_ERROR_EXCEPTION',
-                    $exception->getMessage()
-                ),
-            ];
-        }
+        $result = $this->deliver($config, $message, $replyTo);
 
         return [
-            'sent' => $sent,
-            'message' => $sent
+            'sent' => $result['sent'],
+            'message' => $result['sent']
                 ? Text::_('COM_NXPEASYFORMS_EMAIL_SENT')
-                : Text::_('COM_NXPEASYFORMS_EMAIL_FAILED'),
+                : ($result['error'] ?? Text::_('COM_NXPEASYFORMS_EMAIL_FAILED')),
+            'error' => $result['error'] ?? null,
         ];
     }
 
     /**
      * @param array<string, mixed> $options
-     *
      * @return array<string, mixed>
      */
     private function mergeWithDefaults(array $options): array
@@ -167,12 +155,36 @@ final class EmailService
                 continue;
             }
 
-            if ($key === 'send_email') {
-                $merged[$key] = (bool) $value;
-            } else {
-                $merged[$key] = $value;
+            $merged[$key] = $key === 'send_email' ? (bool) $value : $value;
+        }
+
+        $deliveryDefaults = [
+            'provider' => (string) $this->componentParams->get('email_provider', 'joomla'),
+            'sendgrid' => [
+                'api_key' => (string) $this->componentParams->get('email_sendgrid_key', ''),
+            ],
+            'smtp2go' => [
+                'api_key' => (string) $this->componentParams->get('email_smtp2go_key', ''),
+            ],
+        ];
+
+        $deliveryOptions = isset($options['email_delivery']) && is_array($options['email_delivery'])
+            ? $options['email_delivery']
+            : [];
+
+        $deliveryOptions['provider'] = $deliveryOptions['provider'] ?? $deliveryDefaults['provider'];
+
+        foreach (['sendgrid', 'smtp2go'] as $provider) {
+            $deliveryOptions[$provider] = isset($deliveryOptions[$provider]) && is_array($deliveryOptions[$provider])
+                ? $deliveryOptions[$provider]
+                : [];
+
+            if (empty($deliveryOptions[$provider]['api_key'])) {
+                $deliveryOptions[$provider]['api_key'] = $deliveryDefaults[$provider]['api_key'];
             }
         }
+
+        $merged['email_delivery'] = $deliveryOptions;
 
         return $merged;
     }
@@ -274,12 +286,46 @@ final class EmailService
 
         $title = htmlspecialchars((string) ($form['title'] ?? Text::_('COM_NXPEASYFORMS')), ENT_QUOTES, 'UTF-8');
 
-        return sprintf(
-            '<h2>%s</h2>%s%s',
-            $title,
-            $table,
-            $metaTable
-        );
+        return sprintf('<h2>%s</h2>%s%s', $title, $table, $metaTable);
+    }
+
+    /**
+     * @param array<int, array<string, mixed>> $fieldMeta
+     * @param array<string, mixed> $submission
+     * @param array<string, mixed> $context
+     */
+    private function buildPlainTextBody(
+        array $form,
+        array $fieldMeta,
+        array $submission,
+        array $context,
+        string $headline
+    ): string {
+        $lines = [$headline];
+
+        if (!empty($fieldMeta)) {
+            foreach ($fieldMeta as $field) {
+                $label = $field['label'] ?? $field['name'] ?? '';
+                $value = $field['value'] ?? '';
+                $rendered = is_array($value) ? implode(', ', array_map('strval', $value)) : (string) $value;
+                $lines[] = $label . ': ' . $rendered;
+            }
+        } else {
+            foreach ($submission as $key => $value) {
+                if ($key === '_token') {
+                    continue;
+                }
+
+                $rendered = is_array($value) ? implode(', ', array_map('strval', $value)) : (string) $value;
+                $lines[] = $key . ': ' . $rendered;
+            }
+        }
+
+        if (!empty($context['ip_address'])) {
+            $lines[] = 'IP: ' . $context['ip_address'];
+        }
+
+        return implode("\n", $lines);
     }
 
     /**
@@ -327,5 +373,201 @@ final class EmailService
         }
 
         return nl2br(htmlspecialchars($value, ENT_QUOTES, 'UTF-8'));
+    }
+
+    /**
+     * @param array<string, mixed> $config
+     * @param array<string, mixed> $message
+     * @return array{sent: bool, error?: string}
+     */
+    private function deliver(array $config, array $message, ?string $replyTo): array
+    {
+        $delivery = isset($config['email_delivery']) && is_array($config['email_delivery'])
+            ? $config['email_delivery']
+            : [];
+
+        $provider = $delivery['provider'] ?? 'joomla';
+
+        return match ($provider) {
+            'sendgrid' => $this->sendViaSendgrid($delivery['sendgrid'] ?? [], $message, $replyTo),
+            'smtp2go' => $this->sendViaSmtp2Go($delivery['smtp2go'] ?? [], $message, $replyTo),
+            default => $this->sendViaMailer($message, $replyTo),
+        };
+    }
+
+    /**
+     * @param array<string, mixed> $message
+     * @return array{sent: bool, error?: string}
+     */
+    private function sendViaMailer(array $message, ?string $replyTo): array
+    {
+        $mailer = clone $this->mailer;
+        $mailer->clearAllRecipients();
+        $mailer->clearReplyTos();
+        $mailer->clearCCs();
+        $mailer->clearBCCs();
+        $mailer->clearAttachments();
+
+        $mailer->setSender([$message['from_email'], $message['from_name']]);
+
+        foreach ($message['recipients'] as $recipient) {
+            $mailer->addRecipient($recipient);
+        }
+
+        if ($replyTo !== null) {
+            $mailer->addReplyTo($replyTo);
+        }
+
+        $mailer->setSubject($message['subject']);
+        $mailer->isHtml(true);
+        $mailer->setBody($message['html']);
+
+        try {
+            $sent = (bool) $mailer->send();
+        } catch (\Throwable $exception) {
+            return [
+                'sent' => false,
+                'error' => $exception->getMessage(),
+            ];
+        }
+
+        return [
+            'sent' => $sent,
+            'error' => $sent ? null : Text::_('COM_NXPEASYFORMS_EMAIL_FAILED'),
+        ];
+    }
+
+    /**
+     * @param array<string, mixed> $settings
+     * @param array<string, mixed> $message
+     * @return array{sent: bool, error?: string}
+     */
+    private function sendViaSendgrid(array $settings, array $message, ?string $replyTo): array
+    {
+        $apiKey = $this->resolveSecretValue($settings['api_key'] ?? '');
+
+        if ($apiKey === '') {
+            return [
+                'sent' => false,
+                'error' => Text::_('COM_NXPEASYFORMS_EMAIL_SENDGRID_MISSING_KEY'),
+            ];
+        }
+
+        $payload = [
+            'personalizations' => [
+                [
+                    'to' => array_map(
+                        static fn (string $email): array => ['email' => $email],
+                        $message['recipients']
+                    ),
+                ],
+            ],
+            'from' => [
+                'email' => $message['from_email'],
+                'name' => $message['from_name'],
+            ],
+            'subject' => $message['subject'],
+            'content' => [
+                ['type' => 'text/html', 'value' => $message['html']],
+                ['type' => 'text/plain', 'value' => $message['text']],
+            ],
+        ];
+
+        if ($replyTo !== null) {
+            $payload['reply_to'] = ['email' => $replyTo];
+        }
+
+        try {
+            $response = $this->httpClient->sendJson(
+                'https://api.sendgrid.com/v3/mail/send',
+                $payload,
+                'POST',
+                ['Authorization' => 'Bearer ' . $apiKey],
+                15
+            );
+        } catch (\Throwable $exception) {
+            return [
+                'sent' => false,
+                'error' => $exception->getMessage(),
+            ];
+        }
+
+        $code = (int) $response->code;
+
+        if ($code >= 200 && $code < 300) {
+            return ['sent' => true];
+        }
+
+        return [
+            'sent' => false,
+            'error' => Text::sprintf('COM_NXPEASYFORMS_EMAIL_SENDGRID_ERROR', $code),
+        ];
+    }
+
+    /**
+     * @param array<string, mixed> $settings
+     * @param array<string, mixed> $message
+     * @return array{sent: bool, error?: string}
+     */
+    private function sendViaSmtp2Go(array $settings, array $message, ?string $replyTo): array
+    {
+        $apiKey = $this->resolveSecretValue($settings['api_key'] ?? '');
+
+        if ($apiKey === '') {
+            return [
+                'sent' => false,
+                'error' => Text::_('COM_NXPEASYFORMS_EMAIL_SMTP2GO_MISSING_KEY'),
+            ];
+        }
+
+        $payload = [
+            'api_key' => $apiKey,
+            'to' => array_values($message['recipients']),
+            'sender' => $message['from_email'],
+            'subject' => $message['subject'],
+            'html_body' => $message['html'],
+            'text_body' => $message['text'],
+        ];
+
+        if ($replyTo !== null) {
+            $payload['reply_to'] = $replyTo;
+        }
+
+        try {
+            $response = $this->httpClient->sendJson(
+                'https://api.smtp2go.com/v3/email/send',
+                $payload,
+                'POST',
+                [],
+                15
+            );
+        } catch (\Throwable $exception) {
+            return [
+                'sent' => false,
+                'error' => $exception->getMessage(),
+            ];
+        }
+
+        $code = (int) $response->code;
+
+        if ($code >= 200 && $code < 300) {
+            return ['sent' => true];
+        }
+
+        return [
+            'sent' => false,
+            'error' => Text::sprintf('COM_NXPEASYFORMS_EMAIL_SMTP2GO_ERROR', $code),
+        ];
+    }
+
+    private function resolveSecretValue(?string $value): string
+    {
+        if ($value === null || $value === '') {
+            return '';
+        }
+
+        $decrypted = Secrets::decrypt($value);
+
+        return $decrypted !== '' ? $decrypted : $value;
     }
 }
