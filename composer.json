@@ -1,0 +1,23 @@
+{
+    "name": "nexusplugins/nxp-easy-forms-joomla",
+    "type": "joomla-component",
+    "require": {
+        "php": ">=8.0",
+        "phpunit/phpunit": "^10.5",
+        "psr/simple-cache": "^3.0",
+        "symfony/cache": "^6.4"
+    },
+    "autoload": {
+        "psr-4": {
+            "Joomla\\Component\\Nxpeasyforms\\Administrator\\": "administrator/components/com_nxpeasyforms/src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Joomla\\Component\\Nxpeasyforms\\Tests\\": "tests/"
+        }
+    },
+    "config": {
+        "sort-packages": true
+    }
+}

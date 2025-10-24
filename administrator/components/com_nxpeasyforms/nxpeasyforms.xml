@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<extension type="component" method="upgrade" version="5.0">
+    <name>COM_NXPEASYFORMS</name>
+    <title>NXP Easy Forms</title>
+    <creationDate>2024-05-28</creationDate>
+    <author>nexusplugins.com</author>
+    <authorUrl>https://nexusplugins.com</authorUrl>
+    <version>1.0.0</version>
+    <description>COM_NXPEASYFORMS_XML_DESCRIPTION</description>
+
+    <administration>
+        <menu view="forms">COM_NXPEASYFORMS_SUBMENU_FORMS</menu>
+        <submenu>
+            <menu view="forms">COM_NXPEASYFORMS_SUBMENU_FORMS</menu>
+            <menu view="submissions">COM_NXPEASYFORMS_SUBMENU_SUBMISSIONS</menu>
+            <menu link="index.php?option=com_config&amp;view=component&amp;component=com_nxpeasyforms">
+                COM_NXPEASYFORMS_SUBMENU_SETTINGS
+            </menu>
+            <menu view="documentation">COM_NXPEASYFORMS_SUBMENU_DOCUMENTATION</menu>
+        </submenu>
+
+        <namespace path="src">Joomla\Component\Nxpeasyforms\Administrator</namespace>
+
+        <files>
+            <folder>services</folder>
+            <folder>sql</folder>
+            <folder>src</folder>
+            <folder>tmpl</folder>
+            <filename>access.xml</filename>
+            <filename>config.xml</filename>
+            <filename>index.html</filename>
+        </files>
+
+        <languages>
+            <language tag="en-GB">language/en-GB/com_nxpeasyforms.ini</language>
+            <language tag="en-GB">language/en-GB/com_nxpeasyforms.sys.ini</language>
+        </languages>
+    </administration>
+
+    <site>
+        <namespace path="src">Joomla\Component\Nxpeasyforms\Site</namespace>
+
+        <files>
+            <folder>services</folder>
+            <folder>src</folder>
+            <folder>tmpl</folder>
+            <filename>index.html</filename>
+        </files>
+
+        <languages>
+            <language tag="en-GB">language/en-GB/com_nxpeasyforms.ini</language>
+        </languages>
+    </site>
+
+    <media destination="com_nxpeasyforms" folder="media/com_nxpeasyforms">
+        <folder>assets</folder>
+        <folder>css</folder>
+        <folder>js</folder>
+        <filename>index.html</filename>
+    </media>
+</extension>

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<access component="com_nxpeasyforms">
+    <section name="component">
+        <action name="core.admin" title="JLIB_RULES_RULE_ADMIN" description="JLIB_RULES_RULE_ADMIN_COMPONENT" />
+        <action name="core.manage" title="JLIB_RULES_RULE_MANAGE" description="COM_NXPEASYFORMS_RULE_MANAGE_COMPONENT" />
+        <action name="core.create" title="JLIB_RULES_RULE_CREATE" description="COM_NXPEASYFORMS_RULE_CREATE" />
+        <action name="core.edit" title="JLIB_RULES_RULE_EDIT" description="COM_NXPEASYFORMS_RULE_EDIT" />
+        <action name="core.edit.state" title="JLIB_RULES_RULE_EDIT_STATE" description="COM_NXPEASYFORMS_RULE_EDIT_STATE" />
+        <action name="core.delete" title="JLIB_RULES_RULE_DELETE" description="COM_NXPEASYFORMS_RULE_DELETE" />
+    </section>
+
+    <section name="form">
+        <action name="core.view" title="COM_NXPEASYFORMS_RULE_FORM_VIEW" description="COM_NXPEASYFORMS_RULE_FORM_VIEW_DESC" />
+        <action name="core.edit" title="COM_NXPEASYFORMS_RULE_FORM_EDIT" description="COM_NXPEASYFORMS_RULE_FORM_EDIT_DESC" />
+        <action name="core.delete" title="COM_NXPEASYFORMS_RULE_FORM_DELETE" description="COM_NXPEASYFORMS_RULE_FORM_DELETE_DESC" />
+    </section>
+
+    <section name="submission">
+        <action name="core.view" title="COM_NXPEASYFORMS_RULE_SUBMISSION_VIEW" description="COM_NXPEASYFORMS_RULE_SUBMISSION_VIEW_DESC" />
+        <action name="core.delete" title="COM_NXPEASYFORMS_RULE_SUBMISSION_DELETE" description="COM_NXPEASYFORMS_RULE_SUBMISSION_DELETE_DESC" />
+        <action name="nxpeasyforms.export" title="COM_NXPEASYFORMS_RULE_SUBMISSION_EXPORT" description="COM_NXPEASYFORMS_RULE_SUBMISSION_EXPORT_DESC" />
+    </section>
+</access>

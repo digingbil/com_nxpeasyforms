@@ -1,0 +1,42 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Joomla\Component\Nxpeasyforms\Administrator\Service\Exception;
+
+/**
+ * Domain exception for submission handling failures.
+ */
+class SubmissionException extends \RuntimeException
+{
+    private int $status;
+
+    /**
+     * @var array<string, mixed>
+     */
+    private array $errors;
+
+    /**
+     * @param array<string, mixed> $errors
+     */
+    public function __construct(string $message, int $status = 400, array $errors = [])
+    {
+        parent::__construct($message, $status);
+
+        $this->status = $status;
+        $this->errors = $errors;
+    }
+
+    public function getStatus(): int
+    {
+        return $this->status;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function getErrors(): array
+    {
+        return $this->errors;
+    }
+}

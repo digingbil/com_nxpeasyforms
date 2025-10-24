@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8"?>
+<form>
+    <fieldset name="general" label="COM_NXPEASYFORMS_CONFIG_FIELDSET_GENERAL">
+        <field
+            name="log_level"
+            type="list"
+            label="COM_NXPEASYFORMS_CONFIG_LOG_LEVEL"
+            description="COM_NXPEASYFORMS_CONFIG_LOG_LEVEL_DESC"
+            default="error"
+        >
+            <option value="error">COM_NXPEASYFORMS_CONFIG_LOG_LEVEL_ERROR</option>
+            <option value="warning">COM_NXPEASYFORMS_CONFIG_LOG_LEVEL_WARNING</option>
+            <option value="info">COM_NXPEASYFORMS_CONFIG_LOG_LEVEL_INFO</option>
+            <option value="debug">COM_NXPEASYFORMS_CONFIG_LOG_LEVEL_DEBUG</option>
+        </field>
+
+        <field
+            name="anonymize_ip"
+            type="radio"
+            label="COM_NXPEASYFORMS_CONFIG_ANONYMIZE_IP"
+            description="COM_NXPEASYFORMS_CONFIG_ANONYMIZE_IP_DESC"
+            default="1"
+            class="btn-group btn-group-yesno"
+        >
+            <option value="1">JYES</option>
+            <option value="0">JNO</option>
+        </field>
+
+        <field
+            name="default_submission_status"
+            type="list"
+            label="COM_NXPEASYFORMS_CONFIG_DEFAULT_SUBMISSION_STATUS"
+            description="COM_NXPEASYFORMS_CONFIG_DEFAULT_SUBMISSION_STATUS_DESC"
+            default="new"
+        >
+            <option value="new">COM_NXPEASYFORMS_SUBMISSION_STATUS_NEW</option>
+            <option value="read">COM_NXPEASYFORMS_SUBMISSION_STATUS_READ</option>
+            <option value="archived">COM_NXPEASYFORMS_SUBMISSION_STATUS_ARCHIVED</option>
+        </field>
+    </fieldset>
+
+    <fieldset name="email" label="COM_NXPEASYFORMS_CONFIG_FIELDSET_EMAIL">
+        <field
+            name="email_send_enabled"
+            type="radio"
+            label="COM_NXPEASYFORMS_CONFIG_EMAIL_SEND_ENABLED"
+            description="COM_NXPEASYFORMS_CONFIG_EMAIL_SEND_ENABLED_DESC"
+            default="1"
+            class="btn-group btn-group-yesno"
+        >
+            <option value="1">JYES</option>
+            <option value="0">JNO</option>
+        </field>
+
+        <field
+            name="email_default_recipient"
+            type="email"
+            label="COM_NXPEASYFORMS_CONFIG_EMAIL_DEFAULT_RECIPIENT"
+            description="COM_NXPEASYFORMS_CONFIG_EMAIL_DEFAULT_RECIPIENT_DESC"
+            default=""
+        />
+
+        <field
+            name="email_subject"
+            type="text"
+            label="COM_NXPEASYFORMS_CONFIG_EMAIL_SUBJECT"
+            description="COM_NXPEASYFORMS_CONFIG_EMAIL_SUBJECT_DESC"
+            default=""
+        />
+
+        <field
+            name="email_from_name"
+            type="text"
+            label="COM_NXPEASYFORMS_CONFIG_EMAIL_FROM_NAME"
+            description="COM_NXPEASYFORMS_CONFIG_EMAIL_FROM_NAME_DESC"
+            default=""
+        />
+
+        <field
+            name="email_from_address"
+            type="email"
+            label="COM_NXPEASYFORMS_CONFIG_EMAIL_FROM_ADDRESS"
+            description="COM_NXPEASYFORMS_CONFIG_EMAIL_FROM_ADDRESS_DESC"
+            default=""
+        />
+
+        <field
+            name="email_reply_to"
+            type="email"
+            label="COM_NXPEASYFORMS_CONFIG_EMAIL_REPLY_TO"
+            description="COM_NXPEASYFORMS_CONFIG_EMAIL_REPLY_TO_DESC"
+            default=""
+        />
+    </fieldset>
+</form>
