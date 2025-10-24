@@ -32,8 +32,8 @@
         </files>
 
         <languages>
-            <language tag="en-GB">language/en-GB/en-GB.com_nxpeasyforms.ini</language>
-            <language tag="en-GB">language/en-GB/en-GB.com_nxpeasyforms.sys.ini</language>
+            <language tag="en-GB">language/en-GB/com_nxpeasyforms.ini</language>
+            <language tag="en-GB">language/en-GB/com_nxpeasyforms.sys.ini</language>
         </languages>
     </administration>
 
@@ -48,7 +48,7 @@
         </files>
 
         <languages>
-            <language tag="en-GB">language/en-GB/en-GB.com_nxpeasyforms.ini</language>
+            <language tag="en-GB">language/en-GB/com_nxpeasyforms.ini</language>
         </languages>
     </site>
 
