@@ -7,14 +7,27 @@
     <authorUrl>https://nexusplugins.com</authorUrl>
     <version>1.0.0</version>
     <description>COM_NXPEASYFORMS_XML_DESCRIPTION</description>
-    <namespace path="src">Joomla\Component\Nxpeasyforms</namespace>
+
+    <install>
+        <sql>
+            <file driver="mysql" charset="utf8">sql/install.mysql.utf8.sql</file>
+        </sql>
+    </install>
+
+    <uninstall>
+        <sql>
+            <file driver="mysql" charset="utf8">sql/uninstall.mysql.utf8.sql</file>
+        </sql>
+    </uninstall>
 
     <administration>
-        <menu link="index.php?option=com_nxpeasyforms&view=forms">COM_NXPEASYFORMS_MENU</menu>
+        <menu link="index.php?option=com_nxpeasyforms&amp;view=forms">COM_NXPEASYFORMS_MENU</menu>
         <submenu>
             <menu view="forms">COM_NXPEASYFORMS_SUBMENU_FORMS</menu>
             <menu view="submissions">COM_NXPEASYFORMS_SUBMENU_SUBMISSIONS</menu>
         </submenu>
+
+        <namespace path="src">Joomla\Component\Nxpeasyforms\Administrator</namespace>
 
         <files>
             <folder>services</folder>
@@ -40,12 +53,11 @@
             <folder>services</folder>
             <folder>src</folder>
             <folder>tmpl</folder>
-            <folder>language</folder>
             <filename>index.html</filename>
         </files>
 
-        <languages>
-            <language tag="en-GB">language/en-GB/com_nxpeasyforms.ini</language>
+        <languages folder="language">
+            <language tag="en-GB">en-GB/com_nxpeasyforms.ini</language>
         </languages>
     </site>
 
