@@ -43,6 +43,7 @@ desktop.ini
 /release-config.json
 /make-release.sh
 /scripts
+/REFERENCE_ONLY_unusedimagefinder_REFERENCE_ONLY/
 
 # AI assistants
 .copilot/
@@ -58,6 +59,7 @@ desktop.ini
 .release-stage/
 .phpunit.result.cache
 JOOMLA_MIGRATION_GUIDELINE.md
+joomla_component_symlinking.sh
 
 # Temporary files
 *~

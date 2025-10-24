@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<form>
+    <fields name="filter">
+        <field
+            name="search"
+            type="text"
+            label="JSEARCH_FILTER"
+            hint="COM_NXPEASYFORMS_SEARCH_SUBMISSIONS"
+        />
+
+        <field
+            name="status"
+            type="list"
+            label="COM_NXPEASYFORMS_COLUMN_STATUS"
+            default="all"
+            class="w-100"
+        >
+            <option value="all">JOPTION_SELECT_PUBLISHED</option>
+            <option value="new">COM_NXPEASYFORMS_SUBMISSION_STATUS_NEW</option>
+            <option value="read">COM_NXPEASYFORMS_SUBMISSION_STATUS_READ</option>
+            <option value="archived">COM_NXPEASYFORMS_SUBMISSION_STATUS_ARCHIVED</option>
+        </field>
+
+        <field
+            name="form_id"
+            type="sql"
+            label="COM_NXPEASYFORMS_FILTER_FORM"
+            query="SELECT id AS value, title AS text FROM #__nxpeasyforms_forms ORDER BY title ASC"
+            translate="false"
+            class="w-100"
+            required="false"
+            key_field="value"
+            value_field="text"
+        >
+            <option value="0">COM_NXPEASYFORMS_FILTER_FORM_ALL</option>
+        </field>
+    </fields>
+
+    <fields name="list">
+        <field
+            name="fullordering"
+            type="list"
+            label="JGRID_HEADING_ORDERING"
+            default="created_at DESC"
+            validate="options"
+        >
+            <option value="created_at DESC">COM_NXPEASYFORMS_COLUMN_CREATED_DESC</option>
+            <option value="created_at ASC">COM_NXPEASYFORMS_COLUMN_CREATED_ASC</option>
+            <option value="submission_uuid ASC">COM_NXPEASYFORMS_COLUMN_SUBMISSION_UUID_ASC</option>
+            <option value="submission_uuid DESC">COM_NXPEASYFORMS_COLUMN_SUBMISSION_UUID_DESC</option>
+        </field>
+    </fields>
+</form>

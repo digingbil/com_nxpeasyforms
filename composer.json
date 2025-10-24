@@ -9,7 +9,8 @@
     },
     "autoload": {
         "psr-4": {
-            "Joomla\\Component\\Nxpeasyforms\\Administrator\\": "administrator/components/com_nxpeasyforms/src/"
+            "Joomla\\Component\\Nxpeasyforms\\Administrator\\": "administrator/components/com_nxpeasyforms/src/",
+            "Joomla\\Component\\Nxpeasyforms\\Site\\": "components/com_nxpeasyforms/src/"
         }
     },
     "autoload-dev": {

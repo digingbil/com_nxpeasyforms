@@ -8,6 +8,14 @@ use Joomla\CMS\MVC\Model\AdminModel;
 use Joomla\CMS\Table\Table;
 use Joomla\Component\Nxpeasyforms\Administrator\Table\FormTable;
 
+use function is_array;
+use function is_object;
+use function json_encode;
+
+use const JSON_PRESERVE_ZERO_FRACTION;
+use const JSON_THROW_ON_ERROR;
+use const JSON_UNESCAPED_UNICODE;
+
 /**
  * Administrator model for a single form.
  */
@@ -52,13 +60,38 @@ final class FormModel extends AdminModel
     {
         if (!isset($data['fields'])) {
             $data['fields'] = [];
+        } elseif (is_string($data['fields']) && $data['fields'] !== '') {
+            $data['fields'] = $this->decodeJsonProperty($data['fields']);
         }
 
         if (!isset($data['settings'])) {
             $data['settings'] = [];
+        } elseif (is_string($data['settings']) && $data['settings'] !== '') {
+            $data['settings'] = $this->decodeJsonProperty($data['settings']);
         }
 
         return parent::save($data);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    protected function loadFormData()
+    {
+        $data = parent::loadFormData();
+
+        if (is_object($data)) {
+            $data = (array) $data;
+        }
+
+        if (!is_array($data)) {
+            return $data;
+        }
+
+        $data['fields'] = $this->stringify($data['fields'] ?? [], '[]');
+        $data['settings'] = $this->stringify($data['settings'] ?? [], '{}');
+
+        return $data;
     }
 
     /**
@@ -93,5 +126,26 @@ final class FormModel extends AdminModel
         }
 
         return is_array($decoded) ? $decoded : [];
+    }
+
+    /**
+     * Normalises payloads for hidden JSON fields.
+     *
+     * @param mixed $payload Raw payload retrieved from the table/session.
+     */
+    private function stringify($payload, string $fallback): string
+    {
+        if (is_string($payload)) {
+            return $payload;
+        }
+
+        try {
+            return json_encode(
+                $payload,
+                JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE | JSON_PRESERVE_ZERO_FRACTION
+            );
+        } catch (\JsonException $exception) {
+            return $fallback;
+        }
     }
 }
