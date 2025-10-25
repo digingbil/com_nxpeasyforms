@@ -31,6 +31,20 @@ use const FILTER_VALIDATE_EMAIL;
 \defined('_JEXEC') or die;
 // phpcs:enable PSR1.Files.SideEffects
 
+
+/**
+ * Integration dispatcher for Mailchimp email marketing service.
+ * Handles subscriber management by adding or updating list members through the Mailchimp API v3.
+ *
+ * Features:
+ * - Supports double opt-in configuration
+ * - Maps form fields to Mailchimp merge fields (FNAME, LNAME)
+ * - Handles subscriber tagging
+ * - Validates email addresses
+ * - Securely manages API authentication
+ *
+ * @since  1.0.0
+ */
 final class MailchimpDispatcher implements IntegrationDispatcherInterface
 {
     private HttpClient $client;
@@ -49,6 +63,10 @@ final class MailchimpDispatcher implements IntegrationDispatcherInterface
         $this->dispatcher = $dispatcher;
     }
 
+	/**
+	 * @inheritDoc
+	 * @since 1.0.0
+	 */
     public function dispatch(
         array $settings,
         array $form,
@@ -104,12 +122,12 @@ final class MailchimpDispatcher implements IntegrationDispatcherInterface
 
         $firstField = isset($settings['first_name_field']) ? (string) $settings['first_name_field'] : '';
         if ($firstField !== '' && isset($payload[$firstField])) {
-            $body['merge_fields']['FNAME'] = $this->renderer->normaliseValue($payload[$firstField]);
+            $body['merge_fields']['FNAME'] = $this->renderer->normalizeValue($payload[$firstField]);
         }
 
         $lastField = isset($settings['last_name_field']) ? (string) $settings['last_name_field'] : '';
         if ($lastField !== '' && isset($payload[$lastField])) {
-            $body['merge_fields']['LNAME'] = $this->renderer->normaliseValue($payload[$lastField]);
+            $body['merge_fields']['LNAME'] = $this->renderer->normalizeValue($payload[$lastField]);
         }
 
         if (isset($settings['tags']) && is_array($settings['tags'])) {
@@ -138,7 +156,13 @@ final class MailchimpDispatcher implements IntegrationDispatcherInterface
 
         $this->client->sendJson($endpoint, $body, 'PUT', $headers, 10);
     }
-
+	
+	/**
+	 * Extracts the Mailchimp datacenter from the API key.
+	 * @param string $apiKey
+	 * @return string
+	 * @since 1.0.0
+	 */
     private function extractDatacenter(string $apiKey): string
     {
         $parts = explode('-', $apiKey);
@@ -151,19 +175,24 @@ final class MailchimpDispatcher implements IntegrationDispatcherInterface
         return preg_replace('/[^a-z0-9]/', '', $candidate) ?? '';
     }
 
-    /**
-     * @param array<string, mixed> $payload
-     * @param array<string, mixed> $form
-     * @param array<string, mixed> $submission
-     * @param array<string, mixed> $context
-     * @param array<int, array<string, mixed>> $fieldMeta
-     * @return array<string, mixed>
-     */
-    private function filterPayload(
-        string $eventName,
-        array $payload,
-        array $form,
-        array $submission,
+	/**
+	 * Filters payload data through event dispatcher for modification.
+	 *
+	 * @param   string                            $eventName   Name of the event to dispatch
+	 * @param   array<string, mixed>              $payload     The payload to filter
+	 * @param   array<string, mixed>              $form        Form data array
+	 * @param   array<string, mixed>              $submission  Form submission data
+	 * @param   array<string, mixed>              $context     Contextual information
+	 * @param   array<int, array<string, mixed>>  $fieldMeta   Field metadata information
+	 *
+	 * @return  array<string, mixed>                         The filtered payload
+	 * @since 1.0.0
+	 */
+	private function filterPayload(
+		string $eventName,
+		array  $payload,
+		array  $form,
+		array $submission,
         array $context,
         array $fieldMeta
     ): array {

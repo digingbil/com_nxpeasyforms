@@ -21,7 +21,9 @@ use const JSON_UNESCAPED_UNICODE;
 // phpcs:enable PSR1.Files.SideEffects
 
 /**
- * Provides access to form definitions with decoded configuration payload.
+ * Repository providing CRUD operations for form definitions with JSON-encoded configuration payload.
+ * Handles storing and retrieving form data including fields, settings, and metadata.
+ * @since 1.0.0
  */
 class FormRepository
 {
@@ -33,7 +35,10 @@ class FormRepository
     }
 
     /**
+     * Finds a form by its ID.
+     *
      * @return array<string, mixed>|null
+     * @since 1.0.0
      */
     public function find(int $id): ?array
     {
@@ -74,7 +79,10 @@ class FormRepository
     }
 
     /**
+     * Updates the configuration of a form.
+     *
      * @param array<string, mixed> $config
+     * @since 1.0.0
      */
     public function updateConfig(int $id, array $config): bool
     {
@@ -103,7 +111,10 @@ class FormRepository
     }
 
     /**
+     * Decodes a JSON string or returns a default value if the string is empty or null.
+     *
      * @return mixed
+     * @since 1.0.0
      */
     private function decodeJson(?string $json, $default)
     {
@@ -112,9 +123,7 @@ class FormRepository
         }
 
         try {
-            $decoded = json_decode($json, true, 512, JSON_THROW_ON_ERROR);
-
-            return $decoded;
+	        return json_decode($json, true, 512, JSON_THROW_ON_ERROR);
         } catch (\JsonException $exception) {
             return $default;
         }

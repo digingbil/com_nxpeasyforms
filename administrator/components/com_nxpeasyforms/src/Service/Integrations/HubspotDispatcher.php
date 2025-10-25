@@ -44,7 +44,19 @@ final class HubspotDispatcher implements IntegrationDispatcherInterface
         $this->dispatcher = $dispatcher;
     }
 
-    public function dispatch(
+	/**
+	 * Dispatches form data to HubSpot using their Forms API.
+	 *
+	 * @param   array  $settings   Configuration settings including HubSpot access token, portal ID and form GUID
+	 * @param   array  $form       Form data containing title and other form properties
+	 * @param   array  $payload    Form submission data to be sent to HubSpot
+	 * @param   array  $context    Contextual data about the submission
+	 * @param   array  $fieldMeta  Metadata about the form fields
+	 *
+	 * @throws \JsonException When JSON encoding/decoding fails
+	 * @since 1.0.0
+	 */
+	public function dispatch(
         array $settings,
         array $form,
         array $payload,
@@ -95,7 +107,7 @@ final class HubspotDispatcher implements IntegrationDispatcherInterface
                 continue;
             }
 
-            $value = $this->renderer->normaliseValue($payload[$formField]);
+            $value = $this->renderer->normalizeValue($payload[$formField]);
 
             if ($value === '') {
                 continue;
@@ -150,15 +162,21 @@ final class HubspotDispatcher implements IntegrationDispatcherInterface
         $this->client->sendJson($endpoint, $body, 'POST', $headers, 10);
     }
 
-    /**
-     * @param array<string, mixed> $payload
-     * @param array<string, mixed> $form
-     * @param array<string, mixed> $submission
-     * @param array<string, mixed> $context
-     * @param array<int, array<string, mixed>> $fieldMeta
-     * @return array<string, mixed>
-     */
-    private function filterPayload(
+	/**
+	 * Filters the payload through event dispatcher to allow modifications.
+	 * Plugins could hook into this event to modify the payload before it's sent to HubSpot.
+	 *
+	 * @param   string                            $eventName   Name of event to dispatch
+	 * @param   array<string, mixed>              $payload     Payload data to filter
+	 * @param   array<string, mixed>              $form        Form data and configuration
+	 * @param   array<string, mixed>              $submission  Form submission data
+	 * @param   array<string, mixed>              $context     Contextual information
+	 * @param   array<int, array<string, mixed>>  $fieldMeta   Field metadata
+	 *
+	 * @return array<string, mixed> Filtered payload
+	 * @since 1.0.0
+	 */
+	private function filterPayload(
         string $eventName,
         array $payload,
         array $form,

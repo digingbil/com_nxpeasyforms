@@ -34,6 +34,13 @@ use function trim;
  */
 final class AjaxController extends BaseController
 {
+
+	/**
+	 * Route the request to the appropriate action.
+	 *
+	 * @throws \Exception
+	 * @since 1.0.0
+	 */
     public function route(): void
     {
         $app = Factory::getApplication();
@@ -66,7 +73,15 @@ final class AjaxController extends BaseController
     }
 
     /**
+     * Dispatch the request to the appropriate action.
+     *
      * @param array<int, string> $segments
+    * @param string $method The HTTP method used for the request (GET, POST, etc.).
+    *
+    * @return JsonResponse A JSON response representing the requested resource or error.
+    *
+    * @throws \RuntimeException When the requested resource cannot be found.
+    * @since 1.0.0
      */
     private function dispatch(array $segments, string $method): JsonResponse
     {
@@ -80,6 +95,16 @@ final class AjaxController extends BaseController
         };
     }
 
+	/**
+	 * Handles the forms resource.
+	 *
+     * @param string $action The action segment for forms (for example: 'get', 'save').
+     * @param string $method The HTTP method used for the request.
+     *
+     * @return JsonResponse
+     *
+     * @since 1.0.0
+	 */
     private function handleForms(string $action, string $method): JsonResponse
     {
         return match ($action) {
@@ -91,6 +116,17 @@ final class AjaxController extends BaseController
         };
     }
 
+    /**
+     * Fetch a form and return a JSON response with the transformed item.
+     *
+     * This will check the session token and required permissions, then fetch
+     * the requested form by id from the payload or query string.
+     *
+     * @return JsonResponse
+     *
+     * @throws \RuntimeException When the request is invalid, unauthorised or the form is not found.
+     * @since 1.0.0
+     */
     private function fetchForm(): JsonResponse
     {
         Session::checkToken('post');
@@ -115,6 +151,17 @@ final class AjaxController extends BaseController
         return new JsonResponse($this->transformForm($item));
     }
 
+    /**
+     * Save a form from the provided payload and return the saved representation.
+     *
+     * The method validates the session token and user permissions, maps the
+     * incoming payload to table data and delegates saving to the model.
+     *
+     * @return JsonResponse
+     *
+     * @throws \RuntimeException When saving fails or the request is invalid.
+     * @since 1.0.0
+     */
     private function saveForm(): JsonResponse
     {
         Session::checkToken('post');
@@ -144,6 +191,16 @@ final class AjaxController extends BaseController
         return new JsonResponse($this->transformForm($item));
     }
 
+    /**
+     * Handle email related actions over AJAX.
+     *
+     * @param string $action The email action to perform (e.g. 'test').
+     * @param string $method The HTTP method used for the request.
+     *
+     * @return JsonResponse
+     *
+     * @since 1.0.0
+     */
     private function handleEmails(string $action, string $method): JsonResponse
     {
         return match ($action) {
@@ -155,7 +212,14 @@ final class AjaxController extends BaseController
     }
 
     /**
-     * @param array<int,string> $segments
+     * Handle settings resource routing.
+     *
+     * @param array<int,string> $segments The path segments for settings (section/action/...)
+     * @param string $method The HTTP method used for the request.
+     *
+     * @return JsonResponse
+     *
+     * @since 1.0.0
      */
     private function handleSettings(array $segments, string $method): JsonResponse
     {
@@ -168,6 +232,16 @@ final class AjaxController extends BaseController
         };
     }
 
+    /**
+     * Handle the email settings subsection.
+     *
+     * @param array<int,string> $segments Path segments under settings/email.
+     * @param string $method The HTTP method used for the request.
+     *
+     * @return JsonResponse
+     *
+     * @since 1.0.0
+     */
     private function handleEmailSettings(array $segments, string $method): JsonResponse
     {
         $action = $segments[2] ?? '';
@@ -185,6 +259,16 @@ final class AjaxController extends BaseController
         };
     }
 
+    /**
+     * Handle Joomla-specific settings subsections.
+     *
+     * @param array<int,string> $segments Path segments under settings/joomla.
+     * @param string $method The HTTP method used for the request.
+     *
+     * @return JsonResponse
+     *
+     * @since 1.0.0
+     */
     private function handleJoomlaSettings(array $segments, string $method): JsonResponse
     {
         $action = $segments[2] ?? '';
@@ -197,6 +281,16 @@ final class AjaxController extends BaseController
         };
     }
 
+    /**
+     * Send a one-off test email to a supplied recipient using the configured services.
+     *
+     * The request MUST be a POST and the user must have appropriate permissions.
+     *
+     * @return JsonResponse
+     *
+     * @throws \RuntimeException When recipient is missing or sending fails.
+     * @since 1.0.0
+     */
     private function sendTestEmail(): JsonResponse
     {
         Session::checkToken('post');
@@ -249,6 +343,13 @@ final class AjaxController extends BaseController
         return new JsonResponse($result, $result['sent'] ? 200 : 500);
     }
 
+    /**
+     * Retrieve current email related component settings for the administrator UI.
+     *
+     * @return JsonResponse
+     *
+     * @since 1.0.0
+     */
     private function getEmailSettings(): JsonResponse
     {
         $this->assertAuthorised('core.manage');
@@ -269,6 +370,13 @@ final class AjaxController extends BaseController
         ]);
     }
 
+    /**
+     * Return a list of Joomla content categories suitable for selection in the UI.
+     *
+     * @return JsonResponse
+     *
+     * @since 1.0.0
+     */
     private function getJoomlaCategories(): JsonResponse
     {
         $this->assertAuthorised('core.manage');
@@ -294,7 +402,12 @@ final class AjaxController extends BaseController
     }
 
     /**
-     * @return array<int, array<string, mixed>>
+     * Fetch content categories from the database and format them for client use.
+     *
+     * @return array<int, array<string, mixed>> An array of category rows with id and title keys.
+     *
+     * @throws \RuntimeException When the categories cannot be loaded from the database.
+     * @since 1.0.0
      */
     private function fetchContentCategories(): array
     {
@@ -346,6 +459,16 @@ final class AjaxController extends BaseController
         return $formatted;
     }
 
+    /**
+     * Persist email settings for the component from the provided payload.
+     *
+     * Requires a valid session token and administrative permissions.
+     *
+     * @return JsonResponse
+     *
+     * @throws \RuntimeException When the payload is invalid or storage fails.
+     * @since 1.0.0
+     */
     private function saveEmailSettings(): JsonResponse
     {
         Session::checkToken('post');
@@ -372,6 +495,13 @@ final class AjaxController extends BaseController
         return new JsonResponse(['success' => true]);
     }
 
+    /**
+     * Return a lightweight diagnostics report for email subsystems used by the component.
+     *
+     * @return JsonResponse
+     *
+     * @since 1.0.0
+     */
     private function emailDiagnostics(): JsonResponse
     {
         $this->assertAuthorised('core.manage');
@@ -381,7 +511,7 @@ final class AjaxController extends BaseController
             'diagnostics' => [
                 'loaded' => true,
                 'warningAt' => null,
-                'wpMail' => [
+                'mailer' => [
                     'lastError' => null,
                     'lastSuccess' => null,
                 ],
@@ -389,6 +519,17 @@ final class AjaxController extends BaseController
         ]);
     }
 
+    /**
+     * Send a test email using the saved email settings in component configuration.
+     *
+     * This differs from {@see sendTestEmail} in that it uses component-level
+     * configuration values rather than ad-hoc options passed in the request.
+     *
+     * @return JsonResponse
+     *
+     * @throws \RuntimeException When the recipient is missing or sending fails.
+     * @since 1.0.0
+     */
     private function sendSettingsTestEmail(): JsonResponse
     {
         Session::checkToken('post');
@@ -442,6 +583,16 @@ final class AjaxController extends BaseController
         return new JsonResponse($result, $result['sent'] ? 200 : 500);
     }
 
+    /**
+     * Extract delivery/provider configuration from the component params.
+     *
+     * @param Registry $params       Component params container.
+     * @param bool     $includeSecrets Whether secret keys should be returned or masked.
+     *
+     * @return array<string,mixed> Delivery configuration array suitable for the client.
+     *
+     * @since 1.0.0
+     */
     private function extractDeliverySettings(Registry $params, bool $includeSecrets): array
     {
         $config = Factory::getConfig();
@@ -506,7 +657,16 @@ final class AjaxController extends BaseController
     }
 
     /**
-     * @param array<string, mixed> $delivery
+     * Apply delivery configuration values into the component parameter registry.
+     *
+     * Only non-empty secret values will overwrite existing values; empty secrets
+     * will preserve existing settings unless explicitly cleared.
+     *
+     * @param Registry $params    Component params container.
+     * @param array<string,mixed> $delivery Delivery configuration to apply.
+     *
+     * @return void
+     * @since 1.0.0
      */
     private function applyDeliverySettings(Registry $params, array $delivery): void
     {
@@ -591,6 +751,17 @@ final class AjaxController extends BaseController
         }
     }
 
+    /**
+     * Store the component's params string into the extensions table for the provided extension id.
+     *
+     * @param int $extensionId The extension (component) id in the #__extensions table.
+     * @param Registry $params The params registry to persist.
+     *
+     * @return void
+     *
+     * @throws \RuntimeException When the extension cannot be loaded or saving fails.
+     * @since 1.0.0
+     */
     private function storeComponentParams(int $extensionId, Registry $params): void
     {
         $table = Table::getInstance('extension');
@@ -609,6 +780,16 @@ final class AjaxController extends BaseController
         }
     }
 
+    /**
+     * Assert that the current user has the given permission for this component.
+     *
+     * @param string $action The action to check (for example: 'core.edit').
+     *
+     * @return void
+     *
+     * @throws \RuntimeException When the user is not authorised.
+     * @since 1.0.0
+     */
     private function assertAuthorised(string $action): void
     {
         $user = Factory::getUser();
@@ -618,6 +799,14 @@ final class AjaxController extends BaseController
         }
     }
 
+	/**
+	 * Create and return an instance of the administrator form model.
+	 *
+	 * @return AdminFormModel
+	 *
+	 * @throws \Exception
+	 * @since 1.0.0
+	 */
     private function getFormModel(): AdminFormModel
     {
         $factory = Factory::getApplication()
@@ -631,7 +820,13 @@ final class AjaxController extends BaseController
     }
 
     /**
-     * @param array<string, mixed> $payload
+     * Map an incoming JSON payload to the table data structure used by the model.
+     *
+     * @param array<string,mixed> $payload Incoming payload data from the request.
+     * @param int|null $id Optional id for an existing record when updating.
+     *
+     * @return array<string,mixed> Data structure suitable for model save.
+     * @since 1.0.0
      */
     private function mapPayloadToTable(array $payload, ?int $id = null): array
     {
@@ -639,7 +834,7 @@ final class AjaxController extends BaseController
         $fields = is_array($config['fields'] ?? null) ? $config['fields'] : [];
         $options = is_array($config['options'] ?? null) ? $config['options'] : [];
 
-        $options = $this->normaliseOptionsForStorage($options);
+        $options = $this->normalizeOptionsForStorage($options);
 
         $data = [
             'title' => is_string($payload['title'] ?? null) ? trim($payload['title']) : '',
@@ -659,9 +854,14 @@ final class AjaxController extends BaseController
     }
 
     /**
-     * @param object|null $item
+     * Transform a model item into the API payload expected by the client.
      *
-     * @return array<string, mixed>
+     * @param object|null $item The model item returned by the model's getItem method.
+     *
+     * @return array<string,mixed>
+     *
+     * @throws \RuntimeException When the provided item is null.
+     * @since 1.0.0
      */
     private function transformForm(?object $item): array
     {
@@ -671,7 +871,7 @@ final class AjaxController extends BaseController
 
         $fields = is_array($item->fields ?? null) ? $item->fields : [];
         $settings = is_array($item->settings ?? null) ? $item->settings : [];
-        $settings = $this->normaliseOptionsForClient($settings);
+        $settings = $this->normalizeOptionsForClient($settings);
 
         return [
             'id' => (int) ($item->id ?? 0),
@@ -687,45 +887,50 @@ final class AjaxController extends BaseController
     }
 
     /**
-     * @param array<string,mixed> $options
+     * Normalize options stored in the form configuration for persistent storage.
      *
-     * @return array<string,mixed>
+     * @param array<string,mixed> $options Options coming from the client.
+     *
+     * @return array<string,mixed> Normalized options suitable for storage.
+     * @since 1.0.0
      */
-    private function normaliseOptionsForStorage(array $options): array
+    private function normalizeOptionsForStorage(array $options): array
     {
-        $options['email_delivery'] = $this->normaliseEmailDelivery(
+        $options['email_delivery'] = $this->normalizeEmailDelivery(
             is_array($options['email_delivery'] ?? null) ? $options['email_delivery'] : []
         );
 
         $integrations = is_array($options['integrations'] ?? null) ? $options['integrations'] : [];
-        $integrations = $this->normaliseIntegrations($integrations);
+        $integrations = $this->normalizeIntegrations($integrations);
         $options['integrations'] = $integrations;
 
         return $options;
     }
 
     /**
-     * @param array<string,mixed> $options
+     * Normalize stored options for delivery to the client.
      *
-     * @return array<string,mixed>
+     * @param array<string,mixed> $options Stored options.
+     *
+     * @return array<string,mixed> Normalized options for client consumption.
+     * @since 1.0.0
      */
-    private function normaliseOptionsForClient(array $options): array
+    private function normalizeOptionsForClient(array $options): array
     {
-        return $this->normaliseOptionsForStorage($options);
+        return $this->normalizeOptionsForStorage($options);
     }
 
     /**
-     * @param array<string,mixed> $delivery
+     * Ensure the email delivery configuration contains required keys and defaults.
      *
-     * @return array<string,mixed>
+     * @param array<string,mixed> $delivery Delivery configuration from options.
+     *
+     * @return array<string,mixed> Normalized delivery configuration.
+     * @since 1.0.0
      */
-    private function normaliseEmailDelivery(array $delivery): array
+    private function normalizeEmailDelivery(array $delivery): array
     {
         $provider = isset($delivery['provider']) ? (string) $delivery['provider'] : 'joomla';
-
-        if ($provider === 'wordpress' || $provider === 'wp_mail') {
-            $provider = 'joomla';
-        }
 
         $delivery['provider'] = $provider ?: 'joomla';
 
@@ -733,15 +938,17 @@ final class AjaxController extends BaseController
     }
 
     /**
-     * @param array<string,mixed> $integrations
+     * Normalize integrations configuration and remove unsupported integrations.
      *
-     * @return array<string,mixed>
+     * @param array<string,mixed> $integrations Integrations configuration array.
+     *
+     * @return array<string,mixed> Normalized integrations array.
+     * @since 1.0.0
      */
-    private function normaliseIntegrations(array $integrations): array
+    private function normalizeIntegrations(array $integrations): array
     {
-        if (isset($integrations['wordpress_post']) && is_array($integrations['wordpress_post'])) {
-            $integrations['joomla_article'] = $this->convertWordpressPostIntegration($integrations['wordpress_post']);
-            unset($integrations['wordpress_post']);
+        if (isset($integrations['joomla_article']) && is_array($integrations['joomla_article'])) {
+            $integrations['joomla_article'] = $this->normalizeArticleIntegration($integrations['joomla_article']);
         }
 
         unset($integrations['woocommerce']);
@@ -750,11 +957,14 @@ final class AjaxController extends BaseController
     }
 
     /**
-     * @param array<string,mixed> $settings
+     * Convert legacy article integration settings into the expected shape.
      *
-     * @return array<string,mixed>
+     * @param array<string,mixed> $settings Legacy article integration settings.
+     *
+     * @return array<string,mixed> Converted article integration settings.
+     * @since 1.0.0
      */
-    private function convertWordpressPostIntegration(array $settings): array
+    private function normalizeArticleIntegration(array $settings): array
     {
         $map = is_array($settings['map'] ?? null) ? $settings['map'] : [];
 
@@ -786,7 +996,12 @@ final class AjaxController extends BaseController
     }
 
     /**
-     * @param array<string,mixed> $settings
+     * Parse and return an integer category id from various possible payload shapes.
+     *
+     * @param array<string,mixed> $settings Integration or article settings that may contain category identifiers.
+     *
+     * @return int The resolved category id or 0 when none could be determined.
+     * @since 1.0.0
      */
     private function parseCategoryId(array $settings): int
     {
@@ -804,13 +1019,19 @@ final class AjaxController extends BaseController
     }
 
     /**
-     * @param array<string,mixed> $settings
+     * Extract a legacy tags field mapping from older payloads.
+     *
+     * @param array<string,mixed> $settings The settings array potentially containing legacy taxonomies.
+     *
+     * @return string The field name mapped to tags, or an empty string when none found.
+     * @since 1.0.0
      */
     private function extractLegacyTagsField(array $settings): string
     {
-        $taxonomies = is_array($settings['taxonomies'] ?? null) ? $settings['taxonomies'] : [];
+        // Legacy WordPress payloads exposed a generic "taxonomies" array; we only carry through tag mappings.
+        $legacyTaxonomies = is_array($settings['taxonomies'] ?? null) ? $settings['taxonomies'] : [];
 
-        foreach ($taxonomies as $taxonomy) {
+        foreach ($legacyTaxonomies as $taxonomy) {
             if (!is_array($taxonomy)) {
                 continue;
             }

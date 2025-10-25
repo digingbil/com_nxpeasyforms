@@ -20,10 +20,26 @@ use function substr;
 \defined('_JEXEC') or die;
 // phpcs:enable PSR1.Files.SideEffects
 
+/**
+ * Provides encryption and decryption utilities for sensitive data storage.
+ *
+ * Uses AES-256-CBC encryption with application secrets for encrypting
+ * sensitive configuration values.
+ *
+ * @since 1.0.0
+ */
 final class Secrets
 {
     private const CIPHER = 'aes-256-cbc';
 
+    /**
+     * Encrypt a plaintext string using AES-256-CBC.
+     *
+     * @param string $plain The plaintext to encrypt.
+     *
+     * @return string Base64-encoded encrypted payload, or empty string on failure.
+     * @since 1.0.0
+     */
     public static function encrypt(string $plain): string
     {
         if ($plain === '') {
@@ -42,6 +58,14 @@ final class Secrets
         return base64_encode($iv . $encrypted);
     }
 
+    /**
+     * Decrypt an AES-256-CBC encrypted payload.
+     *
+     * @param string $payload Base64-encoded encrypted data.
+     *
+     * @return string Decrypted plaintext, or empty string on failure.
+     * @since 1.0.0
+     */
     public static function decrypt(string $payload): string
     {
         if ($payload === '') {
@@ -63,6 +87,12 @@ final class Secrets
         return is_string($decrypted) ? $decrypted : '';
     }
 
+    /**
+     * Derive the encryption key from the application secret.
+     *
+     * @return string The SHA-256 hash of the application secret used as encryption key.
+     * @since 1.0.0
+     */
     private static function key(): string
     {
         $app = Factory::getApplication();

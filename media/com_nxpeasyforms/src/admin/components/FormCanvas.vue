@@ -82,14 +82,14 @@
                 <div class="nxp-field__actions">
                     <button
                         type="button"
-                        class="button button-small"
+                        class="button button-small nxp-field__action"
                         @click="emitDuplicate(field.id)"
                     >
                         {{ __("Duplicate") }}
                     </button>
                     <button
                         type="button"
-                        class="button button-link-delete"
+                        class="button button-link-delete nxp-field__action nxp-field__action--danger"
                         @click="emitRemove(field.id)"
                     >
                         {{ __("Remove") }}
@@ -233,8 +233,8 @@ watch(
 
 <style scoped>
 .nxp-canvas {
-    background: #fff;
-    border: 1px solid #dcdcde;
+    background: var(--nxp-panel-bg);
+    border: 1px solid var(--nxp-surface-border);
     border-radius: 10px;
     padding: 16px;
     display: flex;
@@ -267,7 +267,7 @@ watch(
 
 .nxp-canvas__header p {
     margin: 4px 0 12px;
-    color: #6c757d;
+    color: var(--nxp-muted-color);
     font-size: 1rem;
     grid-column: 1 / 2;
 }
@@ -294,12 +294,12 @@ watch(
     outline-offset: 2px;
 }
 .nxp-canvas__settings:hover {
-    background: #f0f0f1;
+    background: var(--bs-secondary-bg, rgba(0, 0, 0, 0.04));
 }
 
 .nxp-canvas__board {
     flex: 1;
-    border: 1px dashed #dcdcde;
+    border: 1px dashed var(--nxp-surface-border);
     border-radius: 10px;
     padding: 12px;
     max-height: inherit;
@@ -313,7 +313,7 @@ watch(
 }
 
 .nxp-canvas__empty {
-    color: #6c757d;
+    color: var(--nxp-muted-color);
     font-size: 1.05rem;
     text-align: center;
 }
@@ -322,10 +322,10 @@ watch(
     display: flex;
     align-items: center;
     justify-content: space-between;
-    border: 1px solid #dcdcde;
+    border: 1px solid var(--nxp-surface-border);
     border-radius: 8px;
     padding: 12px;
-    background: #fdfdfd;
+    background: var(--nxp-card-bg);
     margin-bottom: 8px;
 }
 
@@ -334,8 +334,8 @@ watch(
 }
 
 .nxp-field--selected {
-    border-color: #2271b1;
-    box-shadow: 0 0 0 1px rgba(34, 113, 177, 0.2);
+    border-color: var(--nxp-hover-border);
+    box-shadow: 0 0 0 1px var(--nxp-hover-shadow);
 }
 
 .nxp-field--ghost {
@@ -352,7 +352,7 @@ watch(
 .nxp-field__drag {
     font-size: 1.2rem;
     cursor: grab;
-    color: #646970;
+    color: var(--nxp-muted-color);
 }
 
 .nxp-field__content {
@@ -365,13 +365,64 @@ watch(
 }
 
 .nxp-field__meta {
-    color: #6c757d;
+    color: var(--nxp-muted-color);
     font-size: 0.9rem;
 }
 
 .nxp-field__actions {
     display: flex;
     gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.nxp-field__action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 6px 12px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    border-radius: 6px;
+    border: 1px solid var(--nxp-surface-border);
+    background: var(--nxp-panel-bg);
+    color: var(--bs-body-color);
+    transition:
+        color 0.2s ease,
+        background-color 0.2s ease,
+        border-color 0.2s ease,
+        box-shadow 0.2s ease;
+    text-decoration: none;
+    min-height: 34px;
+}
+
+.nxp-field__action:hover,
+.nxp-field__action:focus-visible {
+    color: var(--bs-primary, #2271b1);
+    border-color: var(--nxp-hover-border);
+    box-shadow: 0 0 0 1px var(--nxp-hover-shadow);
+    outline: none;
+}
+
+.nxp-field__action:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+.nxp-field__action--danger {
+    border-color: transparent;
+    color: var(--bs-danger, #b32d2e);
+    background: transparent;
+}
+
+.nxp-field__action--danger:hover,
+.nxp-field__action--danger:focus-visible {
+    color: var(--bs-danger, #b32d2e);
+    background: rgba(220, 53, 69, 0.12);
+    border-color: rgba(220, 53, 69, 0.35);
+    box-shadow: none;
 }
 
 .nxp-field__label-button {
@@ -388,7 +439,7 @@ watch(
 }
 
 .nxp-field__label-button:focus {
-    outline: 2px solid #2271b1;
+    outline: 2px solid var(--nxp-hover-border);
     outline-offset: 2px;
     border-radius: 4px;
 }
@@ -406,16 +457,22 @@ watch(
     width: 14px;
     height: 14px;
     opacity: 0.85;
+    filter: var(--nxp-icon-filter);
+    transition: filter 0.2s ease;
 }
 
 .nxp-field__icon {
     width: 20px;
     height: 20px;
     opacity: 0.9;
+    filter: var(--nxp-icon-filter);
+    transition: filter 0.2s ease;
 }
 
 .nxp-canvas__settings-icon {
     width: 26px;
     height: 26px;
+    filter: var(--nxp-icon-filter);
+    transition: filter 0.2s ease;
 }
 </style>

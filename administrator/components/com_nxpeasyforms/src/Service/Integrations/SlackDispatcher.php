@@ -15,7 +15,13 @@ use function trim;
 // phpcs:enable PSR1.Files.SideEffects
 
 /**
- * Sends submissions to Slack incoming webhook.
+ * Sends form submissions to Slack using an incoming webhook.
+ *
+ * This service dispatches form data to Slack by formatting the payload into a message
+ * and sending it to a configured Slack webhook URL. It supports custom message templates
+ * and falls back to a default format if no template is provided.
+ *
+ * @since 1.0.0
  */
 final class SlackDispatcher implements IntegrationDispatcherInterface
 {

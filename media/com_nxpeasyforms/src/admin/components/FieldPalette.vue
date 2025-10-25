@@ -109,8 +109,8 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .nxp-panel {
-    background: #fff;
-    border: 1px solid #dcdcde;
+    background: var(--nxp-panel-bg);
+    border: 1px solid var(--nxp-surface-border);
     border-radius: 10px;
     padding: 16px;
     display: flex;
@@ -124,7 +124,7 @@ onBeforeUnmount(() => {
 }
 
 .nxp-panel__header p {
-    color: #6c757d;
+    color: var(--nxp-muted-color);
     margin: 4px 0 12px;
     font-size: 1rem;
 }
@@ -142,11 +142,11 @@ onBeforeUnmount(() => {
 }
 
 .nxp-panel__item {
-    border: 1px solid #dcdcde;
+    border: 1px solid var(--nxp-surface-border);
     border-radius: 8px;
     padding: 12px;
     cursor: grab;
-    background: #fafafa;
+    background: var(--nxp-card-bg);
     transition:
         border-color 0.2s ease,
         box-shadow 0.2s ease;
@@ -157,8 +157,8 @@ onBeforeUnmount(() => {
 }
 
 .nxp-panel__item:hover {
-    border-color: #2271b1;
-    box-shadow: 0 0 0 1px rgba(34, 113, 177, 0.2);
+    border-color: var(--nxp-hover-border);
+    box-shadow: 0 0 0 1px var(--nxp-hover-shadow);
 }
 
 .nxp-panel__item-title {
@@ -167,7 +167,7 @@ onBeforeUnmount(() => {
 }
 
 .nxp-panel__item-desc {
-    color: #6c757d;
+    color: var(--nxp-muted-color);
     font-size: 0.95rem;
 }
 
@@ -180,6 +180,8 @@ onBeforeUnmount(() => {
     height: 20px;
     margin-top: 2px;
     opacity: 0.9;
+    filter: var(--nxp-icon-filter);
+    transition: filter 0.2s ease;
 }
 
 .nxp-panel__item-body {

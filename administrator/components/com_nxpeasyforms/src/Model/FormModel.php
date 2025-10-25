@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Joomla\Component\Nxpeasyforms\Administrator\Model;
@@ -6,7 +7,6 @@ namespace Joomla\Component\Nxpeasyforms\Administrator\Model;
 use Joomla\CMS\MVC\Model\AdminModel;
 use Joomla\CMS\Table\Table;
 use Joomla\Component\Nxpeasyforms\Administrator\Table\FormTable;
-
 
 use function is_array;
 use function is_object;
@@ -16,19 +16,26 @@ use const JSON_PRESERVE_ZERO_FRACTION;
 use const JSON_THROW_ON_ERROR;
 use const JSON_UNESCAPED_UNICODE;
 
-// phpcs:disable PSR1.Files.SideEffects
-\defined('_JEXEC') or die;
-// phpcs:enable PSR1.Files.SideEffects
-
 /**
  * Administrator model for a single form.
+ *
+ * Manages loading, saving and preparing form data for the component's
+ * form builder user interface.
+ *
+ * @since 1.0.0
  */
 final class FormModel extends AdminModel
 {
     protected $text_prefix = 'COM_NXPEASYFORMS';
 
     /**
-     * {@inheritDoc}
+     * Load and return a form instance from XML definition.
+     *
+     * @param array<string,mixed> $data The data to bind to the form (optional).
+     * @param bool $loadData Whether to load data from the model state.
+     *
+     * @return \Joomla\CMS\Form\Form|false Form object, or false on failure.
+     * @since 1.0.0
      */
     public function getForm($data = [], $loadData = true)
     {
@@ -46,17 +53,27 @@ final class FormModel extends AdminModel
     }
 
     /**
-     * {@inheritDoc}
+     * Return a Table object for the given type and prefix.
+     *
+     * @param string $type The type of table to instantiate.
+     * @param string $prefix The prefix for the table class name.
+     * @param array<string,mixed> $config Configuration options for the table.
+     *
+     * @return \Joomla\CMS\Table\Table
+     * @since 1.0.0
      */
-    public function getTable($type = 'Form', $prefix = 'Joomla\\Component\\Nxpeasyforms\\Administrator\\Table\\', $config = [])
+    public function getTable($type = 'FormTable', $prefix = 'Joomla\\Component\\Nxpeasyforms\\Administrator\\Table\\', $config = [])
     {
-        return parent::getTable($type, $prefix, $config);
+        return Table::getInstance($type, $prefix, $config);
     }
 
     /**
-     * {@inheritDoc}
+     * Retrieve an item by primary key after decoding JSON properties.
      *
-     * @return \stdClass|null
+     * @param int|null $pk The primary key value to load.
+     *
+     * @return \stdClass|null The loaded item object or null if not found.
+     * @since 1.0.0
      */
     public function getItem($pk = null)
     {
@@ -74,9 +91,15 @@ final class FormModel extends AdminModel
     }
 
     /**
-     * {@inheritDoc}
+     * Save form data to the database.
      *
-     * @param array<int|string,mixed> $data
+     * Accepts an array of form data and saves it via the parent model,
+     * handling JSON encoding for complex fields.
+     *
+     * @param array<int|string,mixed> $data The form data to save.
+     *
+     * @return bool True on success, false on failure.
+     * @since 1.0.0
      */
     public function save($data)
     {
@@ -96,7 +119,13 @@ final class FormModel extends AdminModel
     }
 
     /**
-     * {@inheritDoc}
+     * Load form data from model state and session.
+     *
+     * Prepares form data for presentation, stringifying array fields
+     * to JSON for form rendering.
+     *
+     * @return array<string,mixed>|object Form data.
+     * @since 1.0.0
      */
     protected function loadFormData()
     {
@@ -117,7 +146,14 @@ final class FormModel extends AdminModel
     }
 
     /**
-     * {@inheritDoc}
+     * Prepare a table instance before saving.
+     *
+     * Trims the title and ensures the form is valid before storage.
+     *
+     * @param FormTable $table The table instance to prepare.
+     *
+     * @return void
+     * @since 1.0.0
      */
     protected function prepareTable($table)
     {
@@ -127,9 +163,14 @@ final class FormModel extends AdminModel
     }
 
     /**
+     * Decode a JSON property value to an array.
+     *
      * @param string $jsonPayload JSON encoded value.
      *
-     * @return array<mixed>
+     * @return array<mixed> Decoded array, or empty array on failure.
+     *
+     * @throws \RuntimeException When JSON decoding fails.
+     * @since 1.0.0
      */
     private function decodeJsonProperty(string $jsonPayload): array
     {
@@ -151,9 +192,16 @@ final class FormModel extends AdminModel
     }
 
     /**
-     * Normalises payloads for hidden JSON fields.
+     * Normalize payloads for hidden JSON fields.
+     *
+     * Converts mixed payloads to JSON strings, with a fallback value
+     * when encoding fails.
      *
      * @param mixed $payload Raw payload retrieved from the table/session.
+     * @param string $fallback JSON fallback value when encoding fails.
+     *
+     * @return string JSON encoded payload or fallback.
+     * @since 1.0.0
      */
     private function stringify($payload, string $fallback): string
     {

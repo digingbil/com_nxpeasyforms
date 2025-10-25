@@ -84,9 +84,9 @@ function handleBackdropClick(event) {
 }
 
 .nxp-template-modal {
-    background: #fff;
+    background: var(--nxp-panel-bg);
     border-radius: 8px;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 10px 40px var(--nxp-drawer-shadow);
     max-width: 800px;
     width: 100%;
     max-height: 80vh;
@@ -99,7 +99,7 @@ function handleBackdropClick(event) {
     align-items: center;
     justify-content: space-between;
     padding: 20px 24px;
-    border-bottom: 1px solid #dcdcde;
+    border-bottom: 1px solid var(--nxp-surface-border);
 }
 
 .nxp-template-modal__header h2 {
@@ -121,12 +121,12 @@ function handleBackdropClick(event) {
     align-items: center;
     justify-content: center;
     border-radius: 4px;
-    color: #50575e;
+    color: var(--nxp-muted-color);
 }
 
 .nxp-template-modal__close:hover {
-    background: #f0f0f1;
-    color: #000;
+    background: var(--bs-secondary-bg, rgba(0, 0, 0, 0.04));
+    color: var(--bs-body-color);
 }
 
 .nxp-template-modal__content {
@@ -141,8 +141,8 @@ function handleBackdropClick(event) {
 }
 
 .nxp-template-card {
-    background: #fff;
-    border: 2px solid #dcdcde;
+    background: var(--nxp-panel-bg);
+    border: 2px solid var(--nxp-surface-border);
     border-radius: 6px;
     padding: 20px;
     text-align: left;
@@ -151,13 +151,13 @@ function handleBackdropClick(event) {
 }
 
 .nxp-template-card:hover {
-    border-color: #2271b1;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    border-color: var(--nxp-hover-border);
+    box-shadow: 0 2px 8px var(--nxp-drawer-shadow);
     transform: translateY(-2px);
 }
 
 .nxp-template-card:focus {
-    outline: 2px solid #2271b1;
+    outline: 2px solid var(--nxp-hover-border);
     outline-offset: 2px;
 }
 
@@ -165,19 +165,19 @@ function handleBackdropClick(event) {
     margin: 0 0 8px 0;
     font-size: 18px;
     font-weight: 600;
-    color: #1d2327;
+    color: var(--bs-body-color);
 }
 
 .nxp-template-card__description {
     margin: 0 0 12px 0;
     font-size: 15px;
-    color: #50575e;
+    color: var(--nxp-muted-color);
     line-height: 1.5;
 }
 
 .nxp-template-card__fields {
     font-size: 13px;
-    color: #787c82;
+    color: var(--nxp-muted-color);
     font-weight: 500;
 }
 </style>

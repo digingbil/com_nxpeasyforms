@@ -16,6 +16,9 @@ use function trim;
 
 /**
  * Sends adaptive card style payloads to Microsoft Teams.
+ * Formats form submission data into an adaptive card message with title, text content and facts.
+ * Supports custom message templates and markdown formatting.
+ * @since 1.0.0
  */
 final class TeamsDispatcher implements IntegrationDispatcherInterface
 {
@@ -35,6 +38,10 @@ final class TeamsDispatcher implements IntegrationDispatcherInterface
         $this->renderer = $renderer ?? new TemplateRenderer();
     }
 
+	/**
+	 * @inheritDoc
+	 * @since 1.0.0
+	 */
     public function dispatch(
         array $settings,
         array $form,

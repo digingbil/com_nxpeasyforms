@@ -10,6 +10,7 @@ namespace Joomla\Component\Nxpeasyforms\Administrator\Service\Integrations;
 
 /**
  * Simple JSON webhook dispatcher for Zapier/Make style endpoints.
+ * @since 1.0.0
  */
 final class GenericWebhookDispatcher implements IntegrationDispatcherInterface
 {
@@ -20,6 +21,18 @@ final class GenericWebhookDispatcher implements IntegrationDispatcherInterface
         $this->client = $client ?? new HttpClient();
     }
 
+	/**
+	 * Dispatches a payload to the specified endpoint with contextual and metadata information.
+	 *
+	 * @param   array  $settings   An array of settings which includes the 'endpoint' key for target URL.
+	 * @param   array  $form       An array containing form data, such as 'id' and 'title'.
+	 * @param   array  $payload    An array representing the payload to be dispatched.
+	 * @param   array  $context    An array providing contextual information related to the dispatch.
+	 * @param   array  $fieldMeta  Metadata describing the fields included in the form or payload.
+	 *
+	 * @return void This method does not return a value.
+	 * @since 1.0.0
+	 */
     public function dispatch(
         array $settings,
         array $form,

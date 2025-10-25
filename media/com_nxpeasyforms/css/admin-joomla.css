@@ -1,63 +1,25 @@
-.nxp-easy-forms-builder .button {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.35rem;
-    padding: 0.4rem 0.8rem;
-    border: 1px solid #ced4da;
-    border-radius: 0.25rem;
-    background-color: #f8f9fa;
-    color: #212529;
-    font-size: 0.95rem;
-    cursor: pointer;
-    text-decoration: none;
-}
-
-.nxp-easy-forms-builder .button:hover {
-    background-color: #e9ecef;
-}
-
-.nxp-easy-forms-builder .button.button-primary {
-    background-color: #0d6efd;
-    border-color: #0d6efd;
-    color: #fff;
-}
-
-.nxp-easy-forms-builder .button.button-primary:hover {
-    background-color: #0b5ed7;
-    border-color: #0a58ca;
-}
-
-.nxp-easy-forms-builder .button.button-secondary {
-    background-color: #ffffff;
-    border-color: #adb5bd;
-    color: #212529;
-}
-
-.nxp-easy-forms-builder .button.button-secondary:hover {
-    background-color: #f1f3f5;
-    border-color: #adb5bd;
-}
+@import "../src/admin/vars.css";
 
 .nxp-easy-forms-builder .notice {
     display: block;
     margin: 1rem 0;
     padding: 0.75rem 1rem;
     border-radius: 0.25rem;
-    border-left: 4px solid #0d6efd;
-    background-color: #f1f5ff;
-    color: #1c2a4d;
+    border-left: 4px solid var(--bs-primary);
+    background-color: var(--bs-info-bg, rgba(13, 110, 253, 0.08));
+    color: var(--bs-info-text, inherit);
 }
 
 .nxp-easy-forms-builder .notice.notice-error {
-    border-left-color: #dc3545;
-    background-color: #f8d7da;
-    color: #58151c;
+    border-left-color: var(--bs-danger);
+    background-color: var(--bs-danger-bg, rgba(220, 53, 69, 0.1));
+    color: var(--bs-danger-text, inherit);
 }
 
 .nxp-easy-forms-builder .notice.notice-success {
-    border-left-color: #198754;
-    background-color: #d1e7dd;
-    color: #0f5132;
+    border-left-color: var(--bs-success);
+    background-color: var(--bs-success-bg, rgba(25, 135, 84, 0.1));
+    color: var(--bs-success-text, inherit);
 }
 
 .nxp-easy-forms-builder .notice-dismiss {
@@ -68,20 +30,57 @@
     color: inherit;
 }
 
-.nxp-easy-forms-builder .dashicons {
+.nxp-easy-forms-builder .fa-regular,
+.nxp-easy-forms-builder .fa-solid {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 1.5rem;
-    height: 1.5rem;
-    border-radius: 50%;
-    background-color: #0d6efd;
-    color: #fff;
-    font-size: 0.9rem;
-    font-style: normal;
+}
+
+.nxp-builder__top {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.nxp-builder__title {
+    flex: 1 1 auto;
+}
+
+.nxp-builder__title label {
+    display: block;
+    margin-bottom: 6px;
     font-weight: 600;
 }
 
-.nxp-easy-forms-builder .dashicons::before {
-    content: '•';
+.nxp-builder__title input {
+    width: 100%;
+    font-size: 1.1rem;
+    padding: 8px 10px;
+}
+
+.nxp-builder__actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+}
+
+.nxp-builder__preview {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 44px;
+}
+
+.nxp-builder__preview .fa-regular,
+.nxp-builder__preview .fa-solid {
+    font-size: 18px;
+}
+
+.nxp-builder__template .nxp-icon {
+    width: 22px;
+    height: 22px;
 }

@@ -3,8 +3,8 @@ declare(strict_types=1);
 
 namespace Joomla\Component\Nxpeasyforms\Administrator\Service\File;
 
-use Joomla\CMS\Filesystem\File;
-use Joomla\CMS\Filesystem\Folder;
+use Joomla\Filesystem\File;
+use Joomla\Filesystem\Folder;
 use Joomla\CMS\Language\Text;
 use Joomla\CMS\Uri\Uri;
 use Joomla\Component\Nxpeasyforms\Administrator\Service\Validation\FileValidator;
@@ -23,6 +23,7 @@ use function trim;
 
 /**
  * Handles secure storage of uploaded files in the Joomla images directory.
+ * @since 1.0.0
  */
 final class FileUploader
 {
@@ -43,13 +44,19 @@ final class FileUploader
         $this->baseUrl = $baseUrl !== null ? rtrim($baseUrl, '/') : $defaultUrl;
     }
 
-    /**
-     * @param array<string, mixed> $field
-     * @param array<string, mixed> $files
-     *
-     * @return array{0: string, 1: array<string, mixed>, 2: ?string}
-     */
-    public function handle(array $field, array $files): array
+	/**
+	 * Handles file upload and returns upload result details
+	 *
+	 * @param   array<string, mixed>  $field  Field configuration array
+	 * @param   array<string, mixed>  $files  Files array from request
+	 *
+	 * @return array{0: string, 1: array<string, mixed>, 2: ?string} Array containing:
+	 *         - [0] Relative file path
+	 *         - [1] File details array with path, url, type, name and size
+	 *         - [2] Error message or null on success
+	 * @since 1.0.0
+	 */
+	public function handle(array $field, array $files): array
     {
         $name = $field['name'] ?? '';
 
@@ -104,6 +111,14 @@ final class FileUploader
         ];
     }
 
+	/**
+	 * Ensures that the storage directory exists and is accessible.
+	 * If the directory does not exist, it attempts to create it.
+	 * Throws a RuntimeException if the directory creation fails.
+	 *
+	 * @return void
+	 * @since 1.0.0
+	 */
     private function ensureStorageDirectory(): void
     {
         if (Folder::exists($this->basePath)) {
@@ -115,6 +130,15 @@ final class FileUploader
         }
     }
 
+	/**
+	 * Generates a random filename with the provided extension.
+	 * If no extension is given, the filename will consist only of a random seed.
+	 *
+	 * @param   string  $extension  The file extension to append to the generated filename. If empty, no extension will be added.
+	 *
+	 * @return string The generated filename, optionally including the specified extension.
+	 * @since 1.0.0
+	 */
     private function generateFilename(string $extension): string
     {
         $seed = bin2hex(random_bytes(16));

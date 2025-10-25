@@ -10,6 +10,11 @@ namespace Joomla\Component\Nxpeasyforms\Administrator\Service\Integrations;
 
 /**
  * Registry for integration dispatchers.
+ * Manages the registration and retrieval of integration dispatchers.
+ * Each dispatcher has a unique identifier and implements the IntegrationDispatcherInterface.
+ * Used to dispatch form submissions to external integrations like webhooks.
+ * @see   IntegrationDispatcherInterface For the contract that all dispatchers must implement
+ * @since 1.0.0
  */
 final class IntegrationManager
 {

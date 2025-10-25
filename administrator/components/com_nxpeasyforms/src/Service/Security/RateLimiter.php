@@ -22,7 +22,10 @@ use function time;
 // phpcs:enable PSR1.Files.SideEffects
 
 /**
- * PSR-16 backed rate limiter for submission throttling.
+ * PSR-16 backed rate limiter implementation for throttling form submissions.
+ * Prevents abuse by limiting the number of submissions per IP address within a specified time period.
+ * Uses PSR-16 compliant caching to maintain submission counters.
+ * @since 1.0.0
  */
 final class RateLimiter
 {
@@ -36,10 +39,19 @@ final class RateLimiter
         $this->keyPrefix = $keyPrefix;
     }
 
-    /**
-     * @throws SubmissionException
-     */
-    public function enforce(int $formId, string $ipAddress, int $maxRequests, int $perSeconds): void
+	/**
+	 * Enforces rate limiting for a form submission to prevent abuse by limiting
+	 * the number of submissions per IP address within a specified time period.
+	 *
+	 * @param   int     $formId       Unique identifier of the form being submitted
+	 * @param   string  $ipAddress    IP address of the submitting user
+	 * @param   int     $maxRequests  Maximum number of allowed submissions
+	 * @param   int     $perSeconds   Time window in seconds for rate limiting
+	 *
+	 * @throws SubmissionException when rate limit is exceeded
+	 * @since 1.0.0
+	 */
+	public function enforce(int $formId, string $ipAddress, int $maxRequests, int $perSeconds): void
     {
         if ($ipAddress === '' || $maxRequests <= 0 || $perSeconds <= 0) {
             return;
@@ -74,10 +86,15 @@ final class RateLimiter
         }
     }
 
-    /**
-     * @return array<string, mixed>|null
-     */
-    private function getRecord(string $key): ?array
+	/**
+	 * Gets the stored rate limiting record for the given key.
+	 *
+	 * @param   string  $key  Cache key for retrieving rate limit record
+	 *
+	 * @return array<string, mixed>|null Rate limit record containing count and expiry or null if not found
+	 * @since 1.0.0
+	 */
+	private function getRecord(string $key): ?array
     {
         try {
             /** @var mixed $value */
@@ -90,7 +107,10 @@ final class RateLimiter
     }
 
     /**
+     * Sets the rate limiting record for the given key.
+     *
      * @param array<string, mixed> $record
+     * @since 1.0.0
      */
     private function setRecord(string $key, array $record, int $ttl): void
     {
@@ -101,6 +121,12 @@ final class RateLimiter
         }
     }
 
+	/**
+	 * Creates and returns the default cache instance.
+	 *
+	 * @return CacheInterface The default cache instance configured with a filesystem adapter.
+	 * @since 1.0.0
+	 */
     private static function createDefaultCache(): CacheInterface
     {
         $cacheDir = defined('JPATH_CACHE')

@@ -20,7 +20,9 @@ use const JSON_THROW_ON_ERROR;
 // phpcs:enable PSR1.Files.SideEffects
 
 /**
- * Dispatches payloads to generic webhooks with optional HMAC signing.
+ * Dispatches form submission data to generic webhooks with optional HMAC signature verification.
+ * Supports custom payload filtering and error logging through event dispatching.
+ * @since 1.0.0
  */
 final class WebhookDispatcher implements IntegrationDispatcherInterface
 {
@@ -95,16 +97,20 @@ final class WebhookDispatcher implements IntegrationDispatcherInterface
         }
     }
 
-    /**
-     * @param array<string, mixed> $payload
-     * @param array<string, mixed> $form
-     * @param array<string, mixed> $submission
-     * @param array<string, mixed> $context
-     * @param array<int, array<string, mixed>> $fieldMeta
-     *
-     * @return array<string, mixed>
-     */
-    private function filterPayload(
+	/**
+	 * Filters the webhook payload through an event dispatcher.
+	 *
+	 * @param   string                            $eventName   Name of the event to dispatch
+	 * @param   array<string, mixed>              $payload     The payload data to filter
+	 * @param   array<string, mixed>              $form        Form configuration data
+	 * @param   array<string, mixed>              $submission  Form submission data
+	 * @param   array<string, mixed>              $context     Contextual information
+	 * @param   array<int, array<string, mixed>>  $fieldMeta   Field metadata
+	 *
+	 * @return array<string, mixed> The filtered payload
+	 * @since 1.0.0
+	 */
+	private function filterPayload(
         string $eventName,
         array $payload,
         array $form,
@@ -129,12 +135,19 @@ final class WebhookDispatcher implements IntegrationDispatcherInterface
         return $payload;
     }
 
-    /**
-     * @param array<string, mixed> $form
-     * @param array<string, mixed> $payload
-     * @param array<string, mixed> $context
-     */
-    private function logError(string $endpoint, string $message, array $form, array $payload, array $context): void
+	/**
+	 * Logs webhook dispatch errors to the event dispatcher.
+	 *
+	 * @param   string                $endpoint  The webhook endpoint URL
+	 * @param   string                $message   The error message
+	 * @param   array<string, mixed>  $form      Form configuration array
+	 * @param   array<string, mixed>  $payload   Submitted form data
+	 * @param   array<string, mixed>  $context   Contextual information
+	 *
+	 * @return void
+	 * @since 1.0.0
+	 */
+	private function logError(string $endpoint, string $message, array $form, array $payload, array $context): void
     {
         if ($this->dispatcher !== null) {
             $event = new Event('onNxpEasyFormsWebhookFailed', [

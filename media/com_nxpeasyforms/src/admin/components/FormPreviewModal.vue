@@ -16,13 +16,13 @@
                     @click="$emit('close')"
                     :title="__('Close', 'nxp-easy-forms')"
                 >
-                    <span class="dashicons dashicons-no-alt"></span>
+                    <span class="fa-solid fa-xmark" aria-hidden="true"></span>
                 </button>
             </div>
 
             <div class="nxp-preview-modal__body">
                 <div class="nxp-preview-notice">
-                    <span class="dashicons dashicons-info"></span>
+                    <span class="fa-solid fa-circle-info" aria-hidden="true"></span>
                     {{ __("This is an approximate visual preview. The final look will adapt to your current theme. The form is not functional in preview mode.", "nxp-easy-forms") }}
                 </div>
 
@@ -202,14 +202,14 @@ const getInputType = (fieldType) => {
     z-index: 1000;
 }
 .nxp-preview-modal {
-    background: #fff;
+    background: var(--nxp-panel-bg);
     border-radius: 8px;
     width: 90vw;
     max-width: 1200px;
     max-height: 90vh;
     display: flex;
     flex-direction: column;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 4px 20px var(--nxp-drawer-shadow);
 }
 
 .nxp-preview-modal__header {
@@ -217,7 +217,7 @@ const getInputType = (fieldType) => {
     align-items: center;
     justify-content: space-between;
     padding: 20px 24px;
-    border-bottom: 1px solid #ddd;
+    border-bottom: 1px solid var(--nxp-surface-border);
 }
 
 .nxp-preview-modal__header h2 {
@@ -240,16 +240,17 @@ const getInputType = (fieldType) => {
     align-items: center;
     gap: 8px;
     padding: 12px 16px;
-    background: #e8f5fa;
-    border-left: 4px solid #0073aa;
+    background: var(--bs-info-bg, rgba(13, 110, 253, 0.08));
+    border-left: 4px solid var(--bs-primary);
     border-radius: 4px;
-    color: #135e96;
+    color: var(--bs-info-text, inherit);
     font-size: 14px;
 }
 
-.nxp-preview-notice .dashicons {
+.nxp-preview-notice .fa-solid,
+.nxp-preview-notice .fa-regular {
     flex-shrink: 0;
-    color: #0073aa;
+    color: var(--bs-primary);
 }
 
 .nxp-preview-container {
@@ -257,21 +258,19 @@ const getInputType = (fieldType) => {
     display: flex;
     justify-content: center;
     padding: 20px;
-    background: #f5f5f5;
+    background: var(--bs-tertiary-bg, rgba(0, 0, 0, 0.04));
     border-radius: 4px;
-    /* Avoid nested scrollbars; the modal body scrolls instead */
     overflow: visible;
 }
 
 .nxp-preview-form {
     width: 100%;
     max-width: 600px;
-    background: #fff;
+    background: var(--nxp-panel-bg);
     padding: 32px;
     border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 8px var(--nxp-drawer-shadow);
     transition: transform 0.2s ease;
-    /* Ensure no implicit max-height constraints can clip content */
     max-height: none !important;
     overflow: visible;
 }
@@ -280,7 +279,7 @@ const getInputType = (fieldType) => {
     margin: 0 0 24px;
     font-size: 24px;
     font-weight: 600;
-    color: #1d2327;
+    color: var(--bs-body-color);
 }
 
 .nxp-easy-form {
@@ -297,12 +296,12 @@ const getInputType = (fieldType) => {
 
 .nxp-form-label {
     font-weight: 500;
-    color: #1d2327;
+    color: var(--bs-body-color);
     font-size: 14px;
 }
 
 .nxp-form-required {
-    color: #d63638;
+    color: var(--bs-danger, #d63638);
     margin-left: 2px;
 }
 
@@ -315,12 +314,12 @@ const getInputType = (fieldType) => {
 .nxp-form-field textarea,
 .nxp-form-field select {
     padding: 8px 12px;
-    border: 1px solid #8c8f94;
+    border: 1px solid var(--nxp-surface-border);
     border-radius: 4px;
     font-size: 14px;
     font-family: inherit;
-    background: #fff;
-    color: #1d2327;
+    background: var(--nxp-panel-bg);
+    color: var(--bs-body-color);
     cursor: not-allowed;
     opacity: 0.7;
 }
@@ -350,20 +349,20 @@ const getInputType = (fieldType) => {
 }
 
 .nxp-form-text-block {
-    color: #50575e;
+    color: var(--nxp-muted-color);
     line-height: 1.6;
 }
 
 .nxp-form-description {
     margin: 0;
     font-size: 13px;
-    color: #646970;
+    color: var(--nxp-muted-color);
 }
 
 .nxp-form-submit {
     padding: 10px 24px;
-    background: #2271b1;
-    color: #fff;
+    background: var(--bs-primary);
+    color: var(--bs-btn-primary-color, #fff);
     border: none;
     border-radius: 4px;
     font-size: 14px;
@@ -376,7 +375,7 @@ const getInputType = (fieldType) => {
     display: flex;
     justify-content: center;
     padding-top: 16px;
-    border-top: 1px solid #ddd;
+    border-top: 1px solid var(--nxp-surface-border);
 }
 
 .nxp-preview-zoom label {
@@ -394,7 +393,7 @@ const getInputType = (fieldType) => {
 .nxp-preview-zoom span {
     min-width: 45px;
     text-align: right;
-    color: #646970;
+    color: var(--nxp-muted-color);
 }
 
 /* Ensure preview ignores builder-specific height/overflow constraints */

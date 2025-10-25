@@ -16,6 +16,9 @@ use Joomla\CMS\Toolbar\ToolbarHelper;
 /**
  * HTML View class for listing forms.
  *
+ * Renders the forms list view with filtering, sorting and pagination
+ * for managing form definitions in the administrator interface.
+ *
  * @psalm-type FormListItem = object{
  *     id:int,
  *     title:string,
@@ -23,6 +26,8 @@ use Joomla\CMS\Toolbar\ToolbarHelper;
  *     created_at:string|null,
  *     updated_at:string|null
  * }
+ *
+ * @since 1.0.0
  */
 final class HtmlView extends BaseHtmlView
 {
@@ -40,7 +45,16 @@ final class HtmlView extends BaseHtmlView
     protected $activeFilters;
 
     /**
-     * {@inheritDoc}
+     * Render the view.
+     *
+     * Prepares filtered, sorted forms list data for display in the admin interface.
+     *
+     * @param string|null $tpl The layout template name (optional).
+     *
+     * @return void
+     *
+     * @throws \RuntimeException When an error is encountered loading view data.
+     * @since 1.0.0
      */
     public function display($tpl = null)
     {
@@ -60,6 +74,12 @@ final class HtmlView extends BaseHtmlView
         parent::display($tpl);
     }
 
+    /**
+     * Add toolbar buttons and title for the forms list view.
+     *
+     * @return void
+     * @since 1.0.0
+     */
     private function addToolbar(): void
     {
         ToolbarHelper::title(Text::_('COM_NXPEASYFORMS_SUBMENU_FORMS'), 'pencil-2');

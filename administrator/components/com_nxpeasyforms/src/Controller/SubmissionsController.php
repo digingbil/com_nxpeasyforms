@@ -21,7 +21,17 @@ final class SubmissionsController extends AdminController
     protected $view_list = 'submissions';
 
     /**
-     * {@inheritDoc}
+     * Get and return a model instance.
+     *
+     * This method returns a model instance from the MVC factory. Callers can
+     * provide the model name, class prefix and configuration.
+     *
+     * @param string $name The model name. Defaults to 'Submissions'.
+     * @param string $prefix The class prefix for the model.
+     * @param array<string,mixed> $config Configuration options for model creation.
+     *
+     * @return BaseDatabaseModel
+     * @since 1.0.0
      */
     public function getModel($name = 'Submissions', $prefix = 'Joomla\\Component\\Nxpeasyforms\\Administrator\\Model\\', $config = ['ignore_request' => true]): BaseDatabaseModel
     {

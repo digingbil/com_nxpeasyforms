@@ -22,7 +22,10 @@ use function is_string;
 // phpcs:enable PSR1.Files.SideEffects
 
 /**
- * Handles CAPTCHA verification across supported providers.
+ * Handles CAPTCHA verification across multiple supported providers like reCAPTCHA v3,
+ * Cloudflare Turnstile and Friendly Captcha. Each provider verification is handled
+ * independently with provider-specific validation logic and error handling.
+ * @since 1.0.0
  */
 final class CaptchaService
 {
@@ -44,12 +47,16 @@ final class CaptchaService
         }
     }
 
-    /**
-     * @param array<string, mixed> $config
-     *
-     * @throws SubmissionException
-     */
-    public function verify(string $provider, string $token, array $config): void
+	/**
+	 * Verifies CAPTCHA token based on the provided configuration
+	 *
+	 * @param   array<string, mixed>  $config  Configuration array must contain 'secret_key'.
+	 *                                         May contain 'ip', 'form_id' and 'site_key' depending on provider.
+	 *
+	 * @throws SubmissionException when verification fails
+	 * @since 1.0.0
+	 */
+	public function verify(string $provider, string $token, array $config): void
     {
         if ($provider === 'none') {
             return;
@@ -182,13 +189,19 @@ final class CaptchaService
         );
     }
 
-    /**
-     * @param array<string, mixed>|string $data
-     * @param array<string, string> $headers
-     *
-     * @throws SubmissionException
-     */
-    private function request(string $url, $data, array $headers, int $timeout): \Joomla\CMS\Http\Response
+	/**
+	 * Makes a request with provided data to an endpoint and returns the response
+	 *
+	 * @param   string                       $url      The URL to make the request to
+	 * @param   array<string, mixed>|string  $data     The data to send with the request
+	 * @param   array<string, string>        $headers  The request headers
+	 * @param   int                          $timeout  The request timeout in seconds
+	 *
+	 * @return \Joomla\CMS\Http\Response The response object
+	 * @throws SubmissionException If request fails or returns invalid response
+	 * @since 1.0.0
+	 */
+	private function request(string $url, $data, array $headers, int $timeout): \Joomla\CMS\Http\Response
     {
         $response = null;
 
@@ -205,13 +218,18 @@ final class CaptchaService
         return $response;
     }
 
-    /**
-     * @param array<string, mixed> $context
-     *
-     * @return mixed
-     */
-    private function filterValue(string $eventName, $value, array $context = [])
-    {
+	/**
+	 * Filters the value based on the provided context.
+	 * If a dispatcher is available, it dispatches the 'onNxpEasyFormsFilterRecaptchaScore' event.
+	 *
+	 * @param   string                $eventName
+	 * @param                         $value
+	 * @param   array<string, mixed>  $context
+	 *
+	 * @return mixed
+	 * @since 1.0.0
+	 */
+    private function filterValue(string $eventName, $value, array $context = []): mixed {
         if ($this->dispatcher === null) {
             return $value;
         }

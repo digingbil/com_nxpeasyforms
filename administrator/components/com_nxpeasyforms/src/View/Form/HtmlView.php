@@ -10,6 +10,7 @@ use Joomla\CMS\MVC\View\HtmlView as BaseHtmlView;
 use Joomla\CMS\Router\Route;
 use Joomla\CMS\Toolbar\ToolbarHelper;
 use Joomla\CMS\Session\Session;
+use Joomla\CMS\WebAsset\WebAssetManager;
 use Joomla\Component\Nxpeasyforms\Administrator\Helper\AssetHelper;
 use Joomla\Component\Nxpeasyforms\Administrator\Helper\FormDefaults;
 
@@ -20,6 +21,11 @@ use Joomla\Component\Nxpeasyforms\Administrator\Helper\FormDefaults;
 
 /**
  * HTML View class for a single form (builder container).
+ *
+ * Renders the form builder interface for creating and editing form definitions.
+ * Loads the Vue.js SPA assets and prepares the builder configuration.
+ *
+ * @since 1.0.0
  */
 final class HtmlView extends BaseHtmlView
 {
@@ -32,7 +38,16 @@ final class HtmlView extends BaseHtmlView
     private string $action = '';
 
     /**
-     * {@inheritDoc}
+     * Render the view.
+     *
+     * Prepares form data and builder assets for display in the admin interface.
+     *
+     * @param string|null $tpl The layout template name (optional).
+     *
+     * @return void
+     *
+     * @throws \RuntimeException When an error is encountered loading view data.
+     * @since 1.0.0
      */
     public function display($tpl = null)
     {
@@ -51,14 +66,31 @@ final class HtmlView extends BaseHtmlView
         parent::display($tpl);
     }
 
+    /**
+     * Get the form action URL for form submission.
+     *
+     * @return string The form action URL.
+     * @since 1.0.0
+     */
     public function getAction(): string
     {
         return $this->action;
     }
 
+	/**
+	 * Initialise the form builder Vue.js application.
+	 *
+	 * Loads SPA assets and prepares the configuration object
+	 * for the builder interface.
+	 *
+	 * @return void
+	 * @throws \Exception
+	 * @since 1.0.0
+	 */
     private function initialiseBuilder(): void
     {
-        $document = $this->document ?? Factory::getDocument();
+        $document = $this->getDocument() ?? Factory::getApplication()->getDocument();
+        $wa = $document->getWebAssetManager();
         AssetHelper::registerEntry('src/admin/main.js');
         HTMLHelper::_('stylesheet', 'com_nxpeasyforms/css/admin-joomla.css', ['version' => 'auto', 'relative' => true]);
 
@@ -83,12 +115,18 @@ final class HtmlView extends BaseHtmlView
             ]
         );
 
-        $document->addScriptDeclaration(
+        $wa->addInlineScript(
             'window.nxpEasyForms = window.nxpEasyForms || {};'
             . 'window.nxpEasyForms.builder = Joomla.getOptions("com_nxpeasyforms.builder");'
         );
     }
 
+    /**
+     * Add toolbar buttons and title for the form builder view.
+     *
+     * @return void
+     * @since 1.0.0
+     */
     private function addToolbar(): void
     {
         ToolbarHelper::title(

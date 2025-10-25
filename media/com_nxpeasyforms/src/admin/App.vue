@@ -4,7 +4,7 @@
             <!-- Quick Start Tip - Only for new forms -->
             <div v-if="showNewFormTip" class="nxp-quick-start">
                 <div class="nxp-quick-start__icon">
-                    <span class="dashicons dashicons-lightbulb"></span>
+                    <span class="fa-regular fa-lightbulb" aria-hidden="true"></span>
                 </div>
                 <div class="nxp-quick-start__content">
                     <strong>{{ __("Quick Start:", "nxp-easy-forms") }}</strong>
@@ -23,7 +23,7 @@
                     @click="dismissNewFormTip()"
                     :title="__('Dismiss')"
                 >
-                    <span class="dashicons dashicons-no-alt"></span>
+                    <span class="fa-solid fa-xmark" aria-hidden="true"></span>
                 </button>
             </div>
 
@@ -40,7 +40,7 @@
                 <div class="nxp-builder__actions">
                     <button
                         type="button"
-                        class="button button-secondary nxp-builder__template"
+                        class="btn btn-outline-secondary nxp-builder__template"
                         @click="toggleTemplates(true)"
                         :title="__('Apply template', 'nxp-easy-forms')"
                     >
@@ -48,16 +48,16 @@
                     </button>
                     <button
                         type="button"
-                        class="button button-secondary nxp-builder__preview"
+                        class="btn btn-outline-secondary nxp-builder__preview"
                         @click="togglePreview(true)"
                         :title="__('Preview form', 'nxp-easy-forms')"
                     >
-                        <span class="dashicons dashicons-visibility"></span>
+                        <span class="fa-regular fa-eye" aria-hidden="true"></span>
                         {{ __("Preview", "nxp-easy-forms") }}
                     </button>
                     <button
                         type="button"
-                        class="button button-primary nxp-builder__save"
+                        class="btn btn-primary nxp-builder__save"
                         :disabled="store.saving"
                         @click="store.saveForm()"
                     >
@@ -326,6 +326,31 @@ const sendTestEmail = (payload) => {
 .nxp-builder__actions {
     display: flex;
     gap: 10px;
+    align-items: center;
+}
+
+.nxp-builder__actions .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    min-height: 44px;
+}
+
+.nxp-builder__actions .btn-outline-secondary {
+    color: #212529;
+    background-color: #fff;
+    border-color: #ced4da;
+}
+
+.nxp-builder__actions .btn-outline-secondary:hover,
+.nxp-builder__actions .btn-outline-secondary:focus {
+    color: #0b5ed7;
+    border-color: #0b5ed7;
+}
+
+.nxp-builder__actions .btn[disabled] {
+    opacity: 0.65;
+    pointer-events: none;
 }
 
 .nxp-builder__actions button.nxp-builder__template {
@@ -339,7 +364,8 @@ const sendTestEmail = (payload) => {
     min-height: 44px;
 }
 
-.nxp-builder__preview .dashicons {
+.nxp-builder__preview .fa-regular,
+.nxp-builder__preview .fa-solid {
     font-size: 18px;
     width: 18px;
     height: 18px;
@@ -354,6 +380,8 @@ const sendTestEmail = (payload) => {
     width: 18px;
     height: 18px;
     vertical-align: middle;
+    filter: var(--nxp-icon-filter);
+    transition: filter 0.2s ease;
 }
 
 .nxp-icon--inline {
@@ -413,7 +441,8 @@ const sendTestEmail = (payload) => {
     margin-top: 2px;
 }
 
-.nxp-quick-start__icon .dashicons {
+.nxp-quick-start__icon .fa-regular,
+.nxp-quick-start__icon .fa-solid {
     width: 20px;
     height: 20px;
     font-size: 20px;
@@ -446,7 +475,8 @@ const sendTestEmail = (payload) => {
     color: #d63638;
 }
 
-.nxp-quick-start__dismiss .dashicons {
+.nxp-quick-start__dismiss .fa-regular,
+.nxp-quick-start__dismiss .fa-solid {
     width: 20px;
     height: 20px;
     font-size: 20px;

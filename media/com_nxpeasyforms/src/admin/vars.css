@@ -1,0 +1,29 @@
+.nxp-easy-forms-builder {
+    --nxp-panel-bg: var(--bs-body-bg, #fff);
+    --nxp-card-bg: var(--bs-tertiary-bg, var(--bs-body-bg, #fff));
+    --nxp-surface-border: var(--bs-border-color, #dcdcde);
+    --nxp-muted-color: var(--bs-secondary-color, #6c757d);
+    --nxp-hover-border: var(--bs-primary, #2271b1);
+    --nxp-hover-shadow: rgba(var(--bs-primary-rgb, 34, 113, 177), 0.2);
+    --nxp-drawer-shadow: rgba(0, 0, 0, 0.12);
+    --nxp-help-bg: var(--bs-tertiary-bg, rgba(0, 0, 0, 0.05));
+    --nxp-help-color: var(--bs-secondary-color, #50575e);
+    --nxp-quick-bg: rgba(var(--bs-primary-rgb, 34, 113, 177), 0.08);
+    --nxp-quick-text: var(--bs-body-color, #1d2327);
+    --nxp-icon-filter: none;
+}
+
+[data-bs-theme="dark"] .nxp-easy-forms-builder {
+    --nxp-panel-bg: var(--bs-tertiary-bg, var(--bs-body-bg, #1f1f1f));
+    --nxp-card-bg: var(--bs-secondary-bg, var(--bs-body-bg, #1b1e21));
+    --nxp-surface-border: var(--bs-border-color, rgba(255, 255, 255, 0.16));
+    --nxp-muted-color: var(--bs-secondary-color, #ced4da);
+    --nxp-hover-border: var(--bs-primary, #6ab7ff);
+    --nxp-hover-shadow: rgba(var(--bs-primary-rgb, 106, 183, 255), 0.45);
+    --nxp-drawer-shadow: rgba(0, 0, 0, 0.4);
+    --nxp-help-bg: rgba(255, 255, 255, 0.08);
+    --nxp-help-color: var(--bs-secondary-color, #d0d5db);
+    --nxp-quick-bg: rgba(var(--bs-primary-rgb, 106, 183, 255), 0.22);
+    --nxp-quick-text: var(--bs-body-color, #f8f9fa);
+    --nxp-icon-filter: brightness(0) invert(1);
+}

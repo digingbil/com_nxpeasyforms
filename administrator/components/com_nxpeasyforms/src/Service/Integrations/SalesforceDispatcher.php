@@ -22,6 +22,21 @@ use const FILTER_VALIDATE_EMAIL;
 \defined('_JEXEC') or die;
 // phpcs:enable PSR1.Files.SideEffects
 
+/**
+ * Salesforce Web-to-Lead form integration dispatcher.
+ *
+ * This class handles the submission of form data to Salesforce's Web-to-Lead service.
+ * It maps form fields to Salesforce lead fields and sends the data using HTTP POST requests.
+ * The dispatcher supports:
+ * - Organization ID configuration
+ * - Lead source assignment
+ * - Assignment rule specification
+ * - Debug email notifications
+ * - Custom field mappings between form fields and Salesforce lead fields
+ *
+ * @implements IntegrationDispatcherInterface
+ * @since 1.0.0
+ */
 final class SalesforceDispatcher implements IntegrationDispatcherInterface
 {
     private HttpClient $client;
@@ -39,7 +54,11 @@ final class SalesforceDispatcher implements IntegrationDispatcherInterface
         $this->renderer = $renderer ?? new TemplateRenderer();
         $this->dispatcher = $dispatcher;
     }
-
+	
+	/**
+	 * @inheritDoc
+	 * @since 1.0.0
+	 */
     public function dispatch(
         array $settings,
         array $form,
@@ -85,7 +104,7 @@ final class SalesforceDispatcher implements IntegrationDispatcherInterface
                 continue;
             }
 
-            $data[$sfField] = $this->renderer->normaliseValue($payload[$formField]);
+            $data[$sfField] = $this->renderer->normalizeValue($payload[$formField]);
         }
 
         $data = $this->filterPayload('onNxpEasyFormsFilterSalesforcePayload', $data, $form, $payload, $context, $fieldMeta);
@@ -95,19 +114,25 @@ final class SalesforceDispatcher implements IntegrationDispatcherInterface
         $this->client->sendForm($endpoint, $data, 'POST', [], 10);
     }
 
-    /**
-     * @param array<string, mixed> $payload
-     * @param array<string, mixed> $form
-     * @param array<string, mixed> $submission
-     * @param array<string, mixed> $context
-     * @param array<int, array<string, mixed>> $fieldMeta
-     * @return array<string, mixed>
-     */
-    private function filterPayload(
-        string $eventName,
-        array $payload,
-        array $form,
-        array $submission,
+	/**
+	 * Filters the payload through registered event listeners.
+	 * Plugins can hook into this event to modify the payload before it's sent to Salesforce.
+	 *
+	 * @param   string                            $eventName   Name of the event to trigger
+	 * @param   array<string, mixed>              $payload     Payload data to filter
+	 * @param   array<string, mixed>              $form        Form configuration data
+	 * @param   array<string, mixed>              $submission  Form submission data
+	 * @param   array<string, mixed>              $context     Contextual data
+	 * @param   array<int, array<string, mixed>>  $fieldMeta   Field metadata
+	 *
+	 * @return  array<string, mixed>                         Filtered payload data
+	 * @since 1.0.0
+	 */
+	private function filterPayload(
+		string $eventName,
+		array  $payload,
+		array  $form,
+		array $submission,
         array $context,
         array $fieldMeta
     ): array {

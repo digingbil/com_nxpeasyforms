@@ -16,6 +16,10 @@ use function filter_var;
 use function is_array;
 use function trim;
 
+// phpcs:disable PSR1.Files.SideEffects
+\defined('_JEXEC') or die;
+// phpcs:enable PSR1.Files.SideEffects
+
 /**
  * Public-facing controller for processing form submissions.
  */

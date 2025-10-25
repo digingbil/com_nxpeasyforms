@@ -16,6 +16,9 @@ use Joomla\Utilities\ArrayHelper;
 /**
  * Table class for NXP Easy Forms definitions.
  *
+ * Manages persistence and retrieval of form definitions, including
+ * JSON field encoding/decoding and validation.
+ *
  * @psalm-type FormPayload = array{
  *     id?: int,
  *     title?: string,
@@ -25,6 +28,8 @@ use Joomla\Utilities\ArrayHelper;
  *     created_at?: string|null,
  *     updated_at?: string|null
  * }
+ *
+ * @since 1.0.0
  */
 final class FormTable extends Table
 {
@@ -48,14 +53,29 @@ final class FormTable extends Table
 
     public $updated_at = null;
 
+    /**
+     * Constructor.
+     *
+     * @param   DatabaseDriver  $db  The database driver instance.
+     *
+     * @since 1.0.0
+     */
     public function __construct(DatabaseDriver $db)
     {
         parent::__construct('#__nxpeasyforms_forms', 'id', $db);
     }
 
     /**
-     * @param array<string,mixed>|object $src
-     * @param array<int,string>|string $ignore
+     * Bind data to the table object.
+     *
+     * Converts incoming data, encoding arrays as JSON for JSON fields
+     * and 1 boolean/integer fields.
+     *
+     * @param array<string,mixed>|object $src Source data to bind.
+     * @param array<int,string>|string $ignore Fields to ignore during binding.
+     *
+     * @return bool
+     * @since 1.0.0
      */
     public function bind($src, $ignore = []): bool
     {
@@ -77,9 +97,15 @@ final class FormTable extends Table
     }
 
     /**
-     * {@inheritDoc}
+     * Validate and prepare table data before storage.
+     *
+     * Ensures the title is not empty, normalizes JSON strings for
+     * encoded fields, and validates the active flag.
+     *
+     * @return bool
      *
      * @throws \InvalidArgumentException When required data is missing.
+     * @since 1.0.0
      */
     public function check()
     {
@@ -89,8 +115,8 @@ final class FormTable extends Table
             throw new \InvalidArgumentException('COM_NXPEASYFORMS_ERROR_FORM_TITLE_REQUIRED');
         }
 
-        $this->fields = $this->normaliseJsonString($this->fields, 'fields', '[]');
-        $this->settings = $this->normaliseJsonString($this->settings, 'settings', '{}');
+        $this->fields = $this->normalizeJsonString($this->fields, 'fields', '[]');
+        $this->settings = $this->normalizeJsonString($this->settings, 'settings', '{}');
 
         $this->active = $this->active ? 1 : 0;
 
@@ -98,11 +124,18 @@ final class FormTable extends Table
     }
 
     /**
-     * Overridden to ensure UTC timestamps when database supports them.
+     * Store the table to the database.
+     *
+     * Overridden to ensure UTC timestamps are set for created_at and updated_at
+     * fields when the database driver supports them.
      *
      * @param bool $updateNulls Whether to update null values.
      *
-     * @throws DatabaseExceptionInterface
+     * @return bool
+     *
+     * @throws \Joomla\Database\Exception\DatabaseExceptionInterface
+     * @return bool
+     * @since 1.0.0
      */
     public function store($updateNulls = false)
     {
@@ -118,9 +151,15 @@ final class FormTable extends Table
     }
 
     /**
-     * Encodes array payload as JSON.
+     * Encode an array payload as JSON.
      *
-     * @param array<mixed> $payload
+     * @param array  $payload  The array to encode.
+     * @param string   $field    The field name for error reporting.
+     *
+     * @return string JSON encoded payload.
+     *
+     * @throws \InvalidArgumentException When JSON encoding fails.
+     * @since 1.0.0
      */
     private function encodeJson(array $payload, string $field): string
     {
@@ -138,7 +177,19 @@ final class FormTable extends Table
         }
     }
 
-    private function normaliseJsonString(?string $value, string $field, string $fallback): string
+    /**
+     * Normalize and validate a JSON string.
+     *
+     * @param string|null $value The JSON string to normalize.
+     * @param string $field The field name for error reporting.
+     * @param string $fallback Default value if normalization fails.
+     *
+     * @return string Normalized JSON string or fallback.
+     *
+     * @throws \InvalidArgumentException When JSON is invalid.
+     * @since 1.0.0
+     */
+    private function normalizeJsonString(?string $value, string $field, string $fallback): string
     {
         $value = $value ?? $fallback;
 

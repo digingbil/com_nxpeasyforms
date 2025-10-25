@@ -15,6 +15,11 @@ use Joomla\CMS\Toolbar\ToolbarHelper;
 
 /**
  * HTML View class for submissions list.
+ *
+ * Renders the submissions list view with filtering, sorting and pagination
+ * for viewing and managing form submissions in the administrator interface.
+ *
+ * @since 1.0.0
  */
 final class HtmlView extends BaseHtmlView
 {
@@ -28,11 +33,20 @@ final class HtmlView extends BaseHtmlView
 
     protected $activeFilters;
 
-    /**
-     * {@inheritDoc}
-     */
-    public function display($tpl = null)
-    {
+	/**
+	 * Render the view.
+	 *
+	 * Prepares filtered, sorted submissions list data for display in the admin interface.
+	 *
+	 * @param   string|null  $tpl  The layout template name (optional).
+	 *
+	 * @return void
+	 *
+	 * @throws \RuntimeException When an error is encountered loading view data.
+	 * @throws \Exception
+	 * @since 1.0.0
+	 */
+    public function display($tpl = null): void {
         $this->state = $this->get('State');
         $this->items = $this->get('Items');
         $this->pagination = $this->get('Pagination');
@@ -48,6 +62,12 @@ final class HtmlView extends BaseHtmlView
         parent::display($tpl);
     }
 
+    /**
+     * Add toolbar buttons and title for the submissions list view.
+     *
+     * @return void
+     * @since 1.0.0
+     */
     private function addToolbar(): void
     {
         ToolbarHelper::title(Text::_('COM_NXPEASYFORMS_SUBMENU_SUBMISSIONS'), 'list');

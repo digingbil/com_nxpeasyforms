@@ -800,14 +800,14 @@ provide("formSettingsContext", {
 .nxp-modal { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; z-index: 1000; }
 .nxp-modal--visible { display: flex; align-items: center; justify-content: center; padding: 24px 20px; overflow-y: auto; }
 .nxp-modal__overlay { position: absolute; inset: 0; background: rgba(0, 0, 0, 0.35); }
-.nxp-modal__content { position: relative; background: #fff; border-radius: 12px; width: 760px; max-width: calc(100vw - 20px); max-height: calc(100vh - 48px); display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 24px 48px rgba(14, 30, 37, 0.12); }
-.nxp-modal__header, .nxp-modal__footer { padding: 16px 20px; border-bottom: 1px solid #dcdcde; }
+.nxp-modal__content { position: relative; background: var(--nxp-panel-bg); border-radius: 12px; width: 760px; max-width: calc(100vw - 20px); max-height: calc(100vh - 48px); display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 24px 48px var(--nxp-drawer-shadow); }
+.nxp-modal__header, .nxp-modal__footer { padding: 16px 20px; border-bottom: 1px solid var(--nxp-surface-border); }
 .nxp-modal__header { display: flex; align-items: center; gap: 16px; }
 .nxp-modal__header h2 { margin: 0; flex: 1; }
-.nxp-settings-mode-toggle { display: flex; gap: 4px; background: #f0f0f1; padding: 2px; border-radius: 6px;
+.nxp-settings-mode-toggle { display: flex; gap: 4px; background: var(--bs-secondary-bg, rgba(0, 0, 0, 0.04)); padding: 2px; border-radius: 6px;
     margin-right: 30px; }
-.nxp-settings-mode-toggle .button { margin: 0!important; background: transparent!important; border: none!important; box-shadow: none!important; color: #50575e!important; font-size: 0.9rem!important; padding: 4px 12px!important; height: auto!important; line-height: 1.4!important; }
-.nxp-settings-mode-toggle .button.is-primary { background: #fff!important; color: #1d2327!important; box-shadow: 0 1px 2px rgba(0,0,0,0.1)!important; }
+.nxp-settings-mode-toggle .button { margin: 0!important; background: transparent!important; border: none!important; box-shadow: none!important; color: var(--nxp-muted-color)!important; font-size: 0.9rem!important; padding: 4px 12px!important; height: auto!important; line-height: 1.4!important; }
+.nxp-settings-mode-toggle .button.is-primary { background: var(--nxp-panel-bg)!important; color: var(--bs-body-color)!important; box-shadow: 0 1px 2px var(--nxp-drawer-shadow)!important; }
 .nxp-modal-close {
     position: absolute;
     top: 14px;
@@ -828,13 +828,15 @@ provide("formSettingsContext", {
     width: 22px;
     height: 22px;
     pointer-events: none;
+    filter: var(--nxp-icon-filter);
+    transition: filter 0.2s ease;
 }
-.nxp-modal__footer { border-bottom: 0; border-top: 1px solid #dcdcde; display: flex; justify-content: flex-end; gap: 8px; background: #fff; }
+.nxp-modal__footer { border-bottom: 0; border-top: 1px solid var(--nxp-surface-border); display: flex; justify-content: flex-end; gap: 8px; background: var(--nxp-panel-bg); }
 .nxp-modal__body { flex: 1; display: flex; flex-direction: column; padding: 0; max-height: calc(90vh - 112px); }
-.nxp-modal__tabs { display: flex; gap: 4px; padding: 12px 20px 0; border-bottom: 1px solid #dcdcde; background: #f6f7f7; }
-.nxp-tab { background: transparent; border: none; padding: 0 12px 12px; font-size: 1rem; font-weight: 600; cursor: pointer; color: #50575e; border-bottom: 3px solid transparent; }
-.nxp-tab:hover { color: #1d2327; }
-.nxp-tab--active { color: #1d2327; border-bottom-color: #2271b1; }
+.nxp-modal__tabs { display: flex; gap: 4px; padding: 12px 20px 0; border-bottom: 1px solid var(--nxp-surface-border); background: var(--bs-secondary-bg, rgba(0, 0, 0, 0.04)); }
+.nxp-tab { background: transparent; border: none; padding: 0 12px 12px; font-size: 1rem; font-weight: 600; cursor: pointer; color: var(--nxp-muted-color); border-bottom: 3px solid transparent; }
+.nxp-tab:hover { color: var(--bs-body-color); }
+.nxp-tab--active { color: var(--bs-body-color); border-bottom-color: var(--bs-primary); }
 .nxp-modal__panels { flex: 1; overflow-y: auto; padding: 20px; display: flex; }
 .nxp-modal__panel { display: grid; gap: 16px; flex: 1; }
 .nxp-setting { display: flex; flex-direction: column; gap: 6px; }
@@ -845,17 +847,17 @@ provide("formSettingsContext", {
 .nxp-setting--stacked { display: flex; flex-direction: column; gap: 6px; }
 .nxp-setting-group { display: grid; gap: 16px; }
 .nxp-setting__inline { display: flex; gap: 12px; margin-bottom: 10px; }
-.nxp-setting__hint { color: #6c757d; font-size: 0.92rem; display: block; margin-top: 4px; }
+.nxp-setting__hint { color: var(--nxp-muted-color); font-size: 0.92rem; display: block; margin-top: 4px; }
 textarea, input:not([type="checkbox"]):not([type="radio"]), select { width: 100%; font-size: 1rem; padding: 6px 8px; }
 textarea { min-height: 100px; }
-.nxp-integration-card { border: 1px solid #dcdcde; border-radius: 8px; padding: 20px; background: #f9f9f9; display: grid; gap: 16px; }
+.nxp-integration-card { border: 1px solid var(--nxp-surface-border); border-radius: 8px; padding: 20px; background: var(--nxp-card-bg); display: grid; gap: 16px; }
 .nxp-setting.nxp-setting--switch { justify-content: flex-start; }
 .nxp-integration-header { display: flex; gap: 12px; align-items: flex-start; }
 .nxp-integration-icon { font-size: 32px; line-height: 1; }
 .nxp-integration-header h3 { margin: 0 0 4px; font-size: 1.1rem; font-weight: 600; }
-.nxp-integration-description { margin: 0; font-size: 0.92rem; color: #50575e; }
-.nxp-integration-hint { display: block; margin-top: 4px; color: #6c757d; font-size: 0.92rem; }
-.nxp-integration-inline-error { margin-top: 6px; color: #b32d2e; font-size: 0.92rem; }
+.nxp-integration-description { margin: 0; font-size: 0.92rem; color: var(--nxp-muted-color); }
+.nxp-integration-hint { display: block; margin-top: 4px; color: var(--nxp-muted-color); font-size: 0.92rem; }
+.nxp-integration-inline-error { margin-top: 6px; color: var(--bs-danger, #b32d2e); font-size: 0.92rem; }
 .nxp-integration-mappings { display: flex; flex-direction: column; gap: 10px; }
 .nxp-integration-mapping__row {
     display: grid;

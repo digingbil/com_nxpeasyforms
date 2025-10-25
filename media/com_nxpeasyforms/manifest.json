@@ -5,13 +5,13 @@
     "src": "src/admin/main.js",
     "isEntry": true,
     "css": [
-      "css/admin-trfcRtm1.css"
+      "css/admin.css"
     ]
   },
-  "src/block/index.js": {
-    "file": "js/block.js",
-    "name": "block",
-    "src": "src/block/index.js",
+  "src/frontend/form-client.js": {
+    "file": "js/frontend.js",
+    "name": "frontend",
+    "src": "src/frontend/form-client.js",
     "isEntry": true
   }
 }

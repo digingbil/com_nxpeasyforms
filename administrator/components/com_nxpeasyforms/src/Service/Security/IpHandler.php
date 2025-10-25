@@ -18,7 +18,13 @@ use function trim;
 // phpcs:enable PSR1.Files.SideEffects
 
 /**
- * Detects and anonymises client IP addresses.
+ * Service class responsible for detecting and anonymising client IP addresses.
+ * Provides functionality to:
+ * - Detect real client IP address from various HTTP headers
+ * - Format IP addresses for storage based on privacy settings
+ * - Anonymise IPv4 and IPv6 addresses by zeroing the last octets
+ *
+ * @since 1.0.0
  */
 final class IpHandler
 {
@@ -26,6 +32,7 @@ final class IpHandler
      * Detect client IP address.
      *
      * @param array<string, mixed>|null $server
+     * @since 1.0.0
      */
     public function detect(?array $server = null): string
     {
@@ -49,6 +56,16 @@ final class IpHandler
         return '';
     }
 
+	/**
+	 * Format an IP address for storage based on the specified privacy mode.
+	 *
+	 * @param   string  $ip    IP address to format
+	 * @param   string  $mode  Privacy mode: 'none', 'anonymous', or 'full'
+	 *
+	 * @return string|null Formatted IP address or null if mode is 'none'
+	 *
+	 * @since 1.0.0
+	 */
     public function formatForStorage(string $ip, string $mode): ?string
     {
         if ($ip === '') {
@@ -68,6 +85,15 @@ final class IpHandler
         }
     }
 
+	/**
+	 * Anonymizes an IP address by masking its last segment in case of IPv4
+	 * or truncating its last half in case of IPv6.
+	 *
+	 * @param   string  $ip  The IP address to anonymize.
+	 *
+	 * @return string|null The anonymized IP address or null if the IP is invalid.
+	 * @since 1.0.0
+	 */
     public function anonymise(string $ip): ?string
     {
         if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {

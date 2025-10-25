@@ -20,6 +20,7 @@ final class FormDefaults
      * Returns the baseline form configuration used to seed the Vue builder.
      *
      * @return array<string, mixed>
+     * @since 1.0.0
      */
     public static function builderConfig(): array
     {

@@ -14,6 +14,11 @@ use Joomla\Database\QueryInterface;
 
 /**
  * Model for listing form definitions.
+ *
+ * Provides filtering, sorting and pagination for the forms list view
+ * in the administrator interface.
+ *
+ * @since 1.0.0
  */
 final class FormsModel extends ListModel
 {
@@ -26,7 +31,16 @@ final class FormsModel extends ListModel
     ];
 
     /**
-     * {@inheritDoc}
+     * Populate the model state with filtering and sorting parameters.
+     *
+     * Reads user state from the application (search, status) and initializes
+     * pagination with the provided ordering defaults.
+     *
+     * @param string $ordering  The default ordering column.
+     * @param string $direction The default sort direction ('asc' or 'desc').
+     *
+     * @return void
+     * @since 1.0.0
      */
     protected function populateState($ordering = 'created_at', $direction = 'desc')
     {
@@ -43,7 +57,13 @@ final class FormsModel extends ListModel
     }
 
     /**
-     * {@inheritDoc}
+     * Build a database query to fetch filtered and sorted form records.
+     *
+     * Constructs and returns a query for the forms table with applied filters
+     * and sorting based on the model's state.
+     *
+     * @return QueryInterface The constructed query.
+     * @since 1.0.0
      */
     protected function getListQuery(): QueryInterface
     {

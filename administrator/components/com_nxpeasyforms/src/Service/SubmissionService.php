@@ -23,6 +23,7 @@ use Joomla\Event\DispatcherInterface;
 use Joomla\Event\Event;
 
 
+use Psr\SimpleCache\InvalidArgumentException;
 use function bin2hex;
 use function chr;
 use function is_array;
@@ -42,7 +43,12 @@ use function vsprintf;
 // phpcs:enable PSR1.Files.SideEffects
 
 /**
- * Orchestrates end-to-end processing for form submissions.
+ * Orchestrates end-to-end processing for form submissions, handling validation,
+ * file uploads, email notifications, database storage, and third-party integrations.
+ * Acts as a centralized service to coordinate all aspects of form processing while
+ * enforcing security measures like CSRF protection, honeypot fields, captcha verification
+ * and rate limiting.
+ * @since 1.0.0
  */
 final class SubmissionService
 {
@@ -96,21 +102,31 @@ final class SubmissionService
         $this->integrationQueue = $integrationQueue ?? $container->get(IntegrationQueue::class);
     }
 
-    /**
-     * @param array<string, mixed> $requestData
-     * @param array<string, mixed> $context
-     * @param array<string, mixed> $files
-     *
-     * @return array<string, mixed>
-     *
-     * @throws SubmissionException
-     */
-    public function handle(int $formId, array $requestData, array $context = [], array $files = []): array
-    {
-        $form = $this->forms->find($formId);
+	/**
+	 * Processes the form submission with validation and security checks
+	 *
+	 * @param   array<string, mixed>  $requestData  Form submission data from the request
+	 * @param   array<string, mixed>  $context      Contextual information like IP address and user agent
+	 * @param   array<string, mixed>  $files        Uploaded files from the request
+	 *
+	 * @return array<string, mixed> Processed submission result containing:
+	 *                              - success: boolean indicating if submission was successful
+	 *                              - message: Success/error message to display
+	 *                              - data: Sanitized submission data
+	 *                              - uuid: Unique identifier for the submission
+	 *                              - submission_id: Database ID if stored
+	 *                              - meta: Additional metadata
+	 *                              - email: Email notification results
+	 *
+	 * @throws SubmissionException|\JsonException If validation fails or other submission error occurs
+	 * @since 1.0.0
+	 */
+	public function handle(int $formId, array $requestData, array $context = [], array $files = []): array {
+		$form = $this->forms->find($formId);
 
-        if ($form === null) {
-            throw new SubmissionException(Text::_('COM_NXPEASYFORMS_ERROR_FORM_NOT_FOUND'), 404);
+		if ($form === null)
+		{
+			throw new SubmissionException(Text::_('COM_NXPEASYFORMS_ERROR_FORM_NOT_FOUND'), 404);
         }
 
         if ((int) ($form['active'] ?? 1) !== 1) {
@@ -181,7 +197,7 @@ final class SubmissionService
 
         $validationResult = $this->fieldValidator->validateAll($fields, $requestData, $files);
 
-        [$sanitised, $errors, $fieldMeta] = $this->normaliseValidationResult($validationResult);
+        [$sanitised, $errors, $fieldMeta] = $this->normalizeValidationResult($validationResult);
 
         if (empty($errors)) {
             [$sanitised, $fileErrors, $fieldMeta] = $this->processFileUploads($fields, $files, $sanitised, $fieldMeta);
@@ -256,12 +272,16 @@ final class SubmissionService
         return $result;
     }
 
-    /**
-     * @param array<string, mixed> $context
-     *
-     * @throws SubmissionException
-     */
-    private function assertTokenValid(array $context): void
+	/**
+	 * Validates CSRF token for form submission. Checks if the token is valid for post
+	 * requests unless token validation is explicitly skipped in the context.
+	 *
+	 * @param   array<string, mixed>  $context  Context array which may contain 'skip_token_validation' flag
+	 *
+	 * @throws SubmissionException If token validation fails
+	 * @since 1.0.0
+	 */
+	private function assertTokenValid(array $context): void
     {
         if (!empty($context['skip_token_validation'])) {
             return;
@@ -272,10 +292,15 @@ final class SubmissionService
         }
     }
 
-    /**
-     * @return array<string, mixed>
-     */
-    private function buildContext(array $context): array
+	/**
+	 * Builds and returns the context array containing IP address and user agent information
+	 *
+	 * @param   array<string, mixed>  $context  Input context array that may contain 'ip_address' and 'user_agent'
+	 *
+	 * @return array<string, mixed> Context array with IP address and user agent information
+	 * @since 1.0.0
+	 */
+	private function buildContext(array $context): array
     {
         $ip = isset($context['ip_address']) && is_string($context['ip_address'])
             ? $context['ip_address']
@@ -291,12 +316,16 @@ final class SubmissionService
         ];
     }
 
-    /**
-     * @param array<string, mixed> $requestData
-     *
-     * @throws SubmissionException
-     */
-    private function verifyHoneypot(int $formId, array $requestData): void
+	/**
+	 * Verifies honeypot field is empty and checks for minimum submission time
+	 *
+	 * @param   array<string, mixed>  $requestData  The submission request data
+	 * @param   int                   $formId       ID of the form being submitted
+	 *
+	 * @throws SubmissionException If spam detection triggered or submission too fast
+	 * @since 1.0.0
+	 */
+	private function verifyHoneypot(int $formId, array $requestData): void
     {
         $honeypotField = self::honeypotFieldName($formId);
         $timestampField = self::timestampFieldName($formId);
@@ -324,14 +353,19 @@ final class SubmissionService
         }
     }
 
-    /**
-     * @param array<string, mixed> $requestData
-     * @param array<string, mixed> $form
-     * @param array<string, mixed> $context
-     *
-     * @return array<string, mixed>
-     */
-    private function filterSubmissionRequest(array $requestData, int $formId, array $form, array $context): array
+	/**
+	 * Filters and modifies the submission request data before validation and processing.
+	 * Allows plugins to modify or enhance the request data through the event system.
+	 *
+	 * @param   array<string, mixed>  $requestData  The raw form submission data
+	 * @param   int                   $formId       ID of the form being submitted
+	 * @param   array<string, mixed>  $form         The form configuration array
+	 * @param   array<string, mixed>  $context      Context data like IP address and user agent
+	 *
+	 * @return array<string, mixed> The filtered request data
+	 * @since 1.0.0
+	 */
+	private function filterSubmissionRequest(array $requestData, int $formId, array $form, array $context): array
     {
         $payload = [
             'data' => &$requestData,
@@ -345,14 +379,20 @@ final class SubmissionService
         return $requestData;
     }
 
-    /**
-     * @param array<string, mixed> $sanitised
-     * @param array<string, mixed> $form
-     * @param array<string, mixed> $context
-     *
-     * @return array<string, mixed>
-     */
-    private function filterSanitisedSubmission(
+	/**
+	 * Filters and transforms the sanitized submission data. Allows plugins to modify the cleaned data
+	 * through the event system before storage and processing.
+	 *
+	 * @param   array<string, mixed>  $sanitised    Sanitized form submission data
+	 * @param   int                   $formId       ID of the form being submitted
+	 * @param   array<string, mixed>  $form         The form configuration array
+	 * @param   array<string, mixed>  $requestData  The original unfiltered request data
+	 * @param   array<string, mixed>  $context      Context data like IP address and user agent
+	 *
+	 * @return array<string, mixed> The filtered sanitized submission data
+	 * @since 1.0.0
+	 */
+	private function filterSanitisedSubmission(
         array $sanitised,
         int $formId,
         array $form,
@@ -372,10 +412,16 @@ final class SubmissionService
         return $sanitised;
     }
 
-    /**
-     * @return array{0: array<string, mixed>, 1: array<string, string>, 2: array<int, array<string, mixed>>}
-     */
-    private function normaliseValidationResult(ValidationResult $result): array
+	/**
+	 * Processes validation result and returns:
+	 * - Sanitized data array containing cleaned form submission values
+	 * - Any validation error messages keyed by field name
+	 * - Field metadata array with additional field-specific information
+	 *
+	 * @return array{0: array<string, mixed>, 1: array<string, string>, 2: array<int, array<string, mixed>>}
+	 * @since 1.0.0
+	 */
+	private function normalizeValidationResult(ValidationResult $result): array
     {
         return [
             $result->getSanitisedData(),
@@ -384,16 +430,23 @@ final class SubmissionService
         ];
     }
 
-    /**
-     * @param array<int, array<string, mixed>> $fields
-     * @param array<string, mixed> $files
-     * @param array<string, mixed> $sanitised
-     * @param array<int, array<string, mixed>> $fieldMeta
-     *
-     * @return array{0: array<string, mixed>, 1: array<string, string>, 2: array<int, array<string, mixed>>}
-     */
-    private function processFileUploads(
-        array $fields,
+	/**
+	 * Processes validation result and returns the processed arrays containing
+	 * sanitized data, validation errors, and field metadata.
+	 *
+	 * @param   array<int, array<string, mixed>>  $fields     Form field definitions
+	 * @param   array<string, mixed>              $files      Uploaded files from request
+	 * @param   array<string, mixed>              $sanitised  Sanitized form values
+	 * @param   array<int, array<string, mixed>>  $fieldMeta  Additional field metadata
+	 *
+	 * @return array{0: array<string, mixed>, 1: array<string, string>, 2: array<int, array<string, mixed>>} Array containing:
+	 *         - [0] Sanitized submission data
+	 *         - [1] Validation error messages keyed by field name
+	 *         - [2] Field metadata with additional field-specific info
+	 * @since 1.0.0
+	 */
+	private function processFileUploads(
+		array $fields,
         array $files,
         array $sanitised,
         array $fieldMeta
@@ -421,13 +474,18 @@ final class SubmissionService
         return [$sanitised, $errors, $fieldMeta];
     }
 
-    /**
-     * @param array<int, array<string, mixed>> $fieldMeta
-     * @param array<string, mixed> $meta
-     *
-     * @return array<int, array<string, mixed>>
-     */
-    private function updateFieldMeta(array $fieldMeta, string $name, string $value, array $meta): array
+	/**
+	 * Updates field metadata with new file upload information and returns the modified array.
+	 *
+	 * @param   array<int, array<string, mixed>>  $fieldMeta  Existing field metadata array
+	 * @param   string                            $name       Field name to update
+	 * @param   string                            $value      Field value to set
+	 * @param   array<string, mixed>              $meta       Additional metadata to merge
+	 * @since 1.0.0
+	 *
+	 * @return array<int, array<string, mixed>> Updated field metadata array
+	 */
+	private function updateFieldMeta(array $fieldMeta, string $name, string $value, array $meta): array
     {
         foreach ($fieldMeta as &$entry) {
             if (($entry['name'] ?? null) === $name) {
@@ -442,14 +500,21 @@ final class SubmissionService
         return $fieldMeta;
     }
 
-    /**
-     * @param array<string, mixed> $options
-     * @param array<string, mixed> $form
-     * @param array<string, mixed> $payload
-     * @param array<string, mixed> $context
-     * @param array<int, array<string, mixed>> $fieldMeta
-     */
-    private function dispatchIntegrations(
+	/**
+	 * Processes and dispatches form submission data to configured third-party integrations.
+	 * Handles both webhook endpoints and custom integration providers, with optional queueing support.
+	 *
+	 * @param   array<string, mixed>              $options    Form configuration options containing integration settings
+	 * @param   array<string, mixed>              $form       Complete form configuration data
+	 * @param   array<string, mixed>              $payload    Sanitized form submission data to be sent
+	 * @param   array<string, mixed>              $context    Contextual data like IP address and user agent
+	 * @param   array<int, array<string, mixed>>  $fieldMeta  Additional metadata for form fields
+	 *
+	 * @return void
+	 * @throws InvalidArgumentException
+	 * @since 1.0.0
+	 */
+	private function dispatchIntegrations(
         array $options,
         array $form,
         array $payload,
@@ -503,7 +568,16 @@ final class SubmissionService
         $this->integrationQueue->process($this->integrationManager);
     }
 
-    private function generateUuid(): string
+	/**
+	 * Generates a UUID v4 (random) string with a specific bit pattern in version and variant fields.
+	 * The UUID follows RFC 4122 format with 32 hex digits separated by hyphens.
+	 *
+	 * @return string A 36 character UUID string in format: xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx
+	 *                where x is any hexadecimal digit and y is one of 8,9,a,b
+	 *
+	 * @since 1.0.0
+	 */
+	private function generateUuid(): string
     {
         $bytes = random_bytes(16);
         $bytes[6] = chr((ord($bytes[6]) & 0x0f) | 0x40);
@@ -513,7 +587,10 @@ final class SubmissionService
     }
 
     /**
+     * Dispatches an event with payload.
+     * 
      * @param array<string, mixed> $payload
+     * @since 1.0.0
      */
     private function dispatchEvent(string $eventName, array $payload): void
     {
@@ -526,9 +603,12 @@ final class SubmissionService
     }
 
     /**
+     * Allow plugins to filter a value.
+     * 
      * @param array<string, mixed> $context
      *
      * @return mixed
+     * @since 1.0.0
      */
     private function filterValue(string $eventName, $value, array $context = [])
     {
@@ -543,6 +623,14 @@ final class SubmissionService
         return $event['value'] ?? $value;
     }
 
+	/**
+	 * Generates a unique field name to be used as a honeypot field for a specific form.
+	 *
+	 * @param   int  $formId  The unique identifier of the form for which the honeypot field name is generated.
+	 *
+	 * @return string The generated honeypot field name.
+	 * @since 1.0.0
+	 */
     public static function honeypotFieldName(int $formId): string
     {
         $secret = self::secret();
@@ -551,6 +639,14 @@ final class SubmissionService
         return substr($hash, 5, 24);
     }
 
+	/**
+	 * Generates a unique field name to be used as a timestamp field for a specific form.
+	 *
+	 * @param   int  $formId  The unique identifier of the form for which the timestamp field name is generated.
+	 *
+	 * @return string The generated timestamp field name.
+	 * @since 1.0.0
+	 */
     public static function timestampFieldName(int $formId): string
     {
         $secret = self::secret();
@@ -559,6 +655,14 @@ final class SubmissionService
         return substr($hash, 11, 24);
     }
 
+	/**
+	 * Returns a secret key used for generating secure field names.
+	 * Uses application secret if available, otherwise falls back to default value.
+	 *
+	 * @return string Secret key used for generating field names
+	 * @throws \Exception
+	 * @since 1.0.0
+	 */
     private static function secret(): string
     {
         /** @var CMSApplicationInterface $app */

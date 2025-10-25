@@ -137,20 +137,6 @@ function mergeIntegrations(integrations = {}) {
                 : [];
         }
 
-        if (Array.isArray(baseConfig.taxonomies)) {
-            merged[key].taxonomies = Array.isArray(incoming.taxonomies)
-                ? incoming.taxonomies.filter(isObject).map((item) => ({
-                      id:
-                          typeof item.id === 'string' && item.id !== ''
-                              ? item.id
-                              : createRowId(),
-                      taxonomy: item.taxonomy || '',
-                      field: item.field || '',
-                      mode: item.mode === 'ids' ? 'ids' : 'names',
-                  }))
-                : [];
-        }
-
         if (Array.isArray(baseConfig.meta)) {
             merged[key].meta = Array.isArray(incoming.meta)
                 ? incoming.meta.filter(isObject).map((item) => ({

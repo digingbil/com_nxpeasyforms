@@ -12,6 +12,7 @@ use Joomla\CMS\MVC\Controller\FormController as JoomlaFormController;
 
 /**
  * Controller for a single form (builder view).
+ * @since 1.0.0
  */
 final class FormController extends JoomlaFormController
 {

@@ -15,6 +15,7 @@ use Joomla\CMS\MVC\Controller\BaseController;
  *
  * Routes bare component URLs to the forms list view so the component loads
  * cleanly when accessed from the Joomla administrator menu.
+ * @since 1.0.0
  */
 final class DisplayController extends BaseController
 {
@@ -22,6 +23,7 @@ final class DisplayController extends BaseController
      * Default view name for the administrator application.
      *
      * @var string
+     * @since 1.0.0
      */
     protected $default_view = 'forms';
 }

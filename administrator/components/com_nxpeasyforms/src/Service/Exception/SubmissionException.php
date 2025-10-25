@@ -10,6 +10,7 @@ namespace Joomla\Component\Nxpeasyforms\Administrator\Service\Exception;
 
 /**
  * Domain exception for submission handling failures.
+ * @since 1.0.0
  */
 class SubmissionException extends \RuntimeException
 {
@@ -17,11 +18,14 @@ class SubmissionException extends \RuntimeException
 
     /**
      * @var array<string, mixed>
+     * @since 1.0.0
      */
     private array $errors;
 
     /**
      * @param array<string, mixed> $errors
+     *
+     * @since 1.0.0
      */
     public function __construct(string $message, int $status = 400, array $errors = [])
     {
@@ -38,6 +42,7 @@ class SubmissionException extends \RuntimeException
 
     /**
      * @return array<string, mixed>
+     * @since 1.0.0
      */
     public function getErrors(): array
     {

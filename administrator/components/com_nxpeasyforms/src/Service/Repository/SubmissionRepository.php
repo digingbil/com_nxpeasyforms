@@ -23,7 +23,9 @@ use const JSON_UNESCAPED_UNICODE;
 // phpcs:enable PSR1.Files.SideEffects
 
 /**
- * Data access for form submissions using Joomla database APIs.
+ * Repository class handling data access and management for form submissions using Joomla database APIs.
+ * Provides CRUD operations and querying capabilities for form submission records.
+ * @since 1.0.0
  */
 class SubmissionRepository
 {
@@ -35,6 +37,8 @@ class SubmissionRepository
     }
 
     /**
+     * Creates a new submission record in the database.
+     *
      * @param array<string, mixed> $payload
      * @param array<string, mixed> $meta
      */
@@ -60,6 +64,14 @@ class SubmissionRepository
         return (int) $this->db->insertid();
     }
 
+	/**
+	 * Counts the number of recent submissions for a form within a specified time range.
+	 * @param int $formId
+	 * @param string $ipAddress
+	 * @param int $seconds
+	 * @return int
+	 * @since 1.0.0
+	 */
     public function countRecent(int $formId, string $ipAddress, int $seconds): int
     {
         $threshold = $this->now($seconds * -1);
@@ -77,6 +89,12 @@ class SubmissionRepository
         return (int) $this->db->setQuery($query)->loadResult();
     }
 
+	/**
+	 * Counts the number of submissions for a form.
+	 * @param int $formId
+	 * @return int
+	 * @since 1.0.0
+	 */
     public function countForForm(int $formId): int
     {
         $query = $this->db->getQuery(true)
@@ -89,7 +107,10 @@ class SubmissionRepository
     }
 
     /**
+     * Get all submissions for a form.
+     *
      * @return array<int, array<string, mixed>>
+     * @since 1.0.0
      */
     public function allForForm(int $formId): array
     {
@@ -138,6 +159,14 @@ class SubmissionRepository
         }, $rows);
     }
 
+	/**
+	 * Deletes all submissions associated with a specific form ID.
+	 *
+	 * @param   int  $formId  The ID of the form whose submissions will be deleted.
+	 *
+	 * @return int The number of rows affected by the delete operation.
+	 * @since 1.0.0
+	 */
     public function deleteByFormId(int $formId): int
     {
         $query = $this->db->getQuery(true)
@@ -150,6 +179,14 @@ class SubmissionRepository
         return (int) $this->db->getAffectedRows();
     }
 
+	/**
+	 * Gets the current UTC time as a SQL-formatted string, with an optional offset in seconds.
+	 *
+	 * @param   int  $offsetSeconds  Number of seconds to offset the current time. Defaults to 0 for current time.
+	 *
+	 * @return string SQL-formatted date and time string.
+	 * @since 1.0.0
+	 */
     private function now(int $offsetSeconds = 0): string
     {
         $date = new Date('now', 'UTC');

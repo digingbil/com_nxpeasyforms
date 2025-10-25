@@ -26,17 +26,21 @@ use function strip_tags;
 
 /**
  * Dispatches Joomla article creation for form submissions.
+ * @since 1.0.0
  */
 final class JoomlaArticleDispatcher implements IntegrationDispatcherInterface
 {
-    /**
-     * @param array<string,mixed>         $settings
-     * @param array<string,mixed>         $form
-     * @param array<string,mixed>         $payload
-     * @param array<string,mixed>         $context
-     * @param array<int,array<string,mixed>> $fieldMeta
-     */
-    public function dispatch(array $settings, array $form, array $payload, array $context, array $fieldMeta): void
+	/**
+	 * Dispatches a payload to create a Joomla article with the given settings.
+	 *
+	 * @param   array<string,mixed>             $settings   Article creation settings and field mappings
+	 * @param   array<string,mixed>             $form       Form configuration array with id and title
+	 * @param   array<string,mixed>             $payload    Form submission payload data
+	 * @param   array<string,mixed>             $context    Contextual information for article creation
+	 * @param   array<int,array<string,mixed>>  $fieldMeta  Field metadata information
+	 * @since 1.0.0
+	 */
+	public function dispatch(array $settings, array $form, array $payload, array $context, array $fieldMeta): void
     {
         if (empty($settings['enabled'])) {
             return;
@@ -73,12 +77,13 @@ final class JoomlaArticleDispatcher implements IntegrationDispatcherInterface
     }
 
     /**
-     * Normalises raw settings into a Joomla article payload.
+     * Normalizes raw settings into a Joomla article payload.
      *
      * @param array<string,mixed> $settings
      * @param array<string,mixed> $payload
      *
      * @return array<string,mixed>
+     * @since 1.0.0
      */
     private function buildArticleData(array $settings, array $payload): array
     {
@@ -125,7 +130,13 @@ final class JoomlaArticleDispatcher implements IntegrationDispatcherInterface
 
         return $data;
     }
-
+	
+	/**
+	 * Resolves the category ID for a Joomla article.
+	 * @param array<string,mixed> $settings
+	 * @return int
+	 * @since 1.0.0
+	 */
     private function resolveCategoryId(array $settings): int
     {
         $categoryId = 0;
@@ -144,7 +155,13 @@ final class JoomlaArticleDispatcher implements IntegrationDispatcherInterface
         // Fallback to Uncategorised (ID 2 in core installs) if still unset.
         return $categoryId > 0 ? $categoryId : 2;
     }
-
+	
+	/**
+	 * Maps a status string to a Joomla article state.
+	 * @param string $status
+	 * @return int
+	 * @since 1.0.0
+	 */
     private function mapStatus(string $status): int
     {
         return match ($status) {
@@ -154,7 +171,13 @@ final class JoomlaArticleDispatcher implements IntegrationDispatcherInterface
             default => 0,
         };
     }
-
+	
+	/**
+	 * Resolves the author ID for a Joomla article.
+	 * @param array<string,mixed> $settings
+	 * @return int
+	 * @since 1.0.0
+	 */
     private function resolveAuthorId(array $settings): int
     {
         $mode = (string) ($settings['author_mode'] ?? 'current_user');
@@ -165,7 +188,14 @@ final class JoomlaArticleDispatcher implements IntegrationDispatcherInterface
             default => $this->getApplication()->getIdentity()->id ?? 0,
         };
     }
-
+	
+	/**
+	 * Resolves tags from a form submission payload.
+	 * @param array<string,mixed> $payload
+	 * @param string $field
+	 * @return array<int,string>
+	 * @since 1.0.0
+	 */
     private function resolveTags(array $payload, string $field): array
     {
         if ($field === '' || !isset($payload[$field])) {
@@ -207,6 +237,16 @@ final class JoomlaArticleDispatcher implements IntegrationDispatcherInterface
         return array_values($tags);
     }
 
+	/**
+	 * Retrieves a string representation of a field's value from the payload.
+	 *
+	 * @param   array<string,mixed>  $payload    The data payload containing field values
+	 * @param   string               $field      The field name to be retrieved from the payload
+	 * @param   bool                 $allowHtml  Whether to allow HTML content in the value
+	 *
+	 * @return string                          The string representation of the field's value, sanitized if necessary
+	 * @since 1.0.0
+	 */
     private function stringValue(array $payload, string $field, bool $allowHtml = false): string
     {
         if ($field === '' || !isset($payload[$field])) {
@@ -232,6 +272,13 @@ final class JoomlaArticleDispatcher implements IntegrationDispatcherInterface
         return strip_tags($string);
     }
 
+	/**
+	 * Retrieves an instance of the com_content ArticleModel.
+	 *
+	 * @return ArticleModel Returns the ArticleModel instance for managing Joomla articles.
+	 * @throws \Exception
+	 * @since 1.0.0
+	 */
     private function getArticleModel(): ArticleModel
     {
         /** @var CMSApplicationInterface $app */
@@ -246,7 +293,14 @@ final class JoomlaArticleDispatcher implements IntegrationDispatcherInterface
         return $model;
     }
 
-    private function getApplication(): CMSApplicationInterface
+	/**
+	 * Gets the Joomla application instance.
+	 *
+	 * @return CMSApplicationInterface Returns the application object
+	 * @throws \Exception If application cannot be retrieved
+	 * @since 1.0.0
+	 */
+	private function getApplication(): CMSApplicationInterface
     {
         return Factory::getApplication();
     }

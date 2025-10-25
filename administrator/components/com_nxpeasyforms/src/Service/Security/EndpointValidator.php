@@ -25,7 +25,10 @@ use function trim;
 // phpcs:enable PSR1.Files.SideEffects
 
 /**
- * Validates remote webhook endpoints to prevent SSRF.
+ * Validates remote webhook endpoints to prevent Server-Side Request Forgery (SSRF) attacks.
+ * Ensures endpoints are public HTTP/HTTPS URLs and blocks requests to private networks,
+ * localhost, and internal domains to maintain security.
+ * @since 1.0.0
  */
 final class EndpointValidator
 {
@@ -81,7 +84,14 @@ final class EndpointValidator
 
         return $validated;
     }
-
+	
+	/**
+	 * Checks if an IP address is considered public.
+	 * 
+	 * @param string $ip
+	 * @return bool
+	 * @since 1.0.0
+	 */
     private function isPublicIp(string $ip): bool
     {
         if (!filter_var($ip, FILTER_VALIDATE_IP)) {
@@ -112,10 +122,17 @@ final class EndpointValidator
         return true;
     }
 
-    /**
-     * @return array<int, string>
-     */
-    private function resolveHostIps(string $host): array
+	/**
+	 * Resolves IP addresses for a given host using DNS queries.
+	 * Returns an array of IPv4 and IPv6 addresses for the host.
+	 * Will attempt to use dns_get_record() with fallback to gethostbynamel().
+	 *
+	 * @param   string  $host  The hostname to resolve (e.g., 'example.com')
+	 *
+	 * @return array<int, string> Array of resolved IP addresses
+	 * @since 1.0.0
+	 */
+	private function resolveHostIps(string $host): array
     {
         $ips = [];
 

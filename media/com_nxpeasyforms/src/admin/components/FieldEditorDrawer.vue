@@ -338,9 +338,9 @@ const updateOptions = () => {
     right: -360px;
     width: 320px;
     height: calc(100% - 32px);
-    background: #fff;
-    border-left: 1px solid #dcdcde;
-    box-shadow: -4px 0 24px rgba(0, 0, 0, 0.1);
+    background: var(--nxp-panel-bg);
+    border-left: 1px solid var(--nxp-surface-border);
+    box-shadow: -4px 0 24px var(--nxp-drawer-shadow);
     transition: right 0.25s ease;
     z-index: 1000;
 }
@@ -373,7 +373,7 @@ const updateOptions = () => {
     align-items: center;
     justify-content: space-between;
     padding: 16px;
-    border-bottom: 1px solid #dcdcde;
+    border-bottom: 1px solid var(--nxp-surface-border);
 }
 
 .nxp-drawer__header h3 {
@@ -400,18 +400,49 @@ const updateOptions = () => {
 }
 
 .nxp-drawer__hint {
-    color: #6c757d;
+    color: var(--nxp-muted-color);
     font-size: 0.92rem;
 }
 
+
 .nxp-drawer__hint--error {
-    color: #b32d2e;
+    color: var(--bs-danger, #b32d2e);
 }
 
-.nxp-label-with-help { display: inline-flex; align-items: center; gap: 6px; }
-.nxp-help { width: 16px; height: 16px; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; background: #f0f0f1; color: #50575e; font-size: 12px; line-height: 1; cursor: help; user-select: none; }
-.nxp-help-icon-wrap { display: inline-flex; align-items: center; }
-.nxp-help-icon { width: 18px; height: 18px; opacity: 0.9; cursor: help; }
+.nxp-label-with-help {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.nxp-help {
+    width: 16px;
+    height: 16px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: var(--nxp-help-bg);
+    color: var(--nxp-help-color);
+    font-size: 12px;
+    line-height: 1;
+    cursor: help;
+    user-select: none;
+}
+
+.nxp-help-icon-wrap {
+    display: inline-flex;
+    align-items: center;
+}
+
+.nxp-help-icon {
+    width: 18px;
+    height: 18px;
+    opacity: 0.9;
+    cursor: help;
+    filter: var(--nxp-icon-filter);
+    transition: filter 0.2s ease;
+}
 
 
 .nxp-control__switch {

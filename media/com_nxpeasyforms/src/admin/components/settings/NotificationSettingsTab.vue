@@ -51,7 +51,7 @@
                 <small class="nxp-setting__hint">
                     {{
                         __(
-                            "Use an address on the same domain as your site (for example, noreply@yourdomain.com) and publish SPF and DKIM DNS records so messages avoid spam filters. Especially important if using the default wp_mail method.",
+                            "Use an address on the same domain as your site (for example, noreply@yourdomain.com) and publish SPF and DKIM DNS records so messages avoid spam filters. Especially important if you rely on the default Joomla mailer.",
                             "nxp-easy-forms",
                         )
                     }}

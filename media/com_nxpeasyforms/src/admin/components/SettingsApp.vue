@@ -164,7 +164,7 @@
 
         <div class="card" style="max-width: 860px; margin-top: 16px;">
             <div style="display:flex; align-items:center; justify-content: space-between; gap: 12px;">
-                <h2 style="margin: 0;">{{ __("Diagnostics (wp_mail only)") }}</h2>
+                <h2 style="margin: 0;">{{ __("Mailer diagnostics") }}</h2>
                 <button type="button" class="button" @click="loadDiagnostics">{{ __("View diagnostics") }}</button>
             </div>
             <div v-if="diag.loaded" style="margin-top: 12px;">
@@ -175,27 +175,27 @@
 
                 <div class="nxp-diagnostic-block">
                     <h3 style="margin-top: 10px;">{{ __("Joomla mail") }}</h3>
-                    <div v-if="diag.wpMail.lastError" class="notice notice-error" style="padding:.5rem .75rem;">
+                    <div v-if="diag.mailer.lastError" class="notice notice-error" style="padding:.5rem .75rem;">
                         <strong>{{ __("Last error:") }}</strong>
-                        <div>{{ diag.wpMail.lastError.message }}</div>
-                        <small v-if="diag.wpMail.lastError.recorded_at" style="display:block; color:#6c757d;">{{ __("Recorded at:") }} {{ new Date(diag.wpMail.lastError.recorded_at*1000).toLocaleString() }}</small>
-                        <details v-if="diag.wpMail.lastError.details" style="margin-top:6px;">
+                        <div>{{ diag.mailer.lastError.message }}</div>
+                        <small v-if="diag.mailer.lastError.recorded_at" style="display:block; color:#6c757d;">{{ __("Recorded at:") }} {{ new Date(diag.mailer.lastError.recorded_at*1000).toLocaleString() }}</small>
+                        <details v-if="diag.mailer.lastError.details" style="margin-top:6px;">
                             <summary>{{ __("Details") }}</summary>
-                            <pre style="white-space: pre-wrap;">{{ JSON.stringify(diag.wpMail.lastError.details, null, 2) }}</pre>
+                            <pre style="white-space: pre-wrap;">{{ JSON.stringify(diag.mailer.lastError.details, null, 2) }}</pre>
                         </details>
                     </div>
                     <div v-else class="notice notice-success" style="padding:.5rem .75rem;">
-                        {{ __("No wp_mail errors recorded recently.") }}
+                        {{ __("No mailer errors recorded recently.") }}
                     </div>
 
-                    <div v-if="diag.wpMail.lastSuccess" class="notice" style="padding:.5rem .75rem;">
+                    <div v-if="diag.mailer.lastSuccess" class="notice" style="padding:.5rem .75rem;">
                         <strong>{{ __("Last success:") }}</strong>
                         <div>
-                            <small>{{ __("To:") }} {{ diag.wpMail.lastSuccess.to }}</small>
+                            <small>{{ __("To:") }} {{ diag.mailer.lastSuccess.to }}</small>
                             <br />
-                            <small>{{ __("Subject:") }} {{ diag.wpMail.lastSuccess.subject }}</small>
+                            <small>{{ __("Subject:") }} {{ diag.mailer.lastSuccess.subject }}</small>
                             <br />
-                            <small v-if="diag.wpMail.lastSuccess.recorded_at">{{ __("Recorded at:") }} {{ new Date(diag.wpMail.lastSuccess.recorded_at*1000).toLocaleString() }}</small>
+                            <small v-if="diag.mailer.lastSuccess.recorded_at">{{ __("Recorded at:") }} {{ new Date(diag.mailer.lastSuccess.recorded_at*1000).toLocaleString() }}</small>
                         </div>
                     </div>
                 </div>
@@ -234,7 +234,7 @@ const message = ref("");
 const messageType = ref("success");
 const testRecipient = ref("");
 
-const diag = reactive({ loaded: false, warningAt: null, wpMail: { lastError: null, lastSuccess: null } });
+const diag = reactive({ loaded: false, warningAt: null, mailer: { lastError: null, lastSuccess: null } });
 
 const fromHint = __(
     "Use an address on the same domain as your site and publish SPF/DKIM DNS records to improve deliverability.",
@@ -333,10 +333,10 @@ async function loadDiagnostics() {
         if (res.ok && data.success) {
             Object.assign(diag, { loaded: true, ...data.diagnostics });
         } else {
-            Object.assign(diag, { loaded: true, warningAt: null, wpMail: { lastError: null, lastSuccess: null } });
+            Object.assign(diag, { loaded: true, warningAt: null, mailer: { lastError: null, lastSuccess: null } });
         }
     } catch (e) {
-        Object.assign(diag, { loaded: true, warningAt: null, wpMail: { lastError: null, lastSuccess: null } });
+        Object.assign(diag, { loaded: true, warningAt: null, mailer: { lastError: null, lastSuccess: null } });
     }
 }
 </script>

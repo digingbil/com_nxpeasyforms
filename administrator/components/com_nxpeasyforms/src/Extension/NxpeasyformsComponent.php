@@ -12,6 +12,7 @@ use Joomla\CMS\Extension\MVCComponent;
 
 /**
  * Component entry point for the administrator application.
+ * @since 1.0.0
  */
 final class NxpeasyformsComponent extends MVCComponent
 {

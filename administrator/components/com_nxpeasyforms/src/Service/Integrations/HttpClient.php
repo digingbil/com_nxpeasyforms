@@ -22,6 +22,7 @@ use const JSON_THROW_ON_ERROR;
 
 /**
  * Thin wrapper around Joomla HTTP client for integration requests.
+ * @since 1.0.0
  */
 final class HttpClient
 {
@@ -32,11 +33,22 @@ final class HttpClient
         $this->http = $http ?? HttpFactory::getHttp();
     }
 
-    /**
-     * @param array<string, string> $headers
-     * @param array<string, mixed>|string $body
-     */
-    public function request(string $method, string $url, $body = '', array $headers = [], int $timeout = 10): Response
+
+	/**
+	 * Sends an HTTP request to the specified URL with the given parameters.
+	 *
+	 * @param   string  $method   The HTTP method to use (GET, POST, PUT, DELETE)
+	 * @param   string  $url      The URL to send the request to
+	 * @param   mixed   $body     The request body data. If array, it will be JSON encoded
+	 * @param   array   $headers  The HTTP headers to send with the request
+	 * @param   int     $timeout  The timeout period in seconds
+	 *
+	 * @return  Response     The HTTP response object
+	 *
+	 * @throws  \JsonException  When JSON encoding of body fails
+	 * @since   1.0.0
+	 */
+	public function request(string $method, string $url, mixed $body = '', array $headers = [], int $timeout = 10): Response
     {
         $method = strtoupper($method);
 
@@ -68,22 +80,42 @@ final class HttpClient
         return $this->http->post($url, $body, $headers, $timeout);
     }
 
-    /**
-     * @param array<string, mixed>|string $body
-     */
-    public function post(string $url, $body, array $headers = [], int $timeout = 10): Response
+	/**
+	 * Sends a POST request to the specified URL with a string or array body.
+	 * Proxy method for request()
+	 *
+	 * @param   string                       $url      The URL to send the request to
+	 * @param   string|array<string, mixed>  $body     The request body
+	 * @param   array                        $headers  The HTTP headers to send with the request
+	 * @param   int                          $timeout  The timeout period in seconds
+	 *
+	 * @return Response The HTTP response object
+	 * @throws \JsonException When JSON encoding of array body fails
+	 * @since 1.0.0
+	 */
+	public function post(string $url, array|string $body, array $headers = [], int $timeout = 10): Response
     {
         return $this->request('POST', $url, $body, $headers, $timeout);
     }
 
-    /**
-     * @param array<string, mixed> $body
-     */
-    public function sendJson(
-        string $url,
-        array $body,
-        string $method = 'POST',
-        array $headers = [],
+	/**
+	 * Sends request with JSON content type and array body.
+	 *
+	 * @param   string                $url      The URL to send the request to
+	 * @param   array<string, mixed>  $body     The request body that will be JSON encoded
+	 * @param   string                $method   The HTTP method to use (default: POST)
+	 * @param   array                 $headers  Additional HTTP headers to send with the request
+	 * @param   int                   $timeout  The timeout period in seconds
+	 *
+	 * @return  Response              The HTTP response object
+	 * @throws  \JsonException       When JSON encoding of body fails
+	 * @since   1.0.0
+	 */
+	public function sendJson(
+		string $url,
+		array  $body,
+		string $method = 'POST',
+		array $headers = [],
         int $timeout = 10
     ): Response {
         $headers['Content-Type'] = 'application/json';
@@ -91,13 +123,23 @@ final class HttpClient
         return $this->request($method, $url, $body, $headers, $timeout);
     }
 
-    /**
-     * @param array<string, mixed> $fields
-     */
-    public function sendForm(
-        string $url,
-        array $fields,
-        string $method = 'POST',
+	/**
+	 * Sends a form data request with urlencoded content type.
+	 *
+	 * @param   string                $url      The URL to send the request to
+	 * @param   array<string, mixed>  $fields   The form fields to be encoded and sent
+	 * @param   string                $method   The HTTP method to use (default: POST)
+	 * @param   array                 $headers  Additional HTTP headers to send with the request
+	 * @param   int                   $timeout  The timeout period in seconds
+	 *
+	 * @return  Response              The HTTP response object
+	 * @since   1.0.0
+	 * @throws  \JsonException
+	 */
+	public function sendForm(
+		string $url,
+		array  $fields,
+		string $method = 'POST',
         array $headers = [],
         int $timeout = 10
     ): Response {

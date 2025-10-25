@@ -13,6 +13,7 @@ use Joomla\CMS\MVC\Model\BaseDatabaseModel;
 
 /**
  * Controller for the forms list view.
+ * @since 1.0.0
  */
 final class FormsController extends AdminController
 {
@@ -23,7 +24,17 @@ final class FormsController extends AdminController
     protected $view_item = 'form';
 
     /**
-     * {@inheritDoc}
+     * Get and return a model instance.
+     *
+     * The method returns a named model instance from the MVC factory. Callers
+     * can supply the model name, class prefix and configuration.
+     *
+     * @param string $name   The model name. Defaults to 'Form'.
+     * @param string $prefix The class prefix for the model.
+     * @param array<string,mixed> $config Configuration options for model creation.
+     *
+     * @return BaseDatabaseModel
+     * @since 1.0.0
      */
     public function getModel($name = 'Form', $prefix = 'Joomla\\Component\\Nxpeasyforms\\Administrator\\Model\\', $config = ['ignore_request' => true]): BaseDatabaseModel
     {

@@ -32,6 +32,14 @@ use const FILTER_VALIDATE_EMAIL;
 \defined('_JEXEC') or die;
 // phpcs:enable PSR1.Files.SideEffects
 
+/**
+ * Email service for managing form submission notifications.
+ *
+ * Handles sending email notifications for form submissions using configurable
+ * email delivery providers (Joomla native, SendGrid, Mailgun, SMTP, etc.).
+ *
+ * @since 1.0.0
+ */
 final class EmailService
 {
     private MailerInterface $mailer;
@@ -40,6 +48,15 @@ final class EmailService
 
     private HttpClient $httpClient;
 
+    /**
+     * Constructor.
+     *
+     * @param \Joomla\CMS\Mail\MailerInterface|null $mailer Optional mailer instance.
+     * @param \Joomla\Registry\Registry|null $componentParams Optional component params registry.
+     * @param HttpClient|null $httpClient Optional HTTP client for external API calls.
+     *
+     * @since 1.0.0
+     */
     public function __construct(
         ?MailerInterface $mailer = null,
         ?Registry $componentParams = null,
@@ -56,11 +73,17 @@ final class EmailService
     }
 
     /**
-     * @param array<string, mixed> $form
-     * @param array<string, mixed> $submission
-     * @param array<string, mixed> $context
+     * Dispatch a submission for email notification.
      *
-     * @return array{sent: bool, message: string, error?: string|null}
+     * Processes the given form submission and sends email notifications to configured
+     * recipients using the selected email delivery provider.
+     *
+     * @param array<string,mixed> $form The form definition array with config/options.
+     * @param array<string,mixed> $submission The submission data payload.
+     * @param array<string,mixed> $context Additional context (field metadata, etc).
+     *
+     * @return array{sent:bool,message:string,error?:string|null} Result with sent flag and message.
+     * @since 1.0.0
      */
     public function dispatchSubmission(array $form, array $submission, array $context = []): array
     {
@@ -114,8 +137,11 @@ final class EmailService
     }
 
     /**
+     * Merges the given options with default values.
+     *
      * @param array<string, mixed> $options
      * @return array<string, mixed>
+     * @since 1.0.0
      */
     private function mergeWithDefaults(array $options): array
     {
@@ -194,7 +220,10 @@ final class EmailService
     }
 
     /**
+     * Resolves email recipient addresses from the given array of addresses.
+     *
      * @return array<int, string>
+     * @since 1.0.0
      */
     private function resolveRecipients(string $recipientList): array
     {
@@ -209,8 +238,11 @@ final class EmailService
     }
 
     /**
+     * Resolves the email subject based on the form configuration and title.
+     *
      * @param array<string, mixed> $config
      * @param array<string, mixed> $form
+     * @since 1.0.0
      */
     private function resolveSubject(array $config, array $form): string
     {
@@ -225,9 +257,12 @@ final class EmailService
     }
 
     /**
+     * Let's build the email body.
+     * 
      * @param array<int, array<string, mixed>> $fieldMeta
      * @param array<string, mixed> $submission
      * @param array<string, mixed> $context
+     * @since 1.0.0
      */
     private function buildHtmlBody(array $form, array $fieldMeta, array $submission, array $context): string
     {
@@ -294,9 +329,12 @@ final class EmailService
     }
 
     /**
+     * Now let's build the plain text body.'
+     * 
      * @param array<int, array<string, mixed>> $fieldMeta
      * @param array<string, mixed> $submission
      * @param array<string, mixed> $context
+     * @since 1.0.0
      */
     private function buildPlainTextBody(
         array $form,
@@ -333,8 +371,11 @@ final class EmailService
     }
 
     /**
+     * We need to resolve the Reply-To address.
+     * 
      * @param array<int, array<string, mixed>> $fieldMeta
      * @param array<string, mixed> $context
+     * @since 1.0.0
      */
     private function resolveReplyTo(array $config, array $fieldMeta, array $context): ?string
     {
@@ -357,10 +398,16 @@ final class EmailService
         return null;
     }
 
-    /**
-     * @param mixed $value
-     */
-    private function formatValue($value): string
+	/**
+	 * Formats a given value for email display.
+	 * Converts arrays to comma-separated strings and handles empty values.
+	 *
+	 * @param   mixed  $value  The value to format
+	 *
+	 * @return string The formatted value as HTML string
+	 * @since 1.0.0
+	 */
+	private function formatValue($value): string
     {
         if (is_array($value)) {
             $value = implode(', ', array_map('strval', $value));
@@ -379,12 +426,22 @@ final class EmailService
         return nl2br(htmlspecialchars($value, ENT_QUOTES, 'UTF-8'));
     }
 
-    /**
-     * @param array<string, mixed> $config
-     * @param array<string, mixed> $message
-     * @return array{sent: bool, error?: string}
-     */
-    private function deliver(array $config, array $message, ?string $replyTo): array
+	/**
+	 * Deliver the email message using the configured provider.
+	 *
+	 * This method handles the actual email delivery using one of the supported providers:
+	 * - Joomla's built-in mailer (default)
+	 * - SendGrid API integration
+	 * - SMTP2GO API integration
+	 *
+	 * @param   array<string, mixed>  $config   The email configuration options
+	 * @param   array<string, mixed>  $message  The email message data including recipients, subject, body etc
+	 * @param   string|null           $replyTo  Optional reply-to email address
+	 *
+	 * @return array{sent: bool, error?: string} Delivery result with sent status and optional error message
+	 * @since 1.0.0
+	 */
+	private function deliver(array $config, array $message, ?string $replyTo): array
     {
         $delivery = isset($config['email_delivery']) && is_array($config['email_delivery'])
             ? $config['email_delivery']
@@ -400,8 +457,11 @@ final class EmailService
     }
 
     /**
+     * Sends an email via the Joomla mailer.
+     *
      * @param array<string, mixed> $message
      * @return array{sent: bool, error?: string}
+     * @since 1.0.0
      */
     private function sendViaMailer(array $message, ?string $replyTo): array
     {
@@ -442,9 +502,12 @@ final class EmailService
     }
 
     /**
+     * Sends an email via SendGrid's API.'
+     *
      * @param array<string, mixed> $settings
      * @param array<string, mixed> $message
      * @return array{sent: bool, error?: string}
+     * @since 1.0.0
      */
     private function sendViaSendgrid(array $settings, array $message, ?string $replyTo): array
     {
@@ -512,6 +575,7 @@ final class EmailService
      * @param array<string, mixed> $settings
      * @param array<string, mixed> $message
      * @return array{sent: bool, error?: string}
+     * @since 1.0.0
      */
     private function sendViaSmtp2Go(array $settings, array $message, ?string $replyTo): array
     {
@@ -564,6 +628,13 @@ final class EmailService
         ];
     }
 
+	/**
+	 * Resolves a secret value by decrypting it if necessary.
+	 *
+	 * @param string|null $value The secret value to resolve
+	 * @return string The decrypted or original value
+	 * @since 1.0.0
+	 */
     private function resolveSecretValue(?string $value): string
     {
         if ($value === null || $value === '') {

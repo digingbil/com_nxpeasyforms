@@ -17,6 +17,10 @@ use function array_replace_recursive;
 use function is_array;
 use function is_string;
 
+// phpcs:disable PSR1.Files.SideEffects
+\defined('_JEXEC') or die;
+// phpcs:enable PSR1.Files.SideEffects
+
 /**
  * API controller exposing CRUD endpoints for form definitions.
  */

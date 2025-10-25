@@ -32,7 +32,7 @@ export default defineConfig({
         chunkFileNames: 'js/[name]-[hash].js',
         assetFileNames: ({ name }) => {
           if (!name) {
-            return 'assets/[name]-[hash][extname]';
+            return 'assets/[name][extname]';
           }
 
           const ext = path.extname(name);
@@ -41,7 +41,7 @@ export default defineConfig({
             const base = ext ? path.basename(name, ext) : path.basename(name);
             const safeExt = ext || '.css';
 
-            return `css/${base}-[hash]${safeExt}`;
+            return `css/${base}${safeExt}`;
           }
 
           const base = ext ? path.basename(name, ext) : path.basename(name);

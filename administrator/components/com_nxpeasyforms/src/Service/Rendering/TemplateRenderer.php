@@ -26,16 +26,23 @@ use const JSON_UNESCAPED_UNICODE;
 // phpcs:enable PSR1.Files.SideEffects
 
 /**
- * Renders template placeholders with submission values.
+ * TemplateRenderer handles the dynamic replacement of placeholders in templates with form submission values.
+ * Supports both predefined placeholders (form_title, form_id, submission_json) and field-specific placeholders.
+ * Field placeholders use the syntax {{field:field_name}} and are replaced with formatted field values.
+ * @since 1.0.0
  */
 final class TemplateRenderer
 {
-    /**
-     * @param array<string, mixed> $form
-     * @param array<string, mixed> $payload
-     * @param array<int, array<string, mixed>> $fieldMeta
-     */
-    public function render(
+	/**
+	 * Renders a template by replacing placeholders with corresponding values from form data.
+	 *
+	 * @param   string                            $template   The template string containing placeholders to be replaced
+	 * @param   array<string, mixed>              $form       Array containing form details like 'id' and 'title'
+	 * @param   array<string, mixed>              $payload    Array containing submitted field values
+	 * @param   array<int, array<string, mixed>>  $fieldMeta  Array containing metadata for form fields
+	 * @since 1.0.0
+	 */
+	public function render(
         string $template,
         array $form,
         array $payload,
@@ -64,7 +71,7 @@ final class TemplateRenderer
                 $fieldName = $matches[1];
                 $value = $payload[$fieldName] ?? '';
 
-                return $this->normaliseValue($value);
+                return $this->normalizeValue($value);
             },
             $rendered
         );
@@ -73,9 +80,12 @@ final class TemplateRenderer
     }
 
     /**
+     * Normalizes a value for display in a template.
+     *
      * @param mixed $value
+     * @since 1.0.0
      */
-    public function normaliseValue($value): string
+    public function normalizeValue(mixed $value): string
     {
         if (is_array($value)) {
             $parts = [];

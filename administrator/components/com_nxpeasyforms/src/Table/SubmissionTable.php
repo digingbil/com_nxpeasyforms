@@ -15,6 +15,11 @@ use Joomla\Utilities\ArrayHelper;
 
 /**
  * Table class for NXP Easy Forms submissions.
+ *
+ * Manages persistence and retrieval of form submission records, including
+ * JSON payload handling and validation.
+ *
+ * @since 1.0.0
  */
 final class SubmissionTable extends Table
 {
@@ -37,14 +42,29 @@ final class SubmissionTable extends Table
 
     public $created_at = null;
 
+    /**
+     * Constructor.
+     *
+     * @param \Joomla\Database\DatabaseDriver $db The database driver instance.
+     *
+     * @since 1.0.0
+     */
     public function __construct(DatabaseDriver $db)
     {
         parent::__construct('#__nxpeasyforms_submissions', 'id', $db);
     }
 
     /**
-     * @param array<string,mixed>|object $src
-     * @param array<int,string>|string $ignore
+     * Bind data to the table object.
+     *
+     * Converts incoming data, encoding arrays as JSON for the data field
+     * and normalizing related fields.
+     *
+     * @param array<string,mixed>|object $src Source data to bind.
+     * @param array<int,string>|string $ignore Fields to ignore during binding.
+     *
+     * @return bool
+     * @since 1.0.0
      */
     public function bind($src, $ignore = []): bool
     {
@@ -66,7 +86,15 @@ final class SubmissionTable extends Table
     }
 
     /**
-     * {@inheritDoc}
+     * Validate and prepare table data before storage.
+     *
+     * Ensures the form_id and submission_uuid are set, normalizes JSON strings
+     * for the data field, and validates the status.
+     *
+     * @return bool
+     *
+     * @throws \InvalidArgumentException When required data is missing.
+     * @since 1.0.0
      */
     public function check()
     {
@@ -78,7 +106,7 @@ final class SubmissionTable extends Table
             throw new \InvalidArgumentException('COM_NXPEASYFORMS_ERROR_SUBMISSION_UUID_REQUIRED');
         }
 
-        $this->data = $this->normaliseJsonString($this->data);
+        $this->data = $this->normalizeJsonString($this->data);
 
         $this->status = $this->status !== '' ? $this->status : 'new';
 
@@ -86,11 +114,16 @@ final class SubmissionTable extends Table
     }
 
     /**
-     * Overridden to set created timestamp when inserting.
+     * Store the table to the database.
+     *
+     * Overridden to set the created_at timestamp on initial insert.
      *
      * @param bool $updateNulls Whether to update null values.
      *
-     * @throws DatabaseExceptionInterface
+     * @return bool
+     *
+     * @throws \Joomla\Database\Exception\DatabaseExceptionInterface
+     * @since 1.0.0
      */
     public function store($updateNulls = false)
     {
@@ -102,7 +135,14 @@ final class SubmissionTable extends Table
     }
 
     /**
-     * @param array<mixed> $payload
+     * Encode an array payload as JSON.
+     *
+     * @param array<mixed> $payload The array to encode.
+     *
+     * @return string JSON encoded payload.
+     *
+     * @throws \InvalidArgumentException When JSON encoding fails.
+     * @since 1.0.0
      */
     private function encodeJson(array $payload): string
     {
@@ -120,7 +160,17 @@ final class SubmissionTable extends Table
         }
     }
 
-    private function normaliseJsonString(?string $value): string
+    /**
+     * Normalize and validate a JSON string.
+     *
+     * @param string|null $value The JSON string to normalize.
+     *
+     * @return string Normalized JSON string or fallback object.
+     *
+     * @throws \InvalidArgumentException When JSON is invalid.
+     * @since 1.0.0
+     */
+    private function normalizeJsonString(?string $value): string
     {
         $value = $value ?? '{}';
 

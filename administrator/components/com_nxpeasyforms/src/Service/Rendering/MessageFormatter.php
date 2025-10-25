@@ -17,7 +17,9 @@ use function strtr;
 // phpcs:enable PSR1.Files.SideEffects
 
 /**
- * Formats submission data for messaging channels.
+ * Formats submission data for various messaging channels.
+ * Supports Slack, Markdown and plaintext output formats.
+ * @since 1.0.0
  */
 final class MessageFormatter
 {
@@ -29,7 +31,10 @@ final class MessageFormatter
     }
 
     /**
+     * Builds the headline for the notification.
+     * 
      * @param array<string, mixed> $form
+     * @since 1.0.0
      */
     public function buildHeadline(array $form): string
     {
@@ -40,13 +45,16 @@ final class MessageFormatter
         return sprintf(Text::_('COM_NXPEASYFORMS_NOTIFICATION_HEADLINE'), $title);
     }
 
-    /**
-     * @param array<string, mixed> $payload
-     * @param array<int, array<string, mixed>> $fieldMeta
-     *
-     * @return array<int, array{label:string,value:string}>
-     */
-    public function buildLines(array $payload, array $fieldMeta): array
+	/**
+	 * Formats form data into a standardized array format for messaging.
+	 *
+	 * @param   array<string, mixed>              $payload    The form submission payload data
+	 * @param   array<int, array<string, mixed>>  $fieldMeta  Metadata for form fields
+	 *
+	 * @return array<int, array{label:string,value:string}> Array of formatted label/value pairs
+	 * @since 1.0.0
+	 */
+	public function buildLines(array $payload, array $fieldMeta): array
     {
         $lines = [];
 
@@ -66,7 +74,7 @@ final class MessageFormatter
 
             $lines[] = [
                 'label' => $label,
-                'value' => $this->renderer->normaliseValue($value),
+                'value' => $this->renderer->normalizeValue($value),
             ];
         }
 
@@ -74,7 +82,10 @@ final class MessageFormatter
     }
 
     /**
+     * Formats form data into a Slack-compatible message.
+     *
      * @param array<int, array{label:string,value:string}> $lines
+     * @since 1.0.0
      */
     public function formatForSlack(array $lines): string
     {
@@ -93,7 +104,10 @@ final class MessageFormatter
     }
 
     /**
+     * Formats form data into a Markdown-compatible message.
+     *
      * @param array<int, array{label:string,value:string}> $lines
+     * @since 1.0.0
      */
     public function formatForMarkdown(array $lines): string
     {
@@ -112,7 +126,10 @@ final class MessageFormatter
     }
 
     /**
+     * Formats form data into a plaintext message.
+     *
      * @param array<int, array{label:string,value:string}> $lines
+     * @since 1.0.0
      */
     public function formatForPlaintext(array $lines, string $headline = ''): string
     {
@@ -130,6 +147,16 @@ final class MessageFormatter
         return implode("\n", $parts);
     }
 
+	/**
+	 * Escapes special characters for Slack messages.
+	 *
+	 * Replaces `&`, `<`, and `>` with their corresponding escaped entities to ensure proper rendering in Slack.
+	 *
+	 * @param   string  $value  The input string to be escaped.
+	 *
+	 * @return string The escaped string safe for use in Slack messages.
+	 * @since 1.0.0
+	 */
     private function escapeSlack(string $value): string
     {
         return strtr($value, [

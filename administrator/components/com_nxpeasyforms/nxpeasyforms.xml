@@ -40,6 +40,8 @@
             <filename>index.html</filename>
         </files>
 
+        <config>config.xml</config>
+
         <languages>
             <language tag="en-GB">language/en-GB/com_nxpeasyforms.ini</language>
             <language tag="en-GB">language/en-GB/com_nxpeasyforms.sys.ini</language>

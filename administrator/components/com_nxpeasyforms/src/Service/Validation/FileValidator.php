@@ -32,6 +32,10 @@ use function trim;
 
 /**
  * Performs security and integrity checks for uploaded files.
+ * Validates file types, sizes, extensions, and image dimensions to ensure secure file uploads.
+ * Implements multiple validation methods including mime type detection, extension matching,
+ * and specific image validation for maximum security.
+ * @since 1.0.0
  */
 final class FileValidator
 {
@@ -49,12 +53,14 @@ final class FileValidator
         'text/csv',
     ];
 
-    /**
-     * Map of mime-type => list of safe extensions.
-     *
-     * @var array<string, array<int, string>>
-     */
-    private const MIME_EXTENSION_MAP = [
+	/**
+	 * Associates MIME types with their allowed file extensions for security validation.
+	 * Each MIME type maps to one or more accepted extensions, with the first extension being the preferred one.
+	 *
+	 * @var array<string, array<int, string>>
+	 * @since 1.0.0
+	 */
+	private const MIME_EXTENSION_MAP = [
         'image/jpeg' => ['jpg', 'jpeg'],
         'image/png' => ['png'],
         'image/gif' => ['gif'],
@@ -83,11 +89,24 @@ final class FileValidator
         }
     }
 
-    /**
-     * @param array<string, mixed> $field
-     * @param array<string, mixed> $files
-     */
-    public function validate(array $field, array $files): ?string
+	/**
+	 * Validates file upload against security constraints and returns validation error message if any.
+	 *
+	 * This method performs multiple security checks including:
+	 * - File upload success verification
+	 * - File size limits enforcement
+	 * - File type/MIME checking against allowed types
+	 * - File extension validation
+	 * - MIME type verification using finfo
+	 * - Image dimension validation for image files
+	 *
+	 * @param   array<string, mixed>  $field  Field configuration array containing validation rules
+	 * @param   array<string, mixed>  $files  Files array from request containing upload data
+	 *
+	 * @return ?string Error message if validation fails, null if validation passes
+	 * @since 1.0.0
+	 */
+	public function validate(array $field, array $files): ?string
     {
         $name = $field['name'] ?? '';
 
@@ -183,13 +202,17 @@ final class FileValidator
         return null;
     }
 
-    /**
-     * @param string $name
-     * @param array<string, mixed> $files
-     *
-     * @return array<string, mixed>|null
-     */
-    public function extractUploadedFile(string $name, array $files): ?array
+	/**
+	 * Extracts uploaded file data for a given field name from the files array.
+	 * Handles both single file uploads and multi-file upload structures.
+	 *
+	 * @param   string                $name   The field name to extract file data for
+	 * @param   array<string, mixed>  $files  The files array from the request
+	 *
+	 * @return array<string, mixed>|null File data array if found, null if not found
+	 * @since 1.0.0
+	 */
+	public function extractUploadedFile(string $name, array $files): ?array
     {
         if (isset($files[$name]) && isset($files[$name]['tmp_name'])) {
             return $files[$name];
@@ -217,19 +240,27 @@ final class FileValidator
     }
 
     /**
+     * Proxy to get the allowed file types.
      * @return array<int, string>
+     * @since 1.0.0
      */
     public static function getAllowedTypes(): array
     {
         return self::ALLOWED_FILE_TYPES;
     }
 
-    /**
-     * @param array<string, mixed> $context
-     * @return mixed
-     */
-    private function filterValue(string $eventName, $value, array $context = [])
-    {
+	/**
+	 * Filters a value through the dispatcher event system.
+	 * Allows modification of values via plugins/events while maintaining the original if no dispatcher exists.
+	 *
+	 * @param   string                $eventName  Name of the event to dispatch
+	 * @param   mixed                 $value      The value to filter
+	 * @param   array<string, mixed>  $context    Additional context data to pass to event handlers
+	 *
+	 * @return mixed The filtered value, or original if no dispatcher available
+	 * @since 1.0.0
+	 */
+	private function filterValue(string $eventName, $value, array $context = []): mixed {
         if ($this->dispatcher === null) {
             return $value;
         }
@@ -241,13 +272,17 @@ final class FileValidator
         return $event['value'] ?? $value;
     }
 
-    /**
-     * @param string $accept
-     * @param array<int, string> $allowedTypes
-     *
-     * @return array<int, string>
-     */
-    private function filterAcceptTypes(string $accept, array $allowedTypes): array
+	/**
+	 * Filters accepted file types based on HTML input accept attribute and allowed types list.
+	 * Returns array of matching MIME types that are allowed.
+	 *
+	 * @param   string              $accept        HTML input accept attribute value
+	 * @param   array<int, string>  $allowedTypes  List of allowed MIME types
+	 *
+	 * @return array<int, string> Array of matched allowed MIME types
+	 * @since 1.0.0
+	 */
+	private function filterAcceptTypes(string $accept, array $allowedTypes): array
     {
         if ($accept === '') {
             return [];
@@ -263,6 +298,18 @@ final class FileValidator
         return $matched;
     }
 
+	/**
+	 * Detects and returns the MIME type of a given file.
+	 *
+	 * This method determines the MIME type using available PHP functions such as
+	 * `finfo_open` and `mime_content_type`. If these functions are not available or
+	 * if the file path is invalid or empty, it will return null.
+	 *
+	 * @param   string  $path  The absolute path to the file whose MIME type needs to be detected.
+	 *
+	 * @return string|null The MIME type of the file if detected successfully, or null otherwise.
+	 * @since 1.0.0
+	 */
     public function detectMimeType(string $path): ?string
     {
         if ($path === '' || !is_file($path)) {
@@ -293,6 +340,15 @@ final class FileValidator
         return null;
     }
 
+	/**
+	 * Determines whether the file extension of a given filename is allowed based on its MIME type.
+	 *
+	 * @param   string  $originalName  The original name of the file.
+	 * @param   string  $mime          The MIME type of the file.
+	 *
+	 * @return bool Returns true if the file extension is allowed, false otherwise.
+	 * @since 1.0.0
+	 */
     private function isExtensionAllowed(string $originalName, string $mime): bool
     {
         if ($originalName === '') {
@@ -314,11 +370,19 @@ final class FileValidator
         return in_array($extension, $allowed, true);
     }
 
+	/**
+	 * Retrieves the preferred file extension for a given MIME type.
+	 *
+	 * @param   string  $mime  The MIME type for which the preferred extension is required.
+	 *
+	 * @return string|null Returns the preferred file extension if available, or null if no extension is associated with the MIME type.
+	 * @since 1.0.0
+	 */
     public static function getPreferredExtension(string $mime): ?string
     {
         $allowed = self::MIME_EXTENSION_MAP[$mime] ?? null;
 
-        if ($allowed === null || empty($allowed)) {
+        if (empty($allowed)) {
             return null;
         }
 

@@ -14,6 +14,11 @@ use Joomla\Database\QueryInterface;
 
 /**
  * Model for listing submissions.
+ *
+ * Handles filtering, sorting and pagination for form submissions
+ * in the administrator submissions view.
+ *
+ * @since 1.0.0
  */
 final class SubmissionsModel extends ListModel
 {
@@ -26,7 +31,16 @@ final class SubmissionsModel extends ListModel
     ];
 
     /**
-     * {@inheritDoc}
+     * Populate the model state with filtering and sorting parameters.
+     *
+     * Reads user state from the application (search, status, form filter)
+     * and initializes pagination with the provided ordering defaults.
+     *
+     * @param string $ordering  The default ordering column.
+     * @param string $direction The default sort direction ('asc' or 'desc').
+     *
+     * @return void
+     * @since 1.0.0
      */
     protected function populateState($ordering = 'created_at', $direction = 'desc')
     {
@@ -46,7 +60,14 @@ final class SubmissionsModel extends ListModel
     }
 
     /**
-     * {@inheritDoc}
+     * Build a database query to fetch filtered and sorted submission records.
+     *
+     * Constructs and returns a query for the submissions table with applied filters
+     * and sorting based on the model's state. Includes a join to the forms table
+     * to display form titles.
+     *
+     * @return \Joomla\Database\QueryInterface The constructed query.
+     * @since 1.0.0
      */
     protected function getListQuery(): QueryInterface
     {

@@ -5,9 +5,19 @@ namespace Joomla\Component\Nxpeasyforms\Administrator\Service\Integrations;
 
 
 /**
- * Placeholder queue implementation that performs synchronous dispatch.
+ * Implementation of a queue system for handling integration dispatches.
+ *
+ * This class manages the queueing and processing of integration tasks for various
+ * third-party services like Zapier, Slack, Teams, etc. It provides:
+ * - Asynchronous processing of integration dispatches
+ * - Persistent storage using PSR-16 Simple Cache
+ * - Retry mechanism with configurable maximum attempts
+ * - Batch processing capabilities
+ *
+ * @since  1.0.0
  */
 use Psr\SimpleCache\CacheInterface;
+use Psr\SimpleCache\InvalidArgumentException;
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 use Symfony\Component\Cache\Psr16Cache;
 
@@ -19,6 +29,7 @@ use function sys_get_temp_dir;
 // phpcs:disable PSR1.Files.SideEffects
 \defined('_JEXEC') or die;
 // phpcs:enable PSR1.Files.SideEffects
+
 
 final class IntegrationQueue
 {
@@ -51,16 +62,21 @@ final class IntegrationQueue
         return in_array($integrationId, $this->asyncIntegrations, true);
     }
 
-    /**
-     * @param array<string, mixed> $settings
-     * @param array<string, mixed> $form
-     * @param array<string, mixed> $payload
-     * @param array<string, mixed> $context
-     * @param array<int, array<string, mixed>> $fieldMeta
-     */
-    public function enqueue(
-        string $integrationId,
-        array $settings,
+	/**
+	 * Enqueues a form submission for asynchronous integration dispatch.
+	 *
+	 * @param   array<string, mixed>              $settings   Integration settings containing endpoint URL
+	 * @param   array<string, mixed>              $form       Form data with id and title
+	 * @param   array<string, mixed>              $payload    Form submission payload
+	 * @param   array<string, mixed>              $context    Contextual dispatch information
+	 * @param   array<int, array<string, mixed>>  $fieldMeta  Field metadata
+	 *
+	 * @throws InvalidArgumentException
+	 * @since 1.0.0
+	 */
+	public function enqueue(
+		string $integrationId,
+		array $settings,
         array $form,
         array $payload,
         array $context,
@@ -81,7 +97,25 @@ final class IntegrationQueue
         $this->cache->set(self::CACHE_KEY, $queue);
     }
 
-    public function process(IntegrationManager $manager, int $batchSize = 10): void
+
+	/**
+	 * Processes queued integration dispatches in batches.
+	 *
+	 * This method:
+	 * - Retrieves pending jobs from the queue
+	 * - Processes up to $batchSize jobs
+	 * - Attempts to dispatch each job using the appropriate integration dispatcher
+	 * - Handles failures with retry logic (up to MAX_ATTEMPTS)
+	 * - Updates the queue by removing successful jobs and requeueing failed ones
+	 *
+	 * @param   IntegrationManager  $manager    Manager instance to retrieve integration dispatchers
+	 * @param   int                 $batchSize  Maximum number of jobs to process in this batch (default: 10)
+	 *
+	 * @return  void
+	 * @throws  InvalidArgumentException  If cache operations fail
+	 * @since   1.0.0
+	 */
+	public function process(IntegrationManager $manager, int $batchSize = 10): void
     {
         $queue = $this->cache->get(self::CACHE_KEY, []);
 

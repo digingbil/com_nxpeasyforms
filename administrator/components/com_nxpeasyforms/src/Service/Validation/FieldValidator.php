@@ -12,7 +12,12 @@ use Joomla\Component\Nxpeasyforms\Administrator\Support\Sanitizer;
 // phpcs:enable PSR1.Files.SideEffects
 
 /**
- * Validates and sanitises incoming field payloads.
+ * Validates and sanitizes incoming field payloads from form submissions.
+ * This class handles validation and sanitization of various field types including:
+ * text, email, telephone, textarea, checkbox, select, radio, date, password, and file uploads.
+ * It processes the submitted data against field configuration rules and returns cleaned data
+ * along with any validation errors encountered.
+ * @since 1.0.0
  */
 final class FieldValidator
 {
@@ -29,6 +34,7 @@ final class FieldValidator
      * @param array<int, array<string, mixed>> $fields
      * @param array<string, mixed> $data
      * @param array<string, mixed> $files
+     * @since 1.0.0
      */
     public function validateAll(array $fields, array $data, array $files): ValidationResult
     {
@@ -81,7 +87,7 @@ final class FieldValidator
 
             $raw = $data[$name] ?? null;
 
-            [$value, $error] = $this->sanitiseAndValidate($type, $raw, $field);
+            [$value, $error] = $this->sanitizeAndValidate($type, $raw, $field);
 
             if ($required && $this->isValueMissing($type, $raw, $value)) {
                 $error = Text::_('COM_NXPEASYFORMS_VALIDATION_FIELD_REQUIRED');
@@ -106,13 +112,16 @@ final class FieldValidator
     }
 
     /**
+     * Sanitize and validate a field value based on its type.
+     *
      * @param string $type
      * @param mixed $raw
      * @param array<string, mixed> $field
      *
      * @return array{0: mixed, 1: ?string}
+     * @since 1.0.0
      */
-    public function sanitiseAndValidate(string $type, $raw, array $field): array
+    public function sanitizeAndValidate(string $type, $raw, array $field): array
     {
         switch ($type) {
             case 'email':
@@ -168,10 +177,13 @@ final class FieldValidator
     }
 
     /**
+     * Validate a select field.
+     *
      * @param mixed $raw
      * @param array<string, mixed> $field
      *
      * @return array{0: mixed, 1: ?string}
+     * @since 1.0.0
      */
     private function validateSelect($raw, array $field): array
     {
@@ -205,10 +217,13 @@ final class FieldValidator
     }
 
     /**
+     * Validate a radio field.
+     *
      * @param mixed $raw
      * @param array<string, mixed> $field
      *
      * @return array{0: string, 1: ?string}
+     * @since 1.0.0
      */
     private function validateRadio($raw, array $field): array
     {
@@ -223,9 +238,12 @@ final class FieldValidator
     }
 
     /**
+     * Validate a date field.
+     *
      * @param mixed $raw
      *
      * @return array{0: string, 1: ?string}
+     * @since 1.0.0
      */
     private function validateDate($raw): array
     {
@@ -244,11 +262,16 @@ final class FieldValidator
         return [$value, null];
     }
 
-    /**
-     * @param string $type
-     * @param mixed $raw
-     * @param mixed $value
-     */
+	/**
+	 * Check if a field value is missing.
+	 *
+	 * @param   string  $type
+	 * @param   mixed   $raw
+	 * @param   mixed   $value
+	 *
+	 * @return bool
+	 * @since 1.0.0
+	 */
     public function isValueMissing(string $type, $raw, $value): bool
     {
         if ($type === 'checkbox') {
@@ -263,7 +286,10 @@ final class FieldValidator
     }
 
     /**
+     * Check if a checkbox is checked.
+     *
      * @param mixed $raw
+     * @since 1.0.0
      */
     private function isCheckboxChecked($raw): bool
     {
@@ -282,9 +308,9 @@ final class FieldValidator
         }
 
         if (is_string($raw)) {
-            $normalised = strtolower($raw);
+            $normalized = strtolower($raw);
 
-            return !in_array($normalised, ['', '0', 'false', 'off'], true);
+            return !in_array($normalized, ['', '0', 'false', 'off'], true);
         }
 
         if ($raw === null) {

@@ -18,6 +18,10 @@ use function is_numeric;
 use function is_string;
 use function trim;
 
+// phpcs:disable PSR1.Files.SideEffects
+\defined('_JEXEC') or die;
+// phpcs:enable PSR1.Files.SideEffects
+
 /**
  * API controller for email-related utilities.
  */
