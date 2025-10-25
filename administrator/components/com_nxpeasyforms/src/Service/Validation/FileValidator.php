@@ -1,5 +1,4 @@
 <?php
-
 declare(strict_types=1);
 
 namespace Joomla\Component\Nxpeasyforms\Administrator\Service\Validation;
@@ -8,6 +7,7 @@ use Joomla\CMS\Factory;
 use Joomla\CMS\Language\Text;
 use Joomla\Event\DispatcherInterface;
 use Joomla\Event\Event;
+
 
 use function array_map;
 use function explode;
@@ -25,6 +25,10 @@ use function str_starts_with;
 use function strpos;
 use function strtolower;
 use function trim;
+
+// phpcs:disable PSR1.Files.SideEffects
+\defined('_JEXEC') or die;
+// phpcs:enable PSR1.Files.SideEffects
 
 /**
  * Performs security and integrity checks for uploaded files.

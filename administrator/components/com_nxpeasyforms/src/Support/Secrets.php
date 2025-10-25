@@ -1,10 +1,10 @@
 <?php
-
 declare(strict_types=1);
 
 namespace Joomla\Component\Nxpeasyforms\Administrator\Support;
 
 use Joomla\CMS\Factory;
+
 
 use function base64_decode;
 use function base64_encode;
@@ -15,6 +15,10 @@ use function openssl_encrypt;
 use function random_bytes;
 use function strlen;
 use function substr;
+
+// phpcs:disable PSR1.Files.SideEffects
+\defined('_JEXEC') or die;
+// phpcs:enable PSR1.Files.SideEffects
 
 final class Secrets
 {

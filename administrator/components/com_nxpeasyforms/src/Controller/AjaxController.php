@@ -1,5 +1,4 @@
 <?php
-
 declare(strict_types=1);
 
 namespace Joomla\Component\Nxpeasyforms\Administrator\Controller;
@@ -16,6 +15,8 @@ use Joomla\Component\Nxpeasyforms\Administrator\Model\FormModel as AdminFormMode
 use Joomla\Component\Nxpeasyforms\Administrator\Service\Email\EmailService;
 use Joomla\Component\Nxpeasyforms\Administrator\Service\Repository\FormRepository;
 use Joomla\Registry\Registry;
+use Joomla\Database\DatabaseInterface;
+
 
 use function array_replace_recursive;
 use function is_array;
@@ -23,6 +24,10 @@ use function is_numeric;
 use function is_string;
 use function rawurldecode;
 use function trim;
+
+// phpcs:disable PSR1.Files.SideEffects
+\defined('_JEXEC') or die;
+// phpcs:enable PSR1.Files.SideEffects
 
 /**
  * Internal AJAX controller for administrator requests.
@@ -156,10 +161,15 @@ final class AjaxController extends BaseController
     {
         $section = $segments[1] ?? '';
 
-        if ($section !== 'email') {
-            throw new \RuntimeException(Text::_('JERROR_PAGE_NOT_FOUND'), 404);
-        }
+        return match ($section) {
+            'email' => $this->handleEmailSettings($segments, $method),
+            'joomla' => $this->handleJoomlaSettings($segments, $method),
+            default => throw new \RuntimeException(Text::_('JERROR_PAGE_NOT_FOUND'), 404),
+        };
+    }
 
+    private function handleEmailSettings(array $segments, string $method): JsonResponse
+    {
         $action = $segments[2] ?? '';
 
         return match ($action) {
@@ -171,6 +181,18 @@ final class AjaxController extends BaseController
                 ? $this->sendSettingsTestEmail()
                 : throw new \RuntimeException(Text::_('JERROR_PAGE_NOT_FOUND'), 404),
             'diagnostics' => $this->emailDiagnostics(),
+            default => throw new \RuntimeException(Text::_('JERROR_PAGE_NOT_FOUND'), 404),
+        };
+    }
+
+    private function handleJoomlaSettings(array $segments, string $method): JsonResponse
+    {
+        $action = $segments[2] ?? '';
+
+        return match ($action) {
+            'categories' => $method === 'GET'
+                ? $this->getJoomlaCategories()
+                : throw new \RuntimeException(Text::_('JERROR_PAGE_NOT_FOUND'), 404),
             default => throw new \RuntimeException(Text::_('JERROR_PAGE_NOT_FOUND'), 404),
         };
     }
@@ -245,6 +267,83 @@ final class AjaxController extends BaseController
             'success' => true,
             'settings' => $settings,
         ]);
+    }
+
+    private function getJoomlaCategories(): JsonResponse
+    {
+        $this->assertAuthorised('core.manage');
+
+        try {
+            $categories = $this->fetchContentCategories();
+        } catch (\RuntimeException $exception) {
+            return new JsonResponse(
+                [
+                    'success' => false,
+                    'message' => $exception->getMessage(),
+                ],
+                500
+            );
+        }
+
+        return new JsonResponse(
+            [
+                'success' => true,
+                'categories' => $categories,
+            ]
+        );
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    private function fetchContentCategories(): array
+    {
+        $db = Factory::getContainer()->get(DatabaseInterface::class);
+
+        $query = $db->getQuery(true)
+            ->select(
+                [
+                    $db->quoteName('id'),
+                    $db->quoteName('title'),
+                    $db->quoteName('level'),
+                ]
+            )
+            ->from($db->quoteName('#__categories'))
+            ->where($db->quoteName('extension') . ' = :extension')
+            ->where($db->quoteName('published') . ' != -2')
+            ->order($db->quoteName('lft') . ' ASC')
+            ->bind(':extension', 'com_content');
+
+        try {
+            $db->setQuery($query);
+            $rows = (array) $db->loadAssocList();
+        } catch (\RuntimeException $exception) {
+            throw new \RuntimeException(
+                Text::_('COM_NXPEASYFORMS_ERROR_CATEGORIES_LOAD_FAILED'),
+                500,
+                $exception
+            );
+        }
+
+        $formatted = [];
+
+        foreach ($rows as $row) {
+            $id = (int) ($row['id'] ?? 0);
+
+            if ($id <= 0) {
+                continue;
+            }
+
+            $level = max(0, (int) ($row['level'] ?? 0) - 1);
+            $prefix = str_repeat('— ', $level);
+
+            $formatted[] = [
+                'id' => $id,
+                'title' => $prefix . (string) ($row['title'] ?? Text::_('JGLOBAL_CATEGORY_UNKNOWN')),
+            ];
+        }
+
+        return $formatted;
     }
 
     private function saveEmailSettings(): JsonResponse
@@ -540,6 +639,8 @@ final class AjaxController extends BaseController
         $fields = is_array($config['fields'] ?? null) ? $config['fields'] : [];
         $options = is_array($config['options'] ?? null) ? $config['options'] : [];
 
+        $options = $this->normaliseOptionsForStorage($options);
+
         $data = [
             'title' => is_string($payload['title'] ?? null) ? trim($payload['title']) : '',
             'fields' => $fields,
@@ -570,6 +671,7 @@ final class AjaxController extends BaseController
 
         $fields = is_array($item->fields ?? null) ? $item->fields : [];
         $settings = is_array($item->settings ?? null) ? $item->settings : [];
+        $settings = $this->normaliseOptionsForClient($settings);
 
         return [
             'id' => (int) ($item->id ?? 0),
@@ -582,5 +684,150 @@ final class AjaxController extends BaseController
             'created_at' => $item->created_at ?? null,
             'updated_at' => $item->updated_at ?? null,
         ];
+    }
+
+    /**
+     * @param array<string,mixed> $options
+     *
+     * @return array<string,mixed>
+     */
+    private function normaliseOptionsForStorage(array $options): array
+    {
+        $options['email_delivery'] = $this->normaliseEmailDelivery(
+            is_array($options['email_delivery'] ?? null) ? $options['email_delivery'] : []
+        );
+
+        $integrations = is_array($options['integrations'] ?? null) ? $options['integrations'] : [];
+        $integrations = $this->normaliseIntegrations($integrations);
+        $options['integrations'] = $integrations;
+
+        return $options;
+    }
+
+    /**
+     * @param array<string,mixed> $options
+     *
+     * @return array<string,mixed>
+     */
+    private function normaliseOptionsForClient(array $options): array
+    {
+        return $this->normaliseOptionsForStorage($options);
+    }
+
+    /**
+     * @param array<string,mixed> $delivery
+     *
+     * @return array<string,mixed>
+     */
+    private function normaliseEmailDelivery(array $delivery): array
+    {
+        $provider = isset($delivery['provider']) ? (string) $delivery['provider'] : 'joomla';
+
+        if ($provider === 'wordpress' || $provider === 'wp_mail') {
+            $provider = 'joomla';
+        }
+
+        $delivery['provider'] = $provider ?: 'joomla';
+
+        return $delivery;
+    }
+
+    /**
+     * @param array<string,mixed> $integrations
+     *
+     * @return array<string,mixed>
+     */
+    private function normaliseIntegrations(array $integrations): array
+    {
+        if (isset($integrations['wordpress_post']) && is_array($integrations['wordpress_post'])) {
+            $integrations['joomla_article'] = $this->convertWordpressPostIntegration($integrations['wordpress_post']);
+            unset($integrations['wordpress_post']);
+        }
+
+        unset($integrations['woocommerce']);
+
+        return $integrations;
+    }
+
+    /**
+     * @param array<string,mixed> $settings
+     *
+     * @return array<string,mixed>
+     */
+    private function convertWordpressPostIntegration(array $settings): array
+    {
+        $map = is_array($settings['map'] ?? null) ? $settings['map'] : [];
+
+        // Preserve featured image information in case we later support media handling.
+        if (isset($map['featured_image']) && !isset($map['media'])) {
+            $map['media'] = [
+                'featured_image' => $map['featured_image'],
+            ];
+        }
+
+        $converted = [
+            'enabled' => !empty($settings['enabled']),
+            'category_id' => $this->parseCategoryId($settings),
+            'status' => (string) ($settings['post_status'] ?? 'unpublished'),
+            'author_mode' => (string) ($settings['author_mode'] ?? 'current_user'),
+            'fixed_author_id' => (int) ($settings['fixed_author_id'] ?? 0),
+            'language' => (string) ($settings['language'] ?? '*'),
+            'access' => (int) ($settings['access'] ?? 1),
+            'map' => $map,
+        ];
+
+        $tagsField = $this->extractLegacyTagsField($settings);
+
+        if ($tagsField !== '') {
+            $converted['map']['tags'] = $tagsField;
+        }
+
+        return $converted;
+    }
+
+    /**
+     * @param array<string,mixed> $settings
+     */
+    private function parseCategoryId(array $settings): int
+    {
+        if (isset($settings['category_id'])) {
+            return (int) $settings['category_id'];
+        }
+
+        $postType = $settings['post_type'] ?? '';
+
+        if (is_numeric($postType)) {
+            return (int) $postType;
+        }
+
+        return 0;
+    }
+
+    /**
+     * @param array<string,mixed> $settings
+     */
+    private function extractLegacyTagsField(array $settings): string
+    {
+        $taxonomies = is_array($settings['taxonomies'] ?? null) ? $settings['taxonomies'] : [];
+
+        foreach ($taxonomies as $taxonomy) {
+            if (!is_array($taxonomy)) {
+                continue;
+            }
+
+            $name = (string) ($taxonomy['taxonomy'] ?? '');
+
+            if ($name !== 'post_tag' && $name !== 'tags') {
+                continue;
+            }
+
+            $field = (string) ($taxonomy['field'] ?? '');
+
+            if ($field !== '') {
+                return $field;
+            }
+        }
+
+        return '';
     }
 }

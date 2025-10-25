@@ -1,5 +1,4 @@
 <?php
-
 declare(strict_types=1);
 
 namespace Joomla\Component\Nxpeasyforms\Administrator\Service\Integrations;
@@ -9,6 +8,7 @@ use Joomla\Component\Nxpeasyforms\Administrator\Support\Sanitizer;
 use Joomla\Component\Nxpeasyforms\Administrator\Support\Secrets;
 use Joomla\Event\DispatcherInterface;
 use Joomla\Event\Event;
+
 
 use function array_key_exists;
 use function base64_encode;
@@ -26,6 +26,10 @@ use function strtolower;
 use function trim;
 
 use const FILTER_VALIDATE_EMAIL;
+
+// phpcs:disable PSR1.Files.SideEffects
+\defined('_JEXEC') or die;
+// phpcs:enable PSR1.Files.SideEffects
 
 final class MailchimpDispatcher implements IntegrationDispatcherInterface
 {

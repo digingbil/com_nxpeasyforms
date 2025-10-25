@@ -1,5 +1,4 @@
 <?php
-
 declare(strict_types=1);
 
 namespace Joomla\Component\Nxpeasyforms\Site\View\Form;
@@ -10,6 +9,11 @@ use Joomla\CMS\Language\Text;
 use Joomla\CMS\MVC\View\HtmlView as BaseHtmlView;
 use Joomla\CMS\Uri\Uri;
 use Joomla\Component\Nxpeasyforms\Site\Helper\FormRenderer;
+
+
+// phpcs:disable PSR1.Files.SideEffects
+\defined('_JEXEC') or die;
+// phpcs:enable PSR1.Files.SideEffects
 
 /**
  * Site HTML view responsible for rendering a single form.

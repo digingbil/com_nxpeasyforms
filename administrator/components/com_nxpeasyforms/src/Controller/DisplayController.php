@@ -1,10 +1,14 @@
 <?php
-
 declare(strict_types=1);
 
 namespace Joomla\Component\Nxpeasyforms\Administrator\Controller;
 
 use Joomla\CMS\MVC\Controller\BaseController;
+
+
+// phpcs:disable PSR1.Files.SideEffects
+\defined('_JEXEC') or die;
+// phpcs:enable PSR1.Files.SideEffects
 
 /**
  * Default display controller for administrator routes.

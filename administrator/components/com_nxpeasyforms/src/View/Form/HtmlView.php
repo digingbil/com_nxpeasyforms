@@ -1,5 +1,4 @@
 <?php
-
 declare(strict_types=1);
 
 namespace Joomla\Component\Nxpeasyforms\Administrator\View\Form;
@@ -13,6 +12,11 @@ use Joomla\CMS\Toolbar\ToolbarHelper;
 use Joomla\CMS\Session\Session;
 use Joomla\Component\Nxpeasyforms\Administrator\Helper\AssetHelper;
 use Joomla\Component\Nxpeasyforms\Administrator\Helper\FormDefaults;
+
+
+// phpcs:disable PSR1.Files.SideEffects
+\defined('_JEXEC') or die;
+// phpcs:enable PSR1.Files.SideEffects
 
 /**
  * HTML View class for a single form (builder container).
@@ -67,13 +71,8 @@ final class HtmlView extends BaseHtmlView
                 'builderUrl' => Route::_('index.php?option=com_nxpeasyforms&view=form'),
                 'defaults' => FormDefaults::builderConfig(),
                 'integrationsMeta' => [],
-                'wpData' => [
-                    'postTypes' => [],
-                    'postStatuses' => [],
-                    'taxonomies' => [],
-                ],
-                'woo' => [
-                    'active' => false,
+                'joomla' => [
+                    'categories' => [],
                 ],
                 'i18n' => [
                     'formSaved' => Text::_('COM_NXPEASYFORMS_FORM_SAVED'),
@@ -99,9 +98,6 @@ final class HtmlView extends BaseHtmlView
             'pencil-2'
         );
 
-        ToolbarHelper::apply('form.apply');
-        ToolbarHelper::save('form.save');
-        ToolbarHelper::save2new('form.save2new');
         ToolbarHelper::cancel('form.cancel');
     }
 }

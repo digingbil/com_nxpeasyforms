@@ -1,8 +1,9 @@
 <?php
-
 declare(strict_types=1);
 
-defined('_JEXEC') or die;
+// phpcs:disable PSR1.Files.SideEffects
+\defined('_JEXEC') or die;
+// phpcs:enable PSR1.Files.SideEffects
 
 use Joomla\CMS\Dispatcher\ComponentDispatcherFactoryInterface;
 use Joomla\DI\Container;
@@ -16,6 +17,7 @@ use Joomla\Component\Nxpeasyforms\Administrator\Service\File\FileUploader;
 use Joomla\Component\Nxpeasyforms\Administrator\Service\Integrations\GenericWebhookDispatcher;
 use Joomla\Component\Nxpeasyforms\Administrator\Service\Integrations\HttpClient;
 use Joomla\Component\Nxpeasyforms\Administrator\Service\Integrations\HubspotDispatcher;
+use Joomla\Component\Nxpeasyforms\Administrator\Service\Integrations\JoomlaArticleDispatcher;
 use Joomla\Component\Nxpeasyforms\Administrator\Service\Integrations\IntegrationManager;
 use Joomla\Component\Nxpeasyforms\Administrator\Service\Integrations\IntegrationQueue;
 use Joomla\Component\Nxpeasyforms\Administrator\Service\Integrations\MailchimpDispatcher;
@@ -195,6 +197,13 @@ return new class () implements ServiceProviderInterface {
         );
 
         $container->share(
+            JoomlaArticleDispatcher::class,
+            static function (): JoomlaArticleDispatcher {
+                return new JoomlaArticleDispatcher();
+            }
+        );
+
+        $container->share(
             SalesforceDispatcher::class,
             static function (Container $container): SalesforceDispatcher {
                 return new SalesforceDispatcher(
@@ -239,6 +248,7 @@ return new class () implements ServiceProviderInterface {
             static function (Container $container): IntegrationManager {
                 $manager = new IntegrationManager();
                 $manager->register('webhook', $container->get(WebhookDispatcher::class));
+                $manager->register('joomla_article', $container->get(JoomlaArticleDispatcher::class));
                 $manager->register('zapier', $container->get(GenericWebhookDispatcher::class));
                 $manager->register('make', $container->get(GenericWebhookDispatcher::class));
                 $manager->register('slack', $container->get(SlackDispatcher::class));

@@ -1,5 +1,4 @@
 <?php
-
 declare(strict_types=1);
 
 namespace Joomla\Component\Nxpeasyforms\Administrator\Service\Integrations;
@@ -7,8 +6,13 @@ namespace Joomla\Component\Nxpeasyforms\Administrator\Service\Integrations;
 use Joomla\Component\Nxpeasyforms\Administrator\Service\Rendering\MessageFormatter;
 use Joomla\Component\Nxpeasyforms\Administrator\Service\Rendering\TemplateRenderer;
 
+
 use function is_string;
 use function trim;
+
+// phpcs:disable PSR1.Files.SideEffects
+\defined('_JEXEC') or die;
+// phpcs:enable PSR1.Files.SideEffects
 
 /**
  * Sends adaptive card style payloads to Microsoft Teams.

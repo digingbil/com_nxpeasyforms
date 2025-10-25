@@ -1,5 +1,4 @@
 <?php
-
 declare(strict_types=1);
 
 namespace Joomla\Component\Nxpeasyforms\Administrator\Service\File;
@@ -10,12 +9,17 @@ use Joomla\CMS\Language\Text;
 use Joomla\CMS\Uri\Uri;
 use Joomla\Component\Nxpeasyforms\Administrator\Service\Validation\FileValidator;
 
+
 use function bin2hex;
 use function is_string;
 use function random_bytes;
 use function rtrim;
 use function strtolower;
 use function trim;
+
+// phpcs:disable PSR1.Files.SideEffects
+\defined('_JEXEC') or die;
+// phpcs:enable PSR1.Files.SideEffects
 
 /**
  * Handles secure storage of uploaded files in the Joomla images directory.

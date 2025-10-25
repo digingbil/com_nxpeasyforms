@@ -1,5 +1,4 @@
 <?php
-
 declare(strict_types=1);
 
 namespace Joomla\Plugin\Content\Nxpeasyforms;
@@ -9,9 +8,14 @@ use Joomla\CMS\Language\Text;
 use Joomla\CMS\Plugin\CMSPlugin;
 use Joomla\Component\Nxpeasyforms\Site\Helper\FormRenderer;
 
+
 use function preg_match_all;
 use function preg_replace;
 use function sprintf;
+
+// phpcs:disable PSR1.Files.SideEffects
+\defined('_JEXEC') or die;
+// phpcs:enable PSR1.Files.SideEffects
 
 /**
  * Content plugin to render NXP Easy Forms via {nxpeasyform 123} shortcode.

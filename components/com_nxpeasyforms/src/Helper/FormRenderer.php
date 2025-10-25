@@ -1,5 +1,4 @@
 <?php
-
 declare(strict_types=1);
 
 namespace Joomla\Component\Nxpeasyforms\Site\Helper;
@@ -9,6 +8,7 @@ use Joomla\CMS\Language\Text;
 use Joomla\CMS\Session\Session;
 use Joomla\Component\Nxpeasyforms\Administrator\Helper\FormDefaults;
 use Joomla\Component\Nxpeasyforms\Administrator\Service\SubmissionService;
+
 
 use function array_map;
 use function array_replace_recursive;
@@ -20,6 +20,10 @@ use function is_string;
 use function sprintf;
 use function trim;
 use function uniqid;
+
+// phpcs:disable PSR1.Files.SideEffects
+\defined('_JEXEC') or die;
+// phpcs:enable PSR1.Files.SideEffects
 
 final class FormRenderer
 {

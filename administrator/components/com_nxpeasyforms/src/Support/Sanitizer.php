@@ -1,13 +1,17 @@
 <?php
-
 declare(strict_types=1);
 
 namespace Joomla\Component\Nxpeasyforms\Administrator\Support;
 
 use Joomla\CMS\Filter\InputFilter;
 
+
+// phpcs:disable PSR1.Files.SideEffects
+\defined('_JEXEC') or die;
+// phpcs:enable PSR1.Files.SideEffects
+
 /**
- * Provides sanitisation helpers mirroring WordPress' sanitize_* functions.
+ * Provides sanitisation helpers consistent with Joomla input filtering conventions.
  */
 final class Sanitizer
 {

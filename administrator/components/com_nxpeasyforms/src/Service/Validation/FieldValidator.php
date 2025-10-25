@@ -1,11 +1,15 @@
 <?php
-
 declare(strict_types=1);
 
 namespace Joomla\Component\Nxpeasyforms\Administrator\Service\Validation;
 
 use Joomla\CMS\Language\Text;
 use Joomla\Component\Nxpeasyforms\Administrator\Support\Sanitizer;
+
+
+// phpcs:disable PSR1.Files.SideEffects
+\defined('_JEXEC') or die;
+// phpcs:enable PSR1.Files.SideEffects
 
 /**
  * Validates and sanitises incoming field payloads.

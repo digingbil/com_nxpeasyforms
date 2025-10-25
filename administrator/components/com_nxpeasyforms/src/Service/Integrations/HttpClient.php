@@ -1,5 +1,4 @@
 <?php
-
 declare(strict_types=1);
 
 namespace Joomla\Component\Nxpeasyforms\Administrator\Service\Integrations;
@@ -13,8 +12,13 @@ use function json_encode;
 use function method_exists;
 use function strtoupper;
 
+
 use const PHP_QUERY_RFC3986;
 use const JSON_THROW_ON_ERROR;
+
+// phpcs:disable PSR1.Files.SideEffects
+\defined('_JEXEC') or die;
+// phpcs:enable PSR1.Files.SideEffects
 
 /**
  * Thin wrapper around Joomla HTTP client for integration requests.

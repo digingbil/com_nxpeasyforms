@@ -1,16 +1,20 @@
 <?php
-
 declare(strict_types=1);
 
 namespace Joomla\Component\Nxpeasyforms\Administrator\Service\Rendering;
 
 use Joomla\CMS\Language\Text;
 
+
 use function implode;
 use function is_array;
 use function is_string;
 use function sprintf;
 use function strtr;
+
+// phpcs:disable PSR1.Files.SideEffects
+\defined('_JEXEC') or die;
+// phpcs:enable PSR1.Files.SideEffects
 
 /**
  * Formats submission data for messaging channels.

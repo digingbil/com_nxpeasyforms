@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <form>
+    <config>
+        <inlinehelp button="false" />
+    </config>
     <fieldset name="general" label="COM_NXPEASYFORMS_CONFIG_FIELDSET_GENERAL">
         <field
             name="log_level"

@@ -1,5 +1,4 @@
 <?php
-
 declare(strict_types=1);
 
 namespace Joomla\Component\Nxpeasyforms\Administrator\Service\Integrations;
@@ -9,11 +8,16 @@ use Joomla\Component\Nxpeasyforms\Administrator\Service\Security\EndpointValidat
 use Joomla\Event\DispatcherInterface;
 use Joomla\Event\Event;
 
+
 use function hash_hmac;
 use function json_encode;
 use function sprintf;
 
 use const JSON_THROW_ON_ERROR;
+
+// phpcs:disable PSR1.Files.SideEffects
+\defined('_JEXEC') or die;
+// phpcs:enable PSR1.Files.SideEffects
 
 /**
  * Dispatches payloads to generic webhooks with optional HMAC signing.

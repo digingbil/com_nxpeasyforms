@@ -119,67 +119,6 @@
                         @input="updateOptions"
                     ></textarea>
                 </div>
-                <div
-                    class="nxp-control"
-                    v-if="supportsWooCatalog"
-                >
-                    <div class="nxp-woo-toggle">
-                        <button type="button" class="button button-small" @click="toggleWooSection()">
-                            <span v-if="!wooSectionOpen">{{ __('Show WooCommerce options', 'nxp-easy-forms') }}</span>
-                            <span v-else>{{ __('Hide WooCommerce options', 'nxp-easy-forms') }}</span>
-                        </button>
-                        <span class="nxp-help-icon-wrap">
-                            <img
-                                class="nxp-help-icon"
-                                :src="ICON_HELP"
-                                :alt="__('Help', 'nxp-easy-forms')"
-                                :title="wooHelpTitle"
-                            />
-                        </span>
-                    </div>
-                    <div v-if="wooSectionOpen">
-                    <div class="nxp-setting__inline">
-                        <button
-                            type="button"
-                            class="button button-secondary"
-                            @click="loadWooCatalog('products')"
-                            :disabled="wooCatalogLoading"
-                        >
-                            <span v-if="wooCatalogLoading && wooCatalogLoadingType === 'products'">
-                                {{ __("Loading products…", "nxp-easy-forms") }}
-                            </span>
-                            <span v-else>
-                                {{ __("Load products", "nxp-easy-forms") }}
-                            </span>
-                        </button>
-                        <button
-                            type="button"
-                            class="button button-secondary"
-                            @click="loadWooCatalog('categories')"
-                            :disabled="wooCatalogLoading"
-                        >
-                            <span v-if="wooCatalogLoading && wooCatalogLoadingType === 'categories'">
-                                {{ __("Loading categories…", "nxp-easy-forms") }}
-                            </span>
-                            <span v-else>
-                                {{ __("Load categories", "nxp-easy-forms") }}
-                            </span>
-                        </button>
-                    </div>
-                    <small class="nxp-drawer__hint">
-                        {{ __("Values will be set to the resource ID (products and variations use their numeric ID; categories are prefixed with cat:).", "nxp-easy-forms") }}
-                    </small>
-                    <small class="nxp-drawer__hint">
-                        {{ __("After loading, click “Save form”. To create WooCommerce orders from this field, open Form Settings → WP → WooCommerce and set this field as the Product field.", "nxp-easy-forms") }}
-                    </small>
-                    <small
-                        v-if="wooCatalogError"
-                        class="nxp-drawer__hint nxp-drawer__hint--error"
-                    >
-                        {{ wooCatalogError }}
-                    </small>
-                    </div>
-                </div>
                 <label class="nxp-control" v-if="local.type === 'select'">
                     <span class="nxp-control__switch">
                         <input
@@ -190,18 +129,7 @@
                         {{ __("Allow multiple selections", "nxp-easy-forms") }}
                     </span>
                 </label>
-                <label class="nxp-control" v-if="local.type === 'country'">
-                    <span>{{ __("WooCommerce country filter", "nxp-easy-forms") }}</span>
-                    <select v-model="local.woocommerce_mode" @change="commit()">
-                        <option value="all">{{ __("All countries", "nxp-easy-forms") }}</option>
-                        <option value="shipping">{{ __("Shipping countries only", "nxp-easy-forms") }}</option>
-                        <option value="selling">{{ __("Selling countries only", "nxp-easy-forms") }}</option>
-                        <option value="both">{{ __("Both shipping & selling", "nxp-easy-forms") }}</option>
-                    </select>
-                    <small class="nxp-drawer__hint">
-                        {{ __("Requires WooCommerce to be active. Falls back to all countries if WooCommerce is not available.", "nxp-easy-forms") }}
-                    </small>
-                </label>
+
                 <div class="nxp-control" v-if="local.type === 'state'">
                     <label>
                         <span>{{ __("Linked country field", "nxp-easy-forms") }}</span>
@@ -234,10 +162,8 @@
 </template>
 
 <script setup>
-import { computed, reactive, ref, watch, onMounted } from "vue";
-import { apiFetch } from "@/admin/utils/http";
+import { computed, reactive, ref, watch } from "vue";
 import { __ } from "@/utils/i18n";
-import ICON_HELP from "../../../assets/icons/help-hexagon.svg";
 
 const props = defineProps({
     field: {
@@ -267,7 +193,6 @@ const local = reactive({
     acceptDocuments: false,
     acceptSpreadsheets: false,
     maxFileSize: 5,
-    woocommerce_mode: "all",
     country_field: "",
     allow_text_input: true,
 });
@@ -303,60 +228,6 @@ const isStatic = computed(() => ["button", "custom_text"].includes(local.type));
 const countryFields = computed(() => {
     return (props.fields || []).filter((f) => f.type === "country");
 });
-const builderSettings = window.nxpEasyForms?.builder || {};
-const wooActive = builderSettings?.woo?.active === true;
-const wooCurrency = builderSettings?.woo?.currency || "";
-const wooCatalogLoading = ref(false);
-const wooCatalogLoadingType = ref(null);
-const wooCatalogError = ref("");
-const supportsWooCatalog = computed(
-    () => wooActive && ["select", "radio"].includes(local.type)
-);
-
-const wooHelpTooltip = computed(() =>
-    __(
-        'Loaded options are applied immediately to this field. Remember to save the form. To generate WooCommerce orders from user selections, map this field as the Product field in Form Settings → WP → WooCommerce.',
-        'nxp-easy-forms'
-    )
-);
-
-const wooHelpTitle = computed(() =>
-    `${__("Populate options from WooCommerce", "nxp-easy-forms")}\n${wooHelpTooltip.value}`
-);
-
-const WOO_TOGGLE_KEY = 'nxp_woo_loader_open';
-const wooSectionOpen = ref(false);
-
-const readWooToggle = () => {
-    try {
-        return localStorage.getItem(WOO_TOGGLE_KEY) === '1';
-    } catch {
-        return false;
-    }
-};
-
-const writeWooToggle = (value) => {
-    try {
-        localStorage.setItem(WOO_TOGGLE_KEY, value ? '1' : '0');
-    } catch {
-        // ignore
-    }
-};
-
-const toggleWooSection = () => {
-    wooSectionOpen.value = !wooSectionOpen.value;
-    writeWooToggle(wooSectionOpen.value);
-};
-
-onMounted(() => {
-    wooSectionOpen.value = readWooToggle();
-});
-
-watch(supportsWooCatalog, (enabled) => {
-    if (!enabled) {
-        wooCatalogError.value = "";
-    }
-});
 
 watch(
     () => props.field,
@@ -387,11 +258,6 @@ watch(
 
         local.maxFileSize = typeof field.maxFileSize === "number" && field.maxFileSize > 0 ? field.maxFileSize : 5;
 
-        // Country field properties
-        local.woocommerce_mode = field.type === "country" && typeof field.woocommerce_mode === "string"
-            ? field.woocommerce_mode
-            : "all";
-
         // State field properties
         local.country_field = field.type === "state" && typeof field.country_field === "string"
             ? field.country_field
@@ -403,93 +269,7 @@ watch(
     { immediate: true },
 );
 
-const loadWooCatalog = async (resource = "products") => {
-    if (!supportsWooCatalog.value) {
-        if (!wooActive) {
-            wooCatalogError.value = __("WooCommerce is not active on this site.", "nxp-easy-forms");
-        }
-        return;
-    }
 
-    if (!builderSettings?.restUrl || wooCatalogLoading.value) {
-        return;
-    }
-
-    wooCatalogLoading.value = true;
-    wooCatalogLoadingType.value = resource;
-    wooCatalogError.value = "";
-
-    const formatPrice = (price) => {
-        if (!price) {
-            return "";
-        }
-        return wooCurrency ? ` ${wooCurrency} ${price}` : ` ${price}`;
-    };
-
-    try {
-        const response = await apiFetch(
-            `woocommerce/catalog?type=${encodeURIComponent(resource)}`,
-            {},
-            {
-                nonce: builderSettings.nonce,
-                base: builderSettings.restUrl,
-            }
-        );
-
-        if (!response.ok) {
-            throw new Error(response.statusText || 'Request failed');
-        }
-
-        const result = await response.json();
-        if (!result.success) {
-            wooCatalogError.value =
-                result.message ||
-                (resource === "categories"
-                    ? __("Unable to load WooCommerce categories.", "nxp-easy-forms")
-                    : __("Unable to load WooCommerce products.", "nxp-easy-forms"));
-            return;
-        }
-
-        const linesOutput = [];
-        if (resource === "categories") {
-            if (Array.isArray(result.items)) {
-                result.items.forEach((category) => {
-                    linesOutput.push(`cat:${category.id} - ${category.name}`);
-                });
-            }
-        } else if (Array.isArray(result.items)) {
-            result.items.forEach((product) => {
-                const baseLabel = `${product.id} - ${product.name}${formatPrice(product.price)}`;
-                linesOutput.push(baseLabel);
-
-                if (Array.isArray(product.variations)) {
-                    product.variations.forEach((variation) => {
-                        const variationLabel = `${variation.id} - ${product.name} (${variation.name || __('Variation', 'nxp-easy-forms')})${formatPrice(variation.price)}`;
-                        linesOutput.push(variationLabel);
-                    });
-                }
-            });
-        }
-
-        if (linesOutput.length === 0) {
-            wooCatalogError.value =
-                resource === "categories"
-                    ? __("No categories were returned from WooCommerce.", "nxp-easy-forms")
-                    : __("No products were returned from WooCommerce.", "nxp-easy-forms");
-            return;
-        }
-
-        optionsText.value = linesOutput.join("\n");
-        commit();
-    } catch (error) {
-        wooCatalogError.value =
-            error?.message ||
-            __("Unexpected WooCommerce API error.", "nxp-easy-forms");
-    } finally {
-        wooCatalogLoading.value = false;
-        wooCatalogLoadingType.value = null;
-    }
-};
 const commit = () => {
     if (!local.id) {
         return;
@@ -533,7 +313,6 @@ const commit = () => {
 
     // Explicitly include country field properties
     if (local.type === "country") {
-        updated.woocommerce_mode = local.woocommerce_mode || "all";
     }
 
     // Explicitly include state field properties
@@ -634,7 +413,6 @@ const updateOptions = () => {
 .nxp-help-icon-wrap { display: inline-flex; align-items: center; }
 .nxp-help-icon { width: 18px; height: 18px; opacity: 0.9; cursor: help; }
 
-.nxp-woo-toggle { display: flex; align-items: center; gap: 10px; justify-content: space-between; }
 
 .nxp-control__switch {
     display: flex;

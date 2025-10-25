@@ -1,5 +1,4 @@
 <?php
-
 declare(strict_types=1);
 
 namespace Joomla\Component\Nxpeasyforms\Administrator\Service\Security;
@@ -12,6 +11,11 @@ use function inet_pton;
 use function str_repeat;
 use function substr;
 use function trim;
+
+
+// phpcs:disable PSR1.Files.SideEffects
+\defined('_JEXEC') or die;
+// phpcs:enable PSR1.Files.SideEffects
 
 /**
  * Detects and anonymises client IP addresses.

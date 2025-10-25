@@ -1,5 +1,4 @@
 <?php
-
 declare(strict_types=1);
 
 namespace Joomla\Component\Nxpeasyforms\Administrator\Service\Security;
@@ -11,11 +10,16 @@ use Joomla\Component\Nxpeasyforms\Administrator\Service\Exception\SubmissionExce
 use Joomla\Event\DispatcherInterface;
 use Joomla\Event\Event;
 
+
 use const JSON_THROW_ON_ERROR;
 use function json_decode;
 use function json_encode;
 use function is_array;
 use function is_string;
+
+// phpcs:disable PSR1.Files.SideEffects
+\defined('_JEXEC') or die;
+// phpcs:enable PSR1.Files.SideEffects
 
 /**
  * Handles CAPTCHA verification across supported providers.

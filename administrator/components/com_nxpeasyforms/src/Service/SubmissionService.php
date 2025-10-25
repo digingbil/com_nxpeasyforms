@@ -1,5 +1,4 @@
 <?php
-
 declare(strict_types=1);
 
 namespace Joomla\Component\Nxpeasyforms\Administrator\Service;
@@ -23,6 +22,7 @@ use Joomla\Component\Nxpeasyforms\Administrator\Service\Validation\ValidationRes
 use Joomla\Event\DispatcherInterface;
 use Joomla\Event\Event;
 
+
 use function bin2hex;
 use function chr;
 use function is_array;
@@ -36,6 +36,10 @@ use function trim;
 use function hash;
 use function time;
 use function vsprintf;
+
+// phpcs:disable PSR1.Files.SideEffects
+\defined('_JEXEC') or die;
+// phpcs:enable PSR1.Files.SideEffects
 
 /**
  * Orchestrates end-to-end processing for form submissions.

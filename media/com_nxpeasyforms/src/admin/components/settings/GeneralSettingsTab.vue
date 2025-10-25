@@ -6,7 +6,7 @@
         id="nxp-panel-general"
     >
         <label class="nxp-setting nxp-setting--switch">
-            <span>{{ __("Store submissions in WordPress") }}</span>
+            <span>{{ __("Store submissions in Joomla") }}</span>
             <input type="checkbox" v-model="local.store_submissions" />
         </label>
 

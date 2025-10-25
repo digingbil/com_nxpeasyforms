@@ -1,8 +1,8 @@
 <?php
-
 declare(strict_types=1);
 
 namespace Joomla\Component\Nxpeasyforms\Administrator\Service\Integrations;
+
 
 /**
  * Placeholder queue implementation that performs synchronous dispatch.
@@ -15,6 +15,10 @@ use function array_values;
 use function defined;
 use function in_array;
 use function sys_get_temp_dir;
+
+// phpcs:disable PSR1.Files.SideEffects
+\defined('_JEXEC') or die;
+// phpcs:enable PSR1.Files.SideEffects
 
 final class IntegrationQueue
 {

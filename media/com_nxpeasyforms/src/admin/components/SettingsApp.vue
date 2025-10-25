@@ -28,7 +28,7 @@
             <div class="nxp-setting">
                 <span>{{ __("Delivery method") }}</span>
                 <select v-model="form.delivery.provider">
-                    <option value="wordpress">{{ __("WordPress default (wp_mail)") }}</option>
+                    <option value="joomla">{{ __("Joomla default (Factory::getMailer())") }}</option>
                     <option value="sendgrid">{{ __("SendGrid API") }}</option>
                     <option value="mailgun">{{ __("Mailgun API") }}</option>
                     <option value="postmark">{{ __("Postmark API") }}</option>
@@ -174,7 +174,7 @@
                 </div>
 
                 <div class="nxp-diagnostic-block">
-                    <h3 style="margin-top: 10px;">{{ __("WordPress mail") }}</h3>
+                    <h3 style="margin-top: 10px;">{{ __("Joomla mail") }}</h3>
                     <div v-if="diag.wpMail.lastError" class="notice notice-error" style="padding:.5rem .75rem;">
                         <strong>{{ __("Last error:") }}</strong>
                         <div>{{ diag.wpMail.lastError.message }}</div>
@@ -216,7 +216,7 @@ const form = reactive({
     from_email: api.defaults?.from_email || "",
     recipient: api.defaults?.recipient || "",
     delivery: {
-        provider: "wordpress",
+        provider: "joomla",
         sendgrid: { api_key: "" },
         mailgun: { api_key: "", domain: "", region: "us" },
         postmark: { api_token: "" },

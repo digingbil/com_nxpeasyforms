@@ -1,5 +1,4 @@
 <?php
-
 declare(strict_types=1);
 
 namespace Joomla\Component\Nxpeasyforms\Administrator\Service\Email;
@@ -11,6 +10,7 @@ use Joomla\CMS\Mail\MailerInterface;
 use Joomla\Component\Nxpeasyforms\Administrator\Service\Integrations\HttpClient;
 use Joomla\Component\Nxpeasyforms\Administrator\Support\Secrets;
 use Joomla\Registry\Registry;
+
 
 use function array_filter;
 use function array_key_exists;
@@ -27,6 +27,10 @@ use function sprintf;
 use function trim;
 
 use const FILTER_VALIDATE_EMAIL;
+
+// phpcs:disable PSR1.Files.SideEffects
+\defined('_JEXEC') or die;
+// phpcs:enable PSR1.Files.SideEffects
 
 final class EmailService
 {

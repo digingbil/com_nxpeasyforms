@@ -242,8 +242,8 @@ watch(
     height: 100%;
     /* Constrain height so side panels (like the field palette) can scroll internally */
     min-height: 520px;
-    /* Tweak these offsets if WP admin bars/toolbars change
-       Subtract the WP admin footer safe area (~65px) to avoid bottom cut-off */
+    /* Tweak these offsets if Joomla admin bars/toolbars change
+       Subtract the Joomla admin footer safe area (~65px) to avoid bottom cut-off */
     max-height: calc(100vh - 180px - 65px);
     overflow: hidden;
 }

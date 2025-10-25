@@ -61,6 +61,9 @@ desktop.ini
 JOOMLA_MIGRATION_GUIDELINE.md
 joomla_component_symlinking.sh
 
+# Generated frontend assets
+media/com_nxpeasyforms/css/admin-*.css
+
 # Temporary files
 *~
 *.lock

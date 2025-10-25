@@ -1,11 +1,15 @@
 <?php
-
 declare(strict_types=1);
 
 namespace Joomla\Component\Nxpeasyforms\Administrator\Helper;
 
 use Joomla\CMS\Factory;
 use Joomla\CMS\Language\Text;
+
+
+// phpcs:disable PSR1.Files.SideEffects
+\defined('_JEXEC') or die;
+// phpcs:enable PSR1.Files.SideEffects
 
 /**
  * Provides default configuration payloads for the form builder.
@@ -69,6 +73,24 @@ final class FormDefaults
                 ],
                 'custom_css' => '',
                 'integrations' => [
+                    'joomla_article' => [
+                        'enabled' => false,
+                        'category_id' => 0,
+                        'status' => 'unpublished',
+                        'author_mode' => 'current_user',
+                        'fixed_author_id' => 0,
+                        'language' => '*',
+                        'access' => 1,
+                        'map' => [
+                            'title' => '',
+                            'introtext' => '',
+                            'fulltext' => '',
+                            'tags' => '',
+                            'alias' => '',
+                            'meta_description' => '',
+                            'meta_keywords' => '',
+                        ],
+                    ],
                     'webhook' => [
                         'enabled' => false,
                         'endpoint' => '',

@@ -1,11 +1,11 @@
 <?php
-
 declare(strict_types=1);
 
 namespace Joomla\Component\Nxpeasyforms\Administrator\Helper;
 
 use Joomla\CMS\Factory;
 use Joomla\CMS\WebAsset\WebAssetManager;
+
 
 use function array_values;
 use function file_get_contents;
@@ -14,6 +14,10 @@ use function is_file;
 use function is_string;
 use function json_decode;
 use function ltrim;
+
+// phpcs:disable PSR1.Files.SideEffects
+\defined('_JEXEC') or die;
+// phpcs:enable PSR1.Files.SideEffects
 
 /**
  * Helper for loading compiled SPA assets from the media package.

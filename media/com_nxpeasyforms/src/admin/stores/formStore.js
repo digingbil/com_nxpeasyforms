@@ -32,20 +32,23 @@ function baseIntegrations() {
             card_title: '',
             message_template: '',
         },
-        wordpress_post: {
+        joomla_article: {
             enabled: false,
-            post_type: 'post',
-            post_status: 'pending',
+            category_id: 0,
+            status: 'unpublished',
             author_mode: 'current_user',
             fixed_author_id: 0,
+            language: '*',
+            access: 1,
             map: {
                 title: '',
-                content: '',
-                excerpt: '',
-                featured_image: '',
+                introtext: '',
+                fulltext: '',
+                tags: '',
+                alias: '',
+                meta_description: '',
+                meta_keywords: '',
             },
-            taxonomies: [],
-            meta: [],
         },
         mailchimp: {
             enabled: false,
@@ -76,42 +79,6 @@ function baseIntegrations() {
             field_mappings: [],
             legal_consent: false,
             consent_text: '',
-        },
-        woocommerce: {
-            enabled: false,
-            product_mode: 'static',
-            static_products: [],
-            product_field: '',
-            quantity_field: '',
-            variation_field: '',
-            price_field: '',
-            order_status: 'wc-pending',
-            create_customer: true,
-            customer: {
-                email_field: '',
-                first_name_field: '',
-                last_name_field: '',
-                phone_field: '',
-                company_field: '',
-                billing: {
-                    line1_field: '',
-                    line2_field: '',
-                    city_field: '',
-                    state_field: '',
-                    postcode_field: '',
-                    country_field: '',
-                },
-                shipping: {
-                    use_billing: true,
-                    line1_field: '',
-                    line2_field: '',
-                    city_field: '',
-                    state_field: '',
-                    postcode_field: '',
-                    country_field: '',
-                },
-            },
-            metadata: [],
         },
     };
 }
@@ -293,7 +260,7 @@ function baseOptions() {
             secret_key: '',
         },
         email_delivery: {
-            provider: 'wordpress',
+            provider: 'joomla',
             sendgrid: {
                 api_key: '',
             },
@@ -402,11 +369,6 @@ function createField(type) {
         field.maxFileSize = template.default.maxFileSize;
     }
 
-    // Include type-specific defaults
-    if (type === 'country') {
-        field.woocommerce_mode = template.default?.woocommerce_mode || 'all';
-    }
-
     if (type === 'state') {
         field.country_field = template.default?.country_field || '';
         field.allow_text_input = template.default?.allow_text_input !== false;
@@ -464,10 +426,6 @@ export const useFormStore = defineStore('form', {
                           ...field,
                           // Preserve type-specific props and ensure booleans are sane
                           multiple: field.multiple ?? false,
-                          woocommerce_mode:
-                              field.type === 'country'
-                                  ? field.woocommerce_mode || 'all'
-                                  : field.woocommerce_mode,
                           country_field:
                               field.type === 'state'
                                   ? field.country_field || ''
@@ -577,11 +535,6 @@ export const useFormStore = defineStore('form', {
                     baseField.maxFileSize = field.maxFileSize;
                 }
 
-                if (field.type === 'country') {
-                    baseField.woocommerce_mode =
-                        field.woocommerce_mode || 'all';
-                }
-
                 if (field.type === 'state') {
                     baseField.country_field = field.country_field || '';
                     baseField.allow_text_input =
@@ -635,11 +588,6 @@ export const useFormStore = defineStore('form', {
                             mapped.maxFileSize = field.maxFileSize;
                         }
 
-                        // Include type-specific props so they persist
-                        if (field.type === 'country') {
-                            mapped.woocommerce_mode =
-                                field.woocommerce_mode || 'all';
-                        }
                         if (field.type === 'state') {
                             mapped.country_field = field.country_field || '';
                             mapped.allow_text_input =

@@ -104,7 +104,6 @@ export const FIELD_LIBRARY = [
             label: __("Country", "nxp-easy-forms"),
             required: false,
             placeholder: __("Select a country", "nxp-easy-forms"),
-            woocommerce_mode: "all",
         },
     },
     {

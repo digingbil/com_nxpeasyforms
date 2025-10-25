@@ -50,7 +50,7 @@ export class CountryStateHandler {
     }
 
     async initCountryField(select) {
-        const mode = select.dataset.wooMode || 'all';
+        const mode = select.dataset.countryFilter || 'all';
         const placeholder =
             select.querySelector('option[value=""]')?.textContent ||
             'Select a country';

@@ -64,8 +64,8 @@
             <div class="nxp-setting" v-if="!local.use_global_email_delivery">
                 <span>{{ __("Delivery method", "nxp-easy-forms") }}</span>
                 <select v-model="local.email_delivery.provider">
-                    <option value="wordpress">
-                        {{ __("WordPress default (wp_mail)", "nxp-easy-forms") }}
+                    <option value="joomla">
+                        {{ __("Joomla default (Factory::getMailer())", "nxp-easy-forms") }}
                     </option>
                     <option value="sendgrid">
                         {{ __("SendGrid API", "nxp-easy-forms") }}
@@ -99,12 +99,12 @@
                 </select>
             </div>
             <small
-                v-if="!local.use_global_email_delivery && local.email_delivery.provider === 'wordpress'"
+                v-if="!local.use_global_email_delivery && local.email_delivery.provider === 'joomla'"
                 class="nxp-setting__hint"
             >
                 {{
                     __(
-                        "The WordPress mailer sends through your server. DNS records (SPF, DKIM, DMARC) for your domain greatly improve deliverability. Switch to SMTP or an email API if you need guaranteed delivery.",
+                        "The Joomla mailer sends through your server. DNS records (SPF, DKIM, DMARC) for your domain greatly improve deliverability. Switch to SMTP or an email API if you need guaranteed delivery.",
                         "nxp-easy-forms",
                     )
                 }}

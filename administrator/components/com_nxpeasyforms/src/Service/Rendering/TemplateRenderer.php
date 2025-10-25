@@ -1,10 +1,10 @@
 <?php
-
 declare(strict_types=1);
 
 namespace Joomla\Component\Nxpeasyforms\Administrator\Service\Rendering;
 
 use Joomla\CMS\Language\Text;
+
 
 use function array_filter;
 use function implode;
@@ -20,6 +20,10 @@ use function strtr;
 use const JSON_PRETTY_PRINT;
 use const JSON_THROW_ON_ERROR;
 use const JSON_UNESCAPED_UNICODE;
+
+// phpcs:disable PSR1.Files.SideEffects
+\defined('_JEXEC') or die;
+// phpcs:enable PSR1.Files.SideEffects
 
 /**
  * Renders template placeholders with submission values.

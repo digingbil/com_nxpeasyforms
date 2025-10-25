@@ -1,5 +1,4 @@
 <?php
-
 declare(strict_types=1);
 
 namespace Joomla\Component\Nxpeasyforms\Administrator\Service\Security;
@@ -19,6 +18,11 @@ use function str_ends_with;
 use function str_starts_with;
 use function strtolower;
 use function trim;
+
+
+// phpcs:disable PSR1.Files.SideEffects
+\defined('_JEXEC') or die;
+// phpcs:enable PSR1.Files.SideEffects
 
 /**
  * Validates remote webhook endpoints to prevent SSRF.

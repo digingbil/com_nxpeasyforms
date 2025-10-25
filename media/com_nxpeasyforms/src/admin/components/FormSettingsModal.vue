@@ -61,7 +61,7 @@
                 <div class="nxp-modal__panels">
                     <GeneralSettingsTab v-show="activeTab === 'general'" />
                     <NotificationSettingsTab v-show="activeTab === 'notifications'" />
-                    <WpIntegrationsSettingsTab v-show="activeTab === 'wp'" />
+                    <JoomlaIntegrationsSettingsTab v-show="activeTab === 'joomla'" />
                     <IntegrationsSettingsTab v-show="activeTab === 'integrations'" />
                     <SecuritySettingsTab v-show="activeTab === 'security'" />
                     <PrivacySettingsTab v-show="activeTab === 'privacy'" />
@@ -97,7 +97,7 @@ import { safeTrim, isObject, createRowId } from "@/admin/utils/strings";
 import { useFormSettings } from "@/admin/composables/useFormSettings";
 import GeneralSettingsTab from "./settings/GeneralSettingsTab.vue";
 import NotificationSettingsTab from "./settings/NotificationSettingsTab.vue";
-import WpIntegrationsSettingsTab from "./settings/WpIntegrationsSettingsTab.vue";
+import JoomlaIntegrationsSettingsTab from "./settings/JoomlaIntegrationsSettingsTab.vue";
 import IntegrationsSettingsTab from "./settings/IntegrationsSettingsTab.vue";
 import SecuritySettingsTab from "./settings/SecuritySettingsTab.vue";
 import PrivacySettingsTab from "./settings/PrivacySettingsTab.vue";
@@ -107,7 +107,7 @@ import ICON_CLOSE from "../../../assets/icons/hexagon-letter-x.svg";
 const tabs = [
     { id: "general", label: __("General", "nxp-easy-forms") },
     { id: "notifications", label: __("Email Settings", "nxp-easy-forms") },
-    { id: "wp", label: __("WP", "nxp-easy-forms") },
+    { id: "joomla", label: __("Joomla", "nxp-easy-forms") },
     { id: "integrations", label: __("Integrations", "nxp-easy-forms") },
     { id: "security", label: __("Security", "nxp-easy-forms") },
     { id: "privacy", label: __("Privacy", "nxp-easy-forms") },
@@ -296,7 +296,7 @@ const mapOptionsToLocal = (value) => {
     };
 
     local.email_delivery.provider =
-        value.email_delivery?.provider || "wordpress";
+        value.email_delivery?.provider || "joomla";
     local.email_delivery.sendgrid.api_key =
         value.email_delivery?.sendgrid?.api_key || "";
     // New providers
@@ -347,49 +347,36 @@ const mapOptionsToLocal = (value) => {
     const integrations = value.integrations || {};
     const defaults = createFormDefaults().integrations;
 
-    const wpMap = integrations?.wordpress_post?.map || {};
-    const wpTaxonomies = Array.isArray(integrations?.wordpress_post?.taxonomies)
-        ? integrations.wordpress_post.taxonomies
-              .filter(isObject)
-              .map((item) => ({
-                  id:
-                      typeof item?.id === "string" && item.id !== ""
-                          ? item.id
-                          : createRowId(),
-                  taxonomy: safeTrim(item?.taxonomy || ""),
-                  field: safeTrim(item?.field || ""),
-                  mode: item?.mode === "ids" ? "ids" : "names",
-              }))
-        : [];
-    const wpMeta = Array.isArray(integrations?.wordpress_post?.meta)
-        ? integrations.wordpress_post.meta
-              .filter(isObject)
-              .map((item) => ({
-                  id:
-                      typeof item?.id === "string" && item.id !== ""
-                          ? item.id
-                          : createRowId(),
-                  key: safeTrim(item?.key || ""),
-                  field: safeTrim(item?.field || ""),
-              }))
-        : [];
+    const articleSource =
+        integrations?.joomla_article ||
+        {};
+    const articleMap = isObject(articleSource.map) ? articleSource.map : {};
 
-    local.integrations.wordpress_post = {
-        ...defaults.wordpress_post,
-        enabled: integrations?.wordpress_post?.enabled === true,
-        post_type: integrations?.wordpress_post?.post_type || "post",
-        post_status: integrations?.wordpress_post?.post_status || "pending",
-        author_mode: integrations?.wordpress_post?.author_mode || "current_user",
-        fixed_author_id:
-            Number(integrations?.wordpress_post?.fixed_author_id ?? 0) || 0,
+    local.integrations.joomla_article = {
+        ...defaults.joomla_article,
+        enabled: articleSource.enabled === true,
+        category_id: Number(articleSource.category_id ?? articleSource.post_type ?? 0) || 0,
+        status:
+            articleSource.status ||
+            articleSource.post_status ||
+            "unpublished",
+        author_mode: articleSource.author_mode || "current_user",
+        fixed_author_id: Number(articleSource.fixed_author_id ?? 0) || 0,
+        language: articleSource.language || "*",
+        access: Number(articleSource.access ?? 1) || 1,
         map: {
-            title: wpMap?.title || "",
-            content: wpMap?.content || "",
-            excerpt: wpMap?.excerpt || "",
-            featured_image: wpMap?.featured_image || "",
+            title: safeTrim(articleMap.title || ""),
+            introtext: safeTrim(
+                articleMap.introtext || articleMap.content || ""
+            ),
+            fulltext: safeTrim(articleMap.fulltext || ""),
+            tags: safeTrim(articleMap.tags || ""),
+            alias: safeTrim(articleMap.alias || ""),
+            meta_description: safeTrim(
+                articleMap.meta_description || articleMap.excerpt || ""
+            ),
+            meta_keywords: safeTrim(articleMap.meta_keywords || ""),
         },
-        taxonomies: wpTaxonomies,
-        meta: wpMeta,
     };
 
     const mailchimpTags = Array.isArray(integrations?.mailchimp?.tags)
@@ -490,81 +477,6 @@ const hubspotMappings = Array.isArray(
         consent_text: integrations?.hubspot?.consent_text || "",
     };
 
-    const incomingWoo = integrations?.woocommerce || {};
-    const wooStaticProducts = Array.isArray(incomingWoo.static_products)
-        ? incomingWoo.static_products
-              .filter(isObject)
-              .map((item) => ({
-                  id:
-                      typeof item?.id === "string" && item.id !== ""
-                          ? item.id
-                          : createRowId(),
-                  product_id: Number(item?.product_id) || 0,
-                  variation_id: Number(item?.variation_id) || 0,
-                  quantity: Number(item?.quantity) || 1,
-              }))
-        : [];
-
-    const wooMetadata = Array.isArray(incomingWoo.metadata)
-        ? incomingWoo.metadata
-              .filter(isObject)
-              .map((item) => ({
-                  id:
-                      typeof item?.id === "string" && item.id !== ""
-                          ? item.id
-                          : createRowId(),
-                  key: safeTrim(item?.key || ""),
-                  field: safeTrim(item?.field || ""),
-              }))
-        : [];
-
-    const incomingCustomer = isObject(incomingWoo.customer)
-        ? incomingWoo.customer
-        : {};
-    const incomingBilling = isObject(incomingCustomer.billing)
-        ? incomingCustomer.billing
-        : {};
-    const incomingShipping = isObject(incomingCustomer.shipping)
-        ? incomingCustomer.shipping
-        : {};
-
-    local.integrations.woocommerce = {
-        ...defaults.woocommerce,
-        enabled: incomingWoo.enabled === true,
-        product_mode: incomingWoo.product_mode === "field" ? "field" : "static",
-        static_products: wooStaticProducts,
-        product_field: incomingWoo.product_field || "",
-        quantity_field: incomingWoo.quantity_field || "",
-        variation_field: incomingWoo.variation_field || "",
-        price_field: incomingWoo.price_field || "",
-        order_status: incomingWoo.order_status || "wc-pending",
-        create_customer: incomingWoo.create_customer !== false,
-        customer: {
-            email_field: incomingCustomer.email_field || "",
-            first_name_field: incomingCustomer.first_name_field || "",
-            last_name_field: incomingCustomer.last_name_field || "",
-            phone_field: incomingCustomer.phone_field || "",
-            company_field: incomingCustomer.company_field || "",
-            billing: {
-                line1_field: incomingBilling.line1_field || "",
-                line2_field: incomingBilling.line2_field || "",
-                city_field: incomingBilling.city_field || "",
-                state_field: incomingBilling.state_field || "",
-                postcode_field: incomingBilling.postcode_field || "",
-                country_field: incomingBilling.country_field || "",
-            },
-            shipping: {
-                use_billing: incomingShipping.use_billing === false ? false : true,
-                line1_field: incomingShipping.line1_field || "",
-                line2_field: incomingShipping.line2_field || "",
-                city_field: incomingShipping.city_field || "",
-                state_field: incomingShipping.state_field || "",
-                postcode_field: incomingShipping.postcode_field || "",
-                country_field: incomingShipping.country_field || "",
-            },
-        },
-        metadata: wooMetadata,
-    };
 };
 
 watch(
@@ -639,36 +551,6 @@ watch(
     }
 );
 
-watch(
-    () => local.integrations.wordpress_post.enabled,
-    (enabled) => {
-        if (enabled) {
-            if (!Array.isArray(local.integrations.wordpress_post.taxonomies)) {
-                local.integrations.wordpress_post.taxonomies = [];
-            }
-            if (!Array.isArray(local.integrations.wordpress_post.meta)) {
-                local.integrations.wordpress_post.meta = [];
-            }
-        }
-    },
-    { immediate: true }
-);
-
-watch(
-    () => local.integrations.woocommerce.enabled,
-    (enabled) => {
-        if (enabled) {
-            if (!Array.isArray(local.integrations.woocommerce.static_products)) {
-                local.integrations.woocommerce.static_products = [];
-            }
-            if (!Array.isArray(local.integrations.woocommerce.metadata)) {
-                local.integrations.woocommerce.metadata = [];
-            }
-        }
-    },
-    { immediate: true }
-);
-
 const parseMailchimpTags = () =>
     local.integrations.mailchimp.tags_input
         .split(",")
@@ -687,7 +569,6 @@ const fetchMailchimpAudiences = async () => {
         nonce: builderSettings.nonce,
     });
 
-    // Auto-select first audience if none selected
     if (
         !local.integrations.mailchimp.list_id &&
         mailchimpAudiences.value.length > 0
@@ -717,34 +598,34 @@ const buildIntegrationPayload = () => ({
         card_title: safeTrim(local.integrations.teams.card_title),
         message_template: local.integrations.teams.message_template,
     },
-    wordpress_post: {
-        enabled: !!local.integrations.wordpress_post.enabled,
-        post_type: safeTrim(local.integrations.wordpress_post.post_type) || "post",
-        post_status: safeTrim(local.integrations.wordpress_post.post_status) || "pending",
-        author_mode: local.integrations.wordpress_post.author_mode || "current_user",
+    joomla_article: {
+        enabled: !!local.integrations.joomla_article.enabled,
+        category_id: Number(local.integrations.joomla_article.category_id) || 0,
+        status:
+            safeTrim(local.integrations.joomla_article.status) ||
+            "unpublished",
+        author_mode:
+            local.integrations.joomla_article.author_mode || "current_user",
         fixed_author_id:
-            Number(local.integrations.wordpress_post.fixed_author_id) || 0,
+            Number(local.integrations.joomla_article.fixed_author_id) || 0,
+        language:
+            safeTrim(local.integrations.joomla_article.language) || "*",
+        access: Number(local.integrations.joomla_article.access) || 1,
         map: {
-            title: safeTrim(local.integrations.wordpress_post.map.title),
-            content: safeTrim(local.integrations.wordpress_post.map.content),
-            excerpt: safeTrim(local.integrations.wordpress_post.map.excerpt),
-            featured_image: safeTrim(
-                local.integrations.wordpress_post.map.featured_image
+            title: safeTrim(local.integrations.joomla_article.map.title),
+            introtext: safeTrim(
+                local.integrations.joomla_article.map.introtext
+            ),
+            fulltext: safeTrim(local.integrations.joomla_article.map.fulltext),
+            tags: safeTrim(local.integrations.joomla_article.map.tags),
+            alias: safeTrim(local.integrations.joomla_article.map.alias),
+            meta_description: safeTrim(
+                local.integrations.joomla_article.map.meta_description
+            ),
+            meta_keywords: safeTrim(
+                local.integrations.joomla_article.map.meta_keywords
             ),
         },
-        taxonomies: (local.integrations.wordpress_post.taxonomies || [])
-            .filter((item) => item.taxonomy && item.field)
-            .map((item) => ({
-                taxonomy: safeTrim(item.taxonomy),
-                field: safeTrim(item.field),
-                mode: item.mode === "ids" ? "ids" : "names",
-            })),
-        meta: (local.integrations.wordpress_post.meta || [])
-            .filter((item) => item.key && item.field)
-            .map((item) => ({
-                key: safeTrim(item.key),
-                field: safeTrim(item.field),
-            })),
     },
     mailchimp: {
         enabled: !!local.integrations.mailchimp.enabled,
@@ -794,104 +675,11 @@ const buildIntegrationPayload = () => ({
         legal_consent: !!local.integrations.hubspot.legal_consent,
         consent_text: local.integrations.hubspot.consent_text,
     },
-    woocommerce: {
-        enabled: !!local.integrations.woocommerce.enabled,
-        product_mode:
-            local.integrations.woocommerce.product_mode === "field"
-                ? "field"
-                : "static",
-        static_products: (local.integrations.woocommerce.static_products || [])
-            .map((item) => ({
-                product_id: Number(item.product_id) || 0,
-                variation_id: Number(item.variation_id) || 0,
-                quantity: Number(item.quantity) || 1,
-            }))
-            .filter((item) => item.product_id > 0),
-        product_field: safeTrim(local.integrations.woocommerce.product_field),
-        quantity_field: safeTrim(local.integrations.woocommerce.quantity_field),
-        variation_field: safeTrim(
-            local.integrations.woocommerce.variation_field
-        ),
-        price_field: safeTrim(local.integrations.woocommerce.price_field),
-        order_status:
-            safeTrim(local.integrations.woocommerce.order_status) ||
-            "wc-pending",
-        create_customer: !!local.integrations.woocommerce.create_customer,
-        customer: {
-            email_field: safeTrim(
-                local.integrations.woocommerce.customer.email_field
-            ),
-            first_name_field: safeTrim(
-                local.integrations.woocommerce.customer.first_name_field
-            ),
-            last_name_field: safeTrim(
-                local.integrations.woocommerce.customer.last_name_field
-            ),
-            phone_field: safeTrim(
-                local.integrations.woocommerce.customer.phone_field
-            ),
-            company_field: safeTrim(
-                local.integrations.woocommerce.customer.company_field
-            ),
-            billing: {
-                line1_field: safeTrim(
-                    local.integrations.woocommerce.customer.billing.line1_field
-                ),
-                line2_field: safeTrim(
-                    local.integrations.woocommerce.customer.billing.line2_field
-                ),
-                city_field: safeTrim(
-                    local.integrations.woocommerce.customer.billing.city_field
-                ),
-                state_field: safeTrim(
-                    local.integrations.woocommerce.customer.billing.state_field
-                ),
-                postcode_field: safeTrim(
-                    local.integrations.woocommerce.customer.billing
-                        .postcode_field
-                ),
-                country_field: safeTrim(
-                    local.integrations.woocommerce.customer.billing.country_field
-                ),
-            },
-            shipping: {
-                use_billing:
-                    local.integrations.woocommerce.customer.shipping.use_billing !==
-                    false,
-                line1_field: safeTrim(
-                    local.integrations.woocommerce.customer.shipping.line1_field
-                ),
-                line2_field: safeTrim(
-                    local.integrations.woocommerce.customer.shipping.line2_field
-                ),
-                city_field: safeTrim(
-                    local.integrations.woocommerce.customer.shipping.city_field
-                ),
-                state_field: safeTrim(
-                    local.integrations.woocommerce.customer.shipping.state_field
-                ),
-                postcode_field: safeTrim(
-                    local.integrations.woocommerce.customer.shipping
-                        .postcode_field
-                ),
-                country_field: safeTrim(
-                    local.integrations.woocommerce.customer.shipping.country_field
-                ),
-            },
-        },
-        metadata: (local.integrations.woocommerce.metadata || [])
-            .map((item) => ({
-                key: safeTrim(item.key),
-                field: safeTrim(item.field),
-            }))
-            .filter((item) => item.key !== "" && item.field !== ""),
-    },
 });
 
 const buildOptionsPayload = () => {
     const ipMode = safeTrim(local.ip_storage);
     const allowedIpModes = ["full", "anonymous", "none"];
-
 
     return {
         store_submissions: !!local.store_submissions,
@@ -905,9 +693,7 @@ const buildOptionsPayload = () => {
         email_from_name: safeTrim(local.email_from_name),
         email_from_address: safeTrim(local.email_from_address),
         honeypot: !!local.honeypot,
-        ip_storage: allowedIpModes.includes(ipMode)
-            ? ipMode
-            : "anonymous",
+        ip_storage: allowedIpModes.includes(ipMode) ? ipMode : "anonymous",
         delete_submissions_after_days_enabled:
             !!local.delete_submissions_after_days_enabled,
         delete_submissions_after_days:
@@ -924,7 +710,7 @@ const buildOptionsPayload = () => {
             secret_key: safeTrim(local.captcha.secret_key),
         },
         email_delivery: {
-            provider: local.email_delivery.provider || "wordpress",
+            provider: local.email_delivery.provider || "joomla",
             sendgrid: {
                 api_key: safeTrim(local.email_delivery.sendgrid.api_key),
             },
@@ -945,9 +731,7 @@ const buildOptionsPayload = () => {
                 region: safeTrim(local.email_delivery.amazon_ses?.region || "us-east-1"),
             },
             mailpit: {
-                host:
-                    safeTrim(local.email_delivery.mailpit.host) ||
-                    "127.0.0.1",
+                host: safeTrim(local.email_delivery.mailpit.host) || "127.0.0.1",
                 port: Number(local.email_delivery.mailpit.port) || 1025,
             },
             smtp2go: {
