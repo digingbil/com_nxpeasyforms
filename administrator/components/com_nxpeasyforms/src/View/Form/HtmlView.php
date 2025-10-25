@@ -102,6 +102,11 @@ final class HtmlView extends BaseHtmlView
                 'formId' => isset($this->item->id) ? (int) $this->item->id : 0,
                 'builderUrl' => Route::_('index.php?option=com_nxpeasyforms&view=form'),
                 'defaults' => FormDefaults::builderConfig(),
+                'initialData' => [
+                    'title' => $this->item->title ?? Text::_('COM_NXPEASYFORMS_UNTITLED_FORM'),
+                    'fields' => is_array($this->item->fields ?? null) ? $this->item->fields : [],
+                    'settings' => is_array($this->item->settings ?? null) ? $this->item->settings : [],
+                ],
                 'integrationsMeta' => [],
                 'joomla' => [
                     'categories' => [],

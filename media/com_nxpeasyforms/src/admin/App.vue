@@ -132,7 +132,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, onBeforeUnmount, ref, watch } from "vue";
+import { computed, nextTick, onMounted, onBeforeUnmount, ref, watch } from "vue";
 import { useFormStore } from "@/admin/stores/formStore";
 import FieldPalette from "@/admin/components/FieldPalette.vue";
 import FormCanvas from "@/admin/components/FormCanvas.vue";
@@ -150,6 +150,11 @@ const showTemplates = ref(false);
 const showPreview = ref(false);
 const showNewFormTip = ref(false);
 const layoutRef = ref(null);
+const hiddenFieldInputs = {
+    title: null,
+    fields: null,
+    settings: null,
+};
 
 const formTitle = computed({
     get: () => store.title,
@@ -176,8 +181,62 @@ const handleBeforeUnload = (event) => {
     }
 };
 
-onMounted(() => {
-    store.bootstrap();
+const ensureHiddenInputs = () => {
+    if (typeof document === "undefined") {
+        return;
+    }
+
+    const formEl = document.getElementById("adminForm");
+
+    if (!formEl) {
+        hiddenFieldInputs.title = null;
+        hiddenFieldInputs.fields = null;
+        hiddenFieldInputs.settings = null;
+        return;
+    }
+
+    hiddenFieldInputs.title = hiddenFieldInputs.title || formEl.querySelector("input[name=\"jform[title]\"]");
+    hiddenFieldInputs.fields = hiddenFieldInputs.fields || formEl.querySelector("input[name=\"jform[fields]\"]");
+    hiddenFieldInputs.settings = hiddenFieldInputs.settings || formEl.querySelector("input[name=\"jform[settings]\"]");
+};
+
+const serialiseFields = () => {
+    try {
+        return JSON.stringify(store.fields ?? []);
+    } catch (error) {
+        return "[]";
+    }
+};
+
+const serialiseOptions = () => {
+    try {
+        return JSON.stringify(store.options ?? {});
+    } catch (error) {
+        return "{}";
+    }
+};
+
+const syncHiddenInputs = () => {
+    ensureHiddenInputs();
+
+    if (hiddenFieldInputs.title) {
+        hiddenFieldInputs.title.value = store.title || "";
+    }
+
+    if (hiddenFieldInputs.fields) {
+        hiddenFieldInputs.fields.value = serialiseFields();
+    }
+
+    if (hiddenFieldInputs.settings) {
+        hiddenFieldInputs.settings.value = serialiseOptions();
+    }
+};
+
+onMounted(async () => {
+    await store.bootstrap();
+    nextTick(() => {
+        syncHiddenInputs();
+    });
     window.addEventListener("beforeunload", handleBeforeUnload);
 
     // Show tip for new forms only
@@ -204,9 +263,11 @@ onMounted(() => {
     // Also observe footer size changes if available
     if (window.ResizeObserver) {
         const ro = new ResizeObserver(updateBottomSafe);
-        const footerEl = document.getElementById('wpfooter');
+        const footerEl = document.getElementById("wpfooter");
         if (footerEl) ro.observe(footerEl);
     }
+
+    nextTick(syncHiddenInputs);
 });
 
 onBeforeUnmount(() => {
@@ -224,6 +285,29 @@ watch(
             selectedFieldId.value = null;
         }
     },
+);
+
+watch(
+    () => store.title,
+    () => {
+        syncHiddenInputs();
+    },
+);
+
+watch(
+    () => store.fields,
+    () => {
+        syncHiddenInputs();
+    },
+    { deep: true }
+);
+
+watch(
+    () => store.options,
+    () => {
+        syncHiddenInputs();
+    },
+    { deep: true }
 );
 
 watch(

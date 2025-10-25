@@ -5,6 +5,7 @@ import { __ } from '@/utils/i18n';
 
 const settings = window.nxpEasyForms?.builder || {};
 const defaults = settings.defaults || { fields: [], options: {} };
+const initialData = settings.initialData || {};
 
 const isObject = (value) =>
     value !== null && typeof value === 'object' && !Array.isArray(value);
@@ -367,10 +368,22 @@ export const useFormStore = defineStore('form', {
     state: () => ({
         formId: settings.formId || 0,
         title:
+            initialData.title ||
             settings.i18n?.defaultTitle ||
             __('Untitled form', 'nxp-easy-forms'),
-        fields: [],
-        options: makeOptions(),
+        fields: Array.isArray(initialData.fields) ? initialData.fields.map((field) => ({
+            ...field,
+            multiple: field.multiple ?? false,
+            country_field:
+                field.type === 'state'
+                    ? field.country_field || ''
+                    : field.country_field,
+            allow_text_input:
+                field.type === 'state'
+                    ? field.allow_text_input !== false
+                    : field.allow_text_input,
+        })) : [],
+        options: initialData.settings ? mergeOptions(initialData.settings) : makeOptions(),
         loading: false,
         saving: false,
         error: null,
@@ -382,6 +395,12 @@ export const useFormStore = defineStore('form', {
     },
     actions: {
         async bootstrap() {
+            // If we have initial data from server, we don't need to fetch via AJAX
+            if (initialData.title || (Array.isArray(initialData.fields) && initialData.fields.length > 0)) {
+                // Data already loaded in state initialization
+                return;
+            }
+
             if (!this.formId) {
                 this.options = makeOptions();
                 return;
