@@ -99,7 +99,7 @@ final class EmailsController extends ApiController
 
     private function assertAuthorised(): void
     {
-        $user = Factory::getUser();
+        $user = $this->app->getIdentity();
 
         if (!$user->authorise('core.manage', 'com_nxpeasyforms')) {
             throw new \RuntimeException(Text::_('JGLOBAL_AUTH_ACCESS_DENIED'), 403);

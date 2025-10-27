@@ -1,13 +1,30 @@
+:root {
+    --nxp-easy-form-spacing: 1rem;
+    --nxp-easy-form-font-size: 1rem;
+    --nxp-easy-form-border-radius: var(--bs-border-radius, var(--template-button-border-radius, 4px));
+    --nxp-easy-form-border-color: color-mix(in srgb, currentColor 18%, transparent);
+    --nxp-easy-form-input-padding: 0.55rem 0.65rem;
+    --nxp-easy-form-message-success: var(--template-success-text, #137333);
+    --nxp-easy-form-message-error: var(--template-danger-text, #b71c1c);
+    --nxp-easy-form-button-bg: var(--template-link-color, #0d6efd);
+    --nxp-easy-form-button-color: var(--template-text-light, #ffffff);
+    --nxp-easy-form-button-hover-bg: color-mix(in srgb, var(--nxp-easy-form-button-bg) 85%, #000 15%);
+}
+
 .nxp-easy-form {
-    margin: 1.5rem 0;
+    margin: calc(var(--nxp-easy-form-spacing) * 1.5) 0;
+    color: inherit;
+    font: inherit;
 }
 
 .nxp-easy-form__group {
-    margin-bottom: 1rem;
+    margin-bottom: var(--nxp-easy-form-spacing);
 }
 
 .nxp-easy-form__label {
-    display: block;
+    display: inline-flex;
+    gap: 0.35rem;
+    align-items: center;
     font-weight: 600;
     margin-bottom: 0.5rem;
 }
@@ -16,10 +33,21 @@
 .nxp-easy-form__textarea,
 .nxp-easy-form__select {
     width: 100%;
-    padding: 0.5rem;
-    border: 1px solid #d0d0d0;
-    border-radius: 4px;
-    font-size: 1rem;
+    padding: var(--nxp-easy-form-input-padding);
+    border: 1px solid var(--nxp-easy-form-border-color);
+    border-radius: var(--nxp-easy-form-border-radius);
+    font-size: var(--nxp-easy-form-font-size);
+    background-color: var(--template-bg-input, var(--cassiopeia-color-bg, #ffffff));
+    color: inherit;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.nxp-easy-form__input:focus,
+.nxp-easy-form__textarea:focus,
+.nxp-easy-form__select:focus {
+    outline: none;
+    border-color: var(--template-link-color, #0d6efd);
+    box-shadow: 0 0 0 0.2rem color-mix(in srgb, var(--template-link-color, #0d6efd) 25%, transparent);
 }
 
 .nxp-easy-form__textarea {
@@ -27,35 +55,57 @@
 }
 
 .nxp-easy-form__messages {
-    margin-bottom: 1rem;
+    margin-bottom: var(--nxp-easy-form-spacing);
     font-weight: 600;
 }
 
 .nxp-easy-form__messages--success {
-    color: #1b5e20;
+    color: var(--nxp-easy-form-message-success);
 }
 
 .nxp-easy-form__messages--error {
-    color: #b71c1c;
+    color: var(--nxp-easy-form-message-error);
 }
 
 .nxp-easy-form__button,
 .nxp-easy-form__actions button {
-    background-color: #0d6efd;
-    color: #fff;
+    background-color: var(--nxp-easy-form-button-bg);
+    color: var(--nxp-easy-form-button-color);
     border: none;
-    border-radius: 4px;
-    padding: 0.5rem 1.25rem;
+    border-radius: var(--nxp-easy-form-border-radius);
+    padding: 0.55rem 1.25rem;
     cursor: pointer;
+    font-weight: 600;
+    transition: background-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
 }
 
-.nxp-easy-form__button:disabled {
+.nxp-easy-form__button:hover,
+.nxp-easy-form__actions button:hover {
+    background-color: var(--nxp-easy-form-button-hover-bg);
+    box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.12);
+}
+
+.nxp-easy-form__button:disabled,
+.nxp-easy-form__actions button:disabled {
     opacity: 0.7;
     cursor: not-allowed;
+    box-shadow: none;
 }
 
 .nxp-easy-form__error {
-    color: #b71c1c;
+    color: var(--nxp-easy-form-message-error);
     font-size: 0.875rem;
-    margin: 0.25rem 0 0;
+    margin: 0.35rem 0 0;
+}
+
+.nxp-easy-form__nxp_f {
+    position: absolute;
+    left: -9999px;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+}
+
+.nxp-easy-form__required {
+    color: var(--template-danger-text, #d32f2f);
 }

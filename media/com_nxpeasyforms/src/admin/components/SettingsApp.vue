@@ -207,7 +207,7 @@
 <script setup>
 import { reactive, ref, onMounted } from "vue";
 import { apiFetch } from "@/admin/utils/http";
-import { __ } from "@/utils/i18n";
+import { __ } from "@/utils/translate";
 
 const api = window.nxpEasyFormsSettings || { restUrl: "", nonce: "", defaults: {} };
 

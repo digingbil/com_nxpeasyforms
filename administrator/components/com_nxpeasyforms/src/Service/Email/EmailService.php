@@ -6,6 +6,8 @@ namespace Joomla\Component\Nxpeasyforms\Administrator\Service\Email;
 use Joomla\CMS\Component\ComponentHelper;
 use Joomla\CMS\Factory;
 use Joomla\CMS\Language\Text;
+use Joomla\CMS\Mail\MailerFactory;
+use Joomla\CMS\Mail\MailerFactoryInterface;
 use Joomla\CMS\Mail\MailerInterface;
 use Joomla\Component\Nxpeasyforms\Administrator\Service\Integrations\HttpClient;
 use Joomla\Component\Nxpeasyforms\Administrator\Support\Secrets;
@@ -16,14 +18,18 @@ use function array_filter;
 use function array_key_exists;
 use function array_map;
 use function array_values;
+use function base64_encode;
 use function explode;
+use function json_decode;
 use function filter_var;
 use function htmlspecialchars;
 use function implode;
+use function in_array;
 use function is_array;
 use function is_string;
 use function nl2br;
 use function sprintf;
+use function strtolower;
 use function trim;
 
 use const FILTER_VALIDATE_EMAIL;
@@ -44,6 +50,8 @@ final class EmailService
 {
     private MailerInterface $mailer;
 
+    private MailerFactoryInterface $mailerFactory;
+
     private Registry $componentParams;
 
     private HttpClient $httpClient;
@@ -54,21 +62,59 @@ final class EmailService
      * @param \Joomla\CMS\Mail\MailerInterface|null $mailer Optional mailer instance.
      * @param \Joomla\Registry\Registry|null $componentParams Optional component params registry.
      * @param HttpClient|null $httpClient Optional HTTP client for external API calls.
+     * @param MailerFactoryInterface|null $mailerFactory Optional mailer factory for SMTP transports.
      *
      * @since 1.0.0
      */
     public function __construct(
         ?MailerInterface $mailer = null,
         ?Registry $componentParams = null,
-        ?HttpClient $httpClient = null
+        ?HttpClient $httpClient = null,
+        ?MailerFactoryInterface $mailerFactory = null
     ) {
         $container = Factory::getContainer();
 
-        /** @var MailerInterface $mailerInstance */
-        $mailerInstance = $mailer ?? $container->get(MailerInterface::class);
-        $this->mailer = $mailerInstance;
+        if ($mailer instanceof MailerInterface) {
+            $this->mailer = $mailer;
+        } elseif ($container->has(MailerInterface::class)) {
+            /** @var MailerInterface $mailerInstance */
+            $mailerInstance = $container->get(MailerInterface::class);
+            $this->mailer = $mailerInstance;
+        } else {
+            $this->mailer = Factory::getMailer();
+        }
+
+        if ($mailerFactory instanceof MailerFactoryInterface) {
+            $this->mailerFactory = $mailerFactory;
+        } elseif ($container->has(MailerFactoryInterface::class)) {
+            /** @var MailerFactoryInterface $resolvedFactory */
+            $resolvedFactory = $container->get(MailerFactoryInterface::class);
+            $this->mailerFactory = $resolvedFactory;
+        } else {
+            $configuration = method_exists(Factory::getApplication(), 'getConfig')
+                ? Factory::getApplication()->getConfig()
+                : Factory::getConfig();
+            $this->mailerFactory = new MailerFactory($configuration);
+        }
 
         $this->componentParams = $componentParams ?? ComponentHelper::getParams('com_nxpeasyforms');
+
+        if ($this->componentParams->exists('params')) {
+            $nested = $this->componentParams->get('params');
+
+            if ($nested instanceof Registry) {
+                $this->componentParams = clone $nested;
+            } elseif (\is_array($nested)) {
+                $this->componentParams = new Registry($nested);
+            } elseif (is_string($nested)) {
+                $decoded = json_decode($nested, true);
+
+                if (\is_array($decoded)) {
+                    $this->componentParams = new Registry($decoded);
+                }
+            }
+        }
+
         $this->httpClient = $httpClient ?? new HttpClient();
     }
 
@@ -147,31 +193,57 @@ final class EmailService
     {
         $app = Factory::getApplication();
 
+        $componentParamsData = $this->componentParams instanceof Registry
+            ? $this->componentParams->toArray()
+            : (array) $this->componentParams;
+
+        if (isset($componentParamsData['params']) && is_array($componentParamsData['params'])) {
+            $componentParams = new Registry($componentParamsData['params']);
+        } else {
+            $componentParams = new Registry($componentParamsData);
+        }
+
+        $this->componentParams = $componentParams;
+
+        $useGlobalDelivery = $this->shouldUseGlobalConfig($options, 'use_global_email_delivery', true);
+        $useGlobalRecipient = $this->shouldUseGlobalConfig($options, 'use_global_recipient', true);
+        $useGlobalFromName = $this->shouldUseGlobalConfig($options, 'use_global_from_name', true);
+        $useGlobalFromEmail = $this->shouldUseGlobalConfig($options, 'use_global_from_email', true);
+
+
         $defaults = [
-            'send_email' => (bool) $this->componentParams->get('email_send_enabled', 1),
-            'email_recipient' => (string) $this->componentParams->get(
+            'send_email' => (bool) $componentParams->get('email_send_enabled', 1),
+            'email_recipient' => (string) $componentParams->get(
                 'email_default_recipient',
                 (string) $app->get('mailfrom')
             ),
-            'email_subject' => (string) $this->componentParams->get(
+            'email_subject' => (string) $componentParams->get(
                 'email_subject',
                 Text::_('COM_NXPEASYFORMS_EMAIL_DEFAULT_SUBJECT')
             ),
-            'email_from_name' => (string) $this->componentParams->get(
+            'email_from_name' => (string) $componentParams->get(
                 'email_from_name',
                 (string) $app->get('sitename')
             ),
-            'email_from_address' => (string) $this->componentParams->get(
+            'email_from_address' => (string) $componentParams->get(
                 'email_from_address',
                 (string) $app->get('mailfrom')
             ),
-            'email_reply_to' => (string) $this->componentParams->get('email_reply_to', ''),
+            'email_reply_to' => (string) $componentParams->get('email_reply_to', ''),
         ];
 
         $merged = $defaults;
 
         foreach ($defaults as $key => $defaultValue) {
             if (!array_key_exists($key, $options)) {
+                continue;
+            }
+
+            if (
+                ($key === 'email_recipient' && $useGlobalRecipient) ||
+                ($key === 'email_from_name' && $useGlobalFromName) ||
+                ($key === 'email_from_address' && $useGlobalFromEmail)
+            ) {
                 continue;
             }
 
@@ -189,12 +261,39 @@ final class EmailService
         }
 
         $deliveryDefaults = [
-            'provider' => (string) $this->componentParams->get('email_provider', 'joomla'),
+            'provider' => (string) $componentParams->get('email_provider', 'joomla'),
             'sendgrid' => [
-                'api_key' => (string) $this->componentParams->get('email_sendgrid_key', ''),
+                'api_key' => (string) $componentParams->get('email_sendgrid_key', ''),
+            ],
+            'mailgun' => [
+                'api_key' => (string) $componentParams->get('email_mailgun_key', ''),
+                'domain' => (string) $componentParams->get('email_mailgun_domain', ''),
+                'region' => (string) $componentParams->get('email_mailgun_region', 'us'),
+            ],
+            'postmark' => [
+                'api_token' => (string) $componentParams->get('email_postmark_api_token', ''),
+            ],
+            'brevo' => [
+                'api_key' => (string) $componentParams->get('email_brevo_api_key', ''),
+            ],
+            'amazon_ses' => [
+                'access_key' => (string) $componentParams->get('email_amazon_ses_access_key', ''),
+                'secret_key' => (string) $componentParams->get('email_amazon_ses_secret_key', ''),
+                'region' => (string) $componentParams->get('email_amazon_ses_region', 'us-east-1'),
+            ],
+            'mailpit' => [
+                'host' => (string) $componentParams->get('email_mailpit_host', '127.0.0.1'),
+                'port' => (int) $componentParams->get('email_mailpit_port', 1025),
             ],
             'smtp2go' => [
-                'api_key' => (string) $this->componentParams->get('email_smtp2go_key', ''),
+                'api_key' => (string) $componentParams->get('email_smtp2go_key', ''),
+            ],
+            'smtp' => [
+                'host' => (string) $componentParams->get('email_smtp_host', ''),
+                'port' => (int) $componentParams->get('email_smtp_port', 587),
+                'encryption' => (string) $componentParams->get('email_smtp_encryption', 'tls'),
+                'username' => (string) $componentParams->get('email_smtp_username', ''),
+                'password' => (string) $componentParams->get('email_smtp_password', ''),
             ],
         ];
 
@@ -202,19 +301,117 @@ final class EmailService
             ? $options['email_delivery']
             : [];
 
-        $deliveryOptions['provider'] = $deliveryOptions['provider'] ?? $deliveryDefaults['provider'];
+        if ($useGlobalDelivery) {
+            $deliveryOptions = $deliveryDefaults;
+        } else {
+            $deliveryOptions['provider'] = $deliveryOptions['provider'] ?? $deliveryDefaults['provider'];
+        }
 
-        foreach (['sendgrid', 'smtp2go'] as $provider) {
+        $providerKeys = [
+            'sendgrid' => ['api_key'],
+            'mailgun' => ['api_key', 'domain', 'region'],
+            'postmark' => ['api_token'],
+            'brevo' => ['api_key'],
+            'amazon_ses' => ['access_key', 'secret_key', 'region'],
+            'mailpit' => ['host', 'port'],
+            'smtp2go' => ['api_key'],
+            'smtp' => ['host', 'port', 'encryption', 'username', 'password'],
+        ];
+
+        foreach ($providerKeys as $provider => $keys) {
             $deliveryOptions[$provider] = isset($deliveryOptions[$provider]) && is_array($deliveryOptions[$provider])
                 ? $deliveryOptions[$provider]
                 : [];
 
-            if (empty($deliveryOptions[$provider]['api_key'])) {
-                $deliveryOptions[$provider]['api_key'] = $deliveryDefaults[$provider]['api_key'];
+            foreach ($keys as $key) {
+                if (
+                    !array_key_exists($key, $deliveryOptions[$provider]) ||
+                    $deliveryOptions[$provider][$key] === '' ||
+                    $deliveryOptions[$provider][$key] === null
+                ) {
+                    $deliveryOptions[$provider][$key] = $deliveryDefaults[$provider][$key] ?? ($key === 'port' ? 0 : '');
+                }
+            }
+
+            if ($provider === 'mailgun') {
+                $deliveryOptions[$provider]['region'] = strtolower(
+                    (string) ($deliveryOptions[$provider]['region'] ?? 'us')
+                );
+            }
+
+            if ($provider === 'amazon_ses') {
+                $deliveryOptions[$provider]['region'] = strtolower(
+                    (string) ($deliveryOptions[$provider]['region'] ?? 'us-east-1')
+                );
+            }
+
+            if ($provider === 'mailpit') {
+                $deliveryOptions[$provider]['port'] = (int) ($deliveryOptions[$provider]['port'] ?? 1025) ?: 1025;
+            }
+
+            if ($provider === 'smtp') {
+                $deliveryOptions[$provider]['port'] = (int) ($deliveryOptions[$provider]['port'] ?? 587) ?: 587;
+
+                if (
+                    ($deliveryOptions[$provider]['password'] ?? '') === '' &&
+                    !empty($deliveryOptions[$provider]['password_set'])
+                ) {
+                    $deliveryOptions[$provider]['password'] = $deliveryDefaults[$provider]['password'] ?? '';
+                }
             }
         }
 
+        $secretKeys = [
+            'sendgrid' => ['api_key'],
+            'mailgun' => ['api_key'],
+            'postmark' => ['api_token'],
+            'brevo' => ['api_key'],
+            'amazon_ses' => ['access_key', 'secret_key'],
+            'smtp2go' => ['api_key'],
+            'smtp' => ['password'],
+        ];
+
+        foreach ($secretKeys as $provider => $keys) {
+            foreach ($keys as $key) {
+                $value = $deliveryOptions[$provider][$key] ?? '';
+
+                if ($value === '') {
+                    $value = $deliveryDefaults[$provider][$key] ?? '';
+                }
+
+                $deliveryOptions[$provider][$key] = $this->resolveSecretValue($value);
+            }
+        }
+
+        if ($useGlobalDelivery && !empty($deliveryDefaults['provider'])) {
+            $deliveryOptions['provider'] = $deliveryDefaults['provider'];
+        }
+
         $merged['email_delivery'] = $deliveryOptions;
+
+        if ($merged['email_recipient'] === '') {
+            $siteMail = (string) $app->get('mailfrom');
+
+            if ($siteMail !== '') {
+                $merged['email_recipient'] = $siteMail;
+            }
+        }
+
+        if ($merged['email_from_address'] === '') {
+            $siteMail = (string) $app->get('mailfrom');
+
+            if ($siteMail !== '') {
+                $merged['email_from_address'] = $siteMail;
+            }
+        }
+
+        if ($merged['email_from_name'] === '') {
+            $merged['email_from_name'] = (string) $app->get('sitename');
+        }
+
+        if ($merged['email_subject'] === '') {
+            $merged['email_subject'] = Text::_('COM_NXPEASYFORMS_EMAIL_DEFAULT_SUBJECT');
+        }
 
         return $merged;
     }
@@ -447,11 +644,17 @@ final class EmailService
             ? $config['email_delivery']
             : [];
 
-        $provider = $delivery['provider'] ?? 'joomla';
+        $provider = strtolower((string) ($delivery['provider'] ?? 'joomla'));
 
         return match ($provider) {
             'sendgrid' => $this->sendViaSendgrid($delivery['sendgrid'] ?? [], $message, $replyTo),
+            'mailgun' => $this->sendViaMailgun($delivery['mailgun'] ?? [], $message, $replyTo),
+            'postmark' => $this->sendViaPostmark($delivery['postmark'] ?? [], $message, $replyTo),
+            'brevo' => $this->sendViaBrevo($delivery['brevo'] ?? [], $message, $replyTo),
+            'amazon_ses' => $this->sendViaAmazonSes($delivery['amazon_ses'] ?? [], $message, $replyTo),
+            'mailpit' => $this->sendViaMailpit($delivery['mailpit'] ?? [], $message, $replyTo),
             'smtp2go' => $this->sendViaSmtp2Go($delivery['smtp2go'] ?? [], $message, $replyTo),
+            'smtp' => $this->sendViaCustomSmtp($delivery['smtp'] ?? [], $message, $replyTo),
             default => $this->sendViaMailer($message, $replyTo),
         };
     }
@@ -466,39 +669,8 @@ final class EmailService
     private function sendViaMailer(array $message, ?string $replyTo): array
     {
         $mailer = clone $this->mailer;
-        $mailer->clearAllRecipients();
-        $mailer->clearReplyTos();
-        $mailer->clearCCs();
-        $mailer->clearBCCs();
-        $mailer->clearAttachments();
 
-        $mailer->setSender([$message['from_email'], $message['from_name']]);
-
-        foreach ($message['recipients'] as $recipient) {
-            $mailer->addRecipient($recipient);
-        }
-
-        if ($replyTo !== null) {
-            $mailer->addReplyTo($replyTo);
-        }
-
-        $mailer->setSubject($message['subject']);
-        $mailer->isHtml(true);
-        $mailer->setBody($message['html']);
-
-        try {
-            $sent = (bool) $mailer->send();
-        } catch (\Throwable $exception) {
-            return [
-                'sent' => false,
-                'error' => $exception->getMessage(),
-            ];
-        }
-
-        return [
-            'sent' => $sent,
-            'error' => $sent ? null : Text::_('COM_NXPEASYFORMS_EMAIL_FAILED'),
-        ];
+        return $this->deliverWithMailer($mailer, $message, $replyTo, 'COM_NXPEASYFORMS_EMAIL_FAILED', true);
     }
 
     /**
@@ -628,13 +800,492 @@ final class EmailService
         ];
     }
 
-	/**
-	 * Resolves a secret value by decrypting it if necessary.
-	 *
-	 * @param string|null $value The secret value to resolve
-	 * @return string The decrypted or original value
-	 * @since 1.0.0
-	 */
+    /**
+     * @param array<string, mixed> $settings
+     * @param array<string, mixed> $message
+     * @return array{sent: bool, error?: string}
+     */
+    private function sendViaMailgun(array $settings, array $message, ?string $replyTo): array
+    {
+        $apiKey = $this->resolveSecretValue($settings['api_key'] ?? '');
+        $domain = trim((string) ($settings['domain'] ?? ''));
+
+        if ($apiKey === '' || $domain === '') {
+            return [
+                'sent' => false,
+                'error' => Text::_('COM_NXPEASYFORMS_EMAIL_MAILGUN_MISSING_CONFIG'),
+            ];
+        }
+
+        $region = strtolower((string) ($settings['region'] ?? 'us'));
+        $endpoint = $region === 'eu' ? 'https://api.eu.mailgun.net' : 'https://api.mailgun.net';
+        $url = $endpoint . '/v3/' . $domain . '/messages';
+
+        $fields = [
+            'from' => $this->formatEmailAddress($message['from_email'], $message['from_name']),
+            'to' => implode(',', $message['recipients']),
+            'subject' => $message['subject'],
+            'html' => $message['html'],
+            'text' => $message['text'],
+        ];
+
+        if ($replyTo !== null) {
+            $fields['h:Reply-To'] = $replyTo;
+        }
+
+        try {
+            $response = $this->httpClient->sendForm(
+                $url,
+                $fields,
+                'POST',
+                ['Authorization' => 'Basic ' . base64_encode('api:' . $apiKey)],
+                15
+            );
+        } catch (\Throwable $exception) {
+            return [
+                'sent' => false,
+                'error' => $exception->getMessage(),
+            ];
+        }
+
+        $code = (int) $response->code;
+
+        if ($code >= 200 && $code < 300) {
+            return ['sent' => true];
+        }
+
+        return [
+            'sent' => false,
+            'error' => Text::sprintf('COM_NXPEASYFORMS_EMAIL_MAILGUN_ERROR', $code),
+        ];
+    }
+
+    /**
+     * @param array<string, mixed> $settings
+     * @param array<string, mixed> $message
+     * @return array{sent: bool, error?: string}
+     */
+    private function sendViaPostmark(array $settings, array $message, ?string $replyTo): array
+    {
+        $token = $this->resolveSecretValue($settings['api_token'] ?? '');
+
+        if ($token === '') {
+            return [
+                'sent' => false,
+                'error' => Text::_('COM_NXPEASYFORMS_EMAIL_POSTMARK_MISSING_TOKEN'),
+            ];
+        }
+
+        $payload = [
+            'From' => $this->formatEmailAddress($message['from_email'], $message['from_name']),
+            'To' => implode(',', $message['recipients']),
+            'Subject' => $message['subject'],
+            'HtmlBody' => $message['html'],
+            'TextBody' => $message['text'],
+        ];
+
+        if ($replyTo !== null) {
+            $payload['ReplyTo'] = $replyTo;
+        }
+
+        try {
+            $response = $this->httpClient->sendJson(
+                'https://api.postmarkapp.com/email',
+                $payload,
+                'POST',
+                ['X-Postmark-Server-Token' => $token],
+                15
+            );
+        } catch (\Throwable $exception) {
+            return [
+                'sent' => false,
+                'error' => $exception->getMessage(),
+            ];
+        }
+
+        $code = (int) $response->code;
+
+        if ($code >= 200 && $code < 300) {
+            return ['sent' => true];
+        }
+
+        return [
+            'sent' => false,
+            'error' => Text::sprintf('COM_NXPEASYFORMS_EMAIL_POSTMARK_ERROR', $code),
+        ];
+    }
+
+    /**
+     * @param array<string, mixed> $settings
+     * @param array<string, mixed> $message
+     * @return array{sent: bool, error?: string}
+     */
+    private function sendViaBrevo(array $settings, array $message, ?string $replyTo): array
+    {
+        $apiKey = $this->resolveSecretValue($settings['api_key'] ?? '');
+
+        if ($apiKey === '') {
+            return [
+                'sent' => false,
+                'error' => Text::_('COM_NXPEASYFORMS_EMAIL_BREVO_MISSING_KEY'),
+            ];
+        }
+
+        $payload = [
+            'sender' => [
+                'email' => $message['from_email'],
+                'name' => $message['from_name'],
+            ],
+            'to' => array_map(
+                static fn (string $email): array => ['email' => $email],
+                $message['recipients']
+            ),
+            'subject' => $message['subject'],
+            'htmlContent' => $message['html'],
+            'textContent' => $message['text'],
+        ];
+
+        if ($replyTo !== null) {
+            $payload['replyTo'] = ['email' => $replyTo];
+        }
+
+        try {
+            $response = $this->httpClient->sendJson(
+                'https://api.brevo.com/v3/smtp/email',
+                $payload,
+                'POST',
+                ['api-key' => $apiKey],
+                15
+            );
+        } catch (\Throwable $exception) {
+            return [
+                'sent' => false,
+                'error' => $exception->getMessage(),
+            ];
+        }
+
+        $code = (int) $response->code;
+
+        if ($code >= 200 && $code < 300) {
+            return ['sent' => true];
+        }
+
+        return [
+            'sent' => false,
+            'error' => Text::sprintf('COM_NXPEASYFORMS_EMAIL_BREVO_ERROR', $code),
+        ];
+    }
+
+    /**
+     * @param array<string, mixed> $settings
+     * @param array<string, mixed> $message
+     * @return array{sent: bool, error?: string}
+     */
+    private function sendViaAmazonSes(array $settings, array $message, ?string $replyTo): array
+    {
+        $accessKey = $this->resolveSecretValue($settings['access_key'] ?? '');
+        $secretKey = $this->resolveSecretValue($settings['secret_key'] ?? '');
+        $region = strtolower((string) ($settings['region'] ?? 'us-east-1'));
+
+        if ($accessKey === '' || $secretKey === '') {
+            return [
+                'sent' => false,
+                'error' => Text::_('COM_NXPEASYFORMS_EMAIL_AMAZON_SES_MISSING_KEYS'),
+            ];
+        }
+
+        $host = sprintf('email-smtp.%s.amazonaws.com', $region !== '' ? $region : 'us-east-1');
+
+        return $this->sendViaSmtpRelay(
+            [
+                'host' => $host,
+                'port' => 587,
+                'encryption' => 'tls',
+                'username' => $accessKey,
+                'password' => $secretKey,
+            ],
+            $message,
+            $replyTo,
+            'COM_NXPEASYFORMS_EMAIL_AMAZON_SES_MISSING_KEYS',
+            'COM_NXPEASYFORMS_EMAIL_AMAZON_SES_ERROR'
+        );
+    }
+
+    /**
+     * @param array<string, mixed> $settings
+     * @param array<string, mixed> $message
+     * @return array{sent: bool, error?: string}
+     */
+    private function sendViaMailpit(array $settings, array $message, ?string $replyTo): array
+    {
+        $host = trim((string) ($settings['host'] ?? ''));
+        $port = (int) ($settings['port'] ?? 1025);
+
+        if ($host === '') {
+            return [
+                'sent' => false,
+                'error' => Text::_('COM_NXPEASYFORMS_EMAIL_MAILPIT_MISSING_HOST'),
+            ];
+        }
+
+        return $this->sendViaSmtpRelay(
+            [
+                'host' => $host,
+                'port' => $port > 0 ? $port : 1025,
+                'encryption' => '',
+                'username' => '',
+                'password' => '',
+            ],
+            $message,
+            $replyTo,
+            'COM_NXPEASYFORMS_EMAIL_MAILPIT_MISSING_HOST',
+            'COM_NXPEASYFORMS_EMAIL_MAILPIT_ERROR',
+            true
+        );
+    }
+
+    /**
+     * @param array<string, mixed> $settings
+     * @param array<string, mixed> $message
+     * @return array{sent: bool, error?: string}
+     */
+    private function sendViaCustomSmtp(array $settings, array $message, ?string $replyTo): array
+    {
+        return $this->sendViaSmtpRelay(
+            $settings,
+            $message,
+            $replyTo,
+            'COM_NXPEASYFORMS_EMAIL_SMTP_MISSING_CONFIG',
+            'COM_NXPEASYFORMS_EMAIL_SMTP_ERROR'
+        );
+    }
+
+    /**
+     * @param array<string, mixed> $settings
+     * @param array<string, mixed> $message
+     * @return array{sent: bool, error?: string}
+     */
+    private function sendViaSmtpRelay(
+        array $settings,
+        array $message,
+        ?string $replyTo,
+        string $missingConfigLangKey,
+        string $errorLangKey,
+        bool $allowAnonymous = false
+    ): array {
+        $host = trim((string) ($settings['host'] ?? ''));
+
+        if ($host === '') {
+            return [
+                'sent' => false,
+                'error' => Text::_($missingConfigLangKey),
+            ];
+        }
+
+        $port = (int) ($settings['port'] ?? 0);
+        $port = $port > 0 ? $port : 25;
+
+        $encryption = strtolower((string) ($settings['encryption'] ?? ''));
+        if (!in_array($encryption, ['ssl', 'tls'], true)) {
+            $encryption = '';
+        }
+
+        $username = trim((string) ($settings['username'] ?? ''));
+        $password = $this->resolveSecretValue($settings['password'] ?? '');
+
+        if (!$allowAnonymous && ($username === '' || $password === '')) {
+            return [
+                'sent' => false,
+                'error' => Text::_($missingConfigLangKey),
+            ];
+        }
+
+        $config = new Registry(
+            [
+                'mailer' => 'smtp',
+                'smtphost' => $host,
+                'smtpport' => $port,
+                'smtpsecure' => $encryption,
+                'smtpuser' => $username,
+                'smtppass' => $password,
+                'smtpauth' => ($username !== '' && $password !== '') ? 1 : 0,
+                'mailfrom' => $message['from_email'],
+                'fromname' => $message['from_name'],
+                'throw_exceptions' => true,
+            ]
+        );
+
+        if ($allowAnonymous && $username === '' && $password === '') {
+            $config->set('smtpauth', 0);
+        }
+
+        try {
+            $mailer = $this->mailerFactory->createMailer($config);
+        } catch (\Throwable $exception) {
+            return [
+                'sent' => false,
+                'error' => $exception->getMessage(),
+            ];
+        }
+
+        return $this->deliverWithMailer($mailer, $message, $replyTo, $errorLangKey);
+    }
+
+    /**
+     * @param array<string, mixed> $message
+     * @return array{sent: bool, error?: string}
+     */
+    private function deliverWithMailer(
+        MailerInterface $mailer,
+        array $message,
+        ?string $replyTo,
+        string $errorLangKey,
+        bool $resetRecipients = false
+    ): array {
+        if ($resetRecipients) {
+            if (method_exists($mailer, 'clearAllRecipients')) {
+                $mailer->clearAllRecipients();
+            }
+            if (method_exists($mailer, 'clearReplyTos')) {
+                $mailer->clearReplyTos();
+            }
+            if (method_exists($mailer, 'clearCCs')) {
+                $mailer->clearCCs();
+            }
+            if (method_exists($mailer, 'clearBCCs')) {
+                $mailer->clearBCCs();
+            }
+            if (method_exists($mailer, 'clearAttachments')) {
+                $mailer->clearAttachments();
+            }
+        }
+
+        try {
+            $mailer->setSender($message['from_email'], $message['from_name']);
+        } catch (\Throwable $exception) {
+            return [
+                'sent' => false,
+                'error' => $exception->getMessage(),
+            ];
+        }
+
+        try {
+            foreach ($message['recipients'] as $recipient) {
+                $mailer->addRecipient($recipient);
+            }
+        } catch (\Throwable $exception) {
+            return [
+                'sent' => false,
+                'error' => $exception->getMessage(),
+            ];
+        }
+
+        if ($replyTo !== null) {
+            try {
+                $mailer->addReplyTo($replyTo);
+            } catch (\Throwable $exception) {
+                return [
+                    'sent' => false,
+                    'error' => $exception->getMessage(),
+                ];
+            }
+        }
+
+        $mailer->setSubject($message['subject']);
+
+        if (method_exists($mailer, 'isHtml')) {
+            $mailer->isHtml(true);
+        }
+
+        try {
+            $mailer->setBody($message['html']);
+        } catch (\Throwable $exception) {
+            return [
+                'sent' => false,
+                'error' => $exception->getMessage(),
+            ];
+        }
+
+        if (property_exists($mailer, 'AltBody')) {
+            $mailer->AltBody = $message['text'];
+        }
+
+        try {
+            $result = $mailer->send();
+        } catch (\Throwable $exception) {
+            return [
+                'sent' => false,
+                'error' => $exception->getMessage(),
+            ];
+        }
+
+        $sent = $result === null ? true : (bool) $result;
+
+        if ($sent) {
+            return ['sent' => true];
+        }
+
+        return [
+            'sent' => false,
+            'error' => Text::_($errorLangKey),
+        ];
+    }
+
+    private function formatEmailAddress(string $email, string $name): string
+    {
+        $name = trim($name);
+
+        if ($name === '') {
+            return $email;
+        }
+
+        return sprintf('%s <%s>', $name, $email);
+    }
+
+    /**
+     * Determine whether a form option should fall back to the global component configuration.
+     *
+     * @param array<string,mixed> $options Options array from the form.
+     * @param string $key The option key to inspect.
+     * @param bool $default Default value when the key is missing or empty.
+     *
+     * @return bool
+     * @since 1.0.0
+     */
+    private function shouldUseGlobalConfig(array $options, string $key, bool $default = true): bool
+    {
+        if (!array_key_exists($key, $options)) {
+            return $default;
+        }
+
+        $value = $options[$key];
+
+        if (is_string($value)) {
+            $normalized = strtolower(trim($value));
+
+            if ($normalized === '') {
+                return $default;
+            }
+
+            if (in_array($normalized, ['0', 'false', 'off', 'no'], true)) {
+                return false;
+            }
+
+            if (in_array($normalized, ['1', 'true', 'on', 'yes'], true)) {
+                return true;
+            }
+        }
+
+        return (bool) $value;
+    }
+
+		/**
+		 * Resolves a secret value by decrypting it if necessary.
+		 *
+		 * @param string|null $value The secret value to resolve
+		 * @return string The decrypted or original value
+		 * @since 1.0.0
+		 */
     private function resolveSecretValue(?string $value): string
     {
         if ($value === null || $value === '') {

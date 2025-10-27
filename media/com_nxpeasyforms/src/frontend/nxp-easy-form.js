@@ -75,10 +75,13 @@ export class NxpEasyForm {
                 return;
             }
 
+            // Add formId to payload
+            payload.formId = this.formId;
+
             const requestOptions = this.buildRequestOptions(payload, files);
 
             const response = await fetch(
-                `${this.restUrl}/forms/${this.formId}/submissions`,
+                `${this.restUrl}/submission`,
                 requestOptions,
             );
 

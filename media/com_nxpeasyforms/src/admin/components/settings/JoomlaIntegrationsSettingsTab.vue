@@ -204,7 +204,7 @@
 
 <script setup>
 import { inject, ref, computed, watch } from "vue";
-import { __ } from "@/utils/i18n";
+import { __ } from "@/utils/translate";
 import { apiFetch } from "@/admin/utils/http";
 import ICON_JOOMLA from "../../../../assets/icons/world-share.svg";
 

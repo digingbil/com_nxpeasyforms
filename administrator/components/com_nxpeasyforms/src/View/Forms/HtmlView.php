@@ -84,10 +84,11 @@ final class HtmlView extends BaseHtmlView
     {
         ToolbarHelper::title(Text::_('COM_NXPEASYFORMS_SUBMENU_FORMS'), 'pencil-2');
 
-        $user = Factory::getUser();
+        $user = Factory::getApplication()->getIdentity();
 
         if ($user->authorise('core.create', 'com_nxpeasyforms')) {
             ToolbarHelper::addNew('form.add');
+            ToolbarHelper::custom('forms.duplicate', 'copy', 'copy', 'JTOOLBAR_DUPLICATE', true);
         }
 
         if ($user->authorise('core.edit', 'com_nxpeasyforms')) {

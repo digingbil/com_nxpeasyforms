@@ -974,7 +974,7 @@
 
 <script setup>
 import { inject, computed } from "vue";
-import { __ } from "@/utils/i18n";
+import { __ } from "@/utils/translate";
 import ICON_REMOVE from "../../../../assets/icons/square-letter-x.svg";
 import ICON_ZAPIER from "../../../../assets/icons/bolt.svg";
 import ICON_MAKE from "../../../../assets/icons/cloud-data-connection.svg";

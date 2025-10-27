@@ -1,4 +1,4 @@
-import { __ } from '@/utils/i18n';
+import { __ } from '@/utils/translate';
 
 export const FORM_TEMPLATES = [
     {
@@ -677,76 +677,72 @@ export const FORM_TEMPLATES = [
     },
     {
         id: 'post-submission',
-        name: __('Front-end Post Submission', 'nxp-easy-forms'),
+        name: __('Front-end Article Submission', 'nxp-easy-forms'),
         description: __(
-            'Collect user-generated content for review before publishing.',
+            'Collect Joomla articles from contributors for editorial review.',
             'nxp-easy-forms'
         ),
         fields: [
             {
                 type: 'text',
-                name: 'post_title',
-                label: __('Post Title', 'nxp-easy-forms'),
+                name: 'article_title',
+                label: __('Article Title', 'nxp-easy-forms'),
                 required: true,
-                placeholder: __('Give your post a headline', 'nxp-easy-forms'),
+                placeholder: __('Give your article a headline', 'nxp-easy-forms'),
             },
             {
                 type: 'textarea',
-                name: 'post_content',
-                label: __('Post Content', 'nxp-easy-forms'),
+                name: 'article_introtext',
+                label: __('Intro Text', 'nxp-easy-forms'),
                 required: true,
                 placeholder: __(
-                    'Share the full story. Markdown or plain text is welcome.',
+                    'Opening paragraph shown in blog listings (supports basic HTML).',
+                    'nxp-easy-forms'
+                ),
+            },
+            {
+                type: 'textarea',
+                name: 'article_fulltext',
+                label: __('Full Article Content', 'nxp-easy-forms'),
+                required: false,
+                placeholder: __(
+                    'Continue the story here. Leaving this blank will publish only the intro text.',
                     'nxp-easy-forms'
                 ),
             },
             {
                 type: 'file',
-                name: 'featured_image',
-                label: __('Featured Image', 'nxp-easy-forms'),
+                name: 'article_featured_image',
+                label: __('Featured Image (Optional)', 'nxp-easy-forms'),
                 required: false,
                 accept: 'image/jpeg,image/png,image/webp',
                 maxFileSize: 5,
             },
             {
                 type: 'select',
-                name: 'categories',
-                label: __('Categories', 'nxp-easy-forms'),
+                name: 'article_category',
+                label: __('Suggested Category', 'nxp-easy-forms'),
                 required: false,
-                multiple: true,
                 options: [
-                    __('Announcements', 'nxp-easy-forms'),
+                    __('Community News', 'nxp-easy-forms'),
                     __('Events', 'nxp-easy-forms'),
-                    __('Guides', 'nxp-easy-forms'),
+                    __('Guides & Tutorials', 'nxp-easy-forms'),
                     __('Opinion', 'nxp-easy-forms'),
                 ],
             },
             {
                 type: 'text',
-                name: 'tags',
-                label: __('Tags', 'nxp-easy-forms'),
+                name: 'article_tags',
+                label: __('Tags (comma separated)', 'nxp-easy-forms'),
                 required: false,
                 placeholder: __('Separate tags with commas', 'nxp-easy-forms'),
             },
             {
-                type: 'textarea',
-                name: 'excerpt',
-                label: __('Excerpt (Optional)', 'nxp-easy-forms'),
+                type: 'text',
+                name: 'article_alias',
+                label: __('Custom URL Alias (Optional)', 'nxp-easy-forms'),
                 required: false,
-                placeholder: __(
-                    'Short summary used in listings.',
-                    'nxp-easy-forms'
-                ),
-            },
-            {
-                type: 'textarea',
-                name: 'custom_fields',
-                label: __('Custom Fields', 'nxp-easy-forms'),
-                required: false,
-                placeholder: __(
-                    'Add meta data using key=value pairs, one per line.',
-                    'nxp-easy-forms'
-                ),
+                placeholder: __('leave blank to auto-generate', 'nxp-easy-forms'),
             },
             {
                 type: 'radio',
@@ -765,14 +761,14 @@ export const FORM_TEMPLATES = [
                 type: 'checkbox',
                 name: 'content_guidelines',
                 label: __(
-                    'I confirm this content follows the community guidelines.',
+                    'I confirm this submission follows the community guidelines.',
                     'nxp-easy-forms'
                 ),
                 required: true,
             },
             {
                 type: 'button',
-                label: __('Submit Post for Review', 'nxp-easy-forms'),
+                label: __('Submit Article for Review', 'nxp-easy-forms'),
             },
         ],
         options: {
@@ -780,6 +776,25 @@ export const FORM_TEMPLATES = [
                 'Thanks for the submission! Our editors will review it shortly.',
                 'nxp-easy-forms'
             ),
+            integrations: {
+                joomla_article: {
+                    enabled: true,
+                    category_id: 0,
+                    status: 'unpublished',
+                    author_mode: 'current_user',
+                    fixed_author_id: 0,
+                    language: '*',
+                    access: 1,
+                    map: {
+                        title: 'article_title',
+                        introtext: 'article_introtext',
+                        fulltext: 'article_fulltext',
+                        featured_image: 'article_featured_image',
+                        tags: 'article_tags',
+                        alias: 'article_alias',
+                    },
+                },
+            },
         },
     },
     {

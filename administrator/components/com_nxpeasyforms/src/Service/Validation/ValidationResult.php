@@ -23,7 +23,7 @@ final class ValidationResult
      * @var array<string, mixed>
      * @since   1.0.0
      */
-    private array $sanitizedData;
+    private array $sanitisedData;
 
     /**
      * Validation error messages indexed by field name.

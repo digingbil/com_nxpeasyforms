@@ -7,6 +7,7 @@
         <action name="core.edit" title="JLIB_RULES_RULE_EDIT" description="COM_NXPEASYFORMS_RULE_EDIT" />
         <action name="core.edit.state" title="JLIB_RULES_RULE_EDIT_STATE" description="COM_NXPEASYFORMS_RULE_EDIT_STATE" />
         <action name="core.delete" title="JLIB_RULES_RULE_DELETE" description="COM_NXPEASYFORMS_RULE_DELETE" />
+        <action name="core.view" title="COM_NXPEASYFORMS_RULE_COMPONENT_VIEW" description="COM_NXPEASYFORMS_RULE_COMPONENT_VIEW_DESC" default="true" />
     </section>
 
     <section name="form">

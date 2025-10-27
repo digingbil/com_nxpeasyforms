@@ -14,6 +14,8 @@ use Joomla\CMS\WebAsset\WebAssetManager;
 use Joomla\Component\Nxpeasyforms\Administrator\Helper\AssetHelper;
 use Joomla\Component\Nxpeasyforms\Administrator\Helper\FormDefaults;
 
+use function is_array;
+
 
 // phpcs:disable PSR1.Files.SideEffects
 \defined('_JEXEC') or die;
@@ -77,19 +79,18 @@ final class HtmlView extends BaseHtmlView
         return $this->action;
     }
 
-	/**
-	 * Initialise the form builder Vue.js application.
-	 *
-	 * Loads SPA assets and prepares the configuration object
-	 * for the builder interface.
-	 *
-	 * @return void
-	 * @throws \Exception
-	 * @since 1.0.0
-	 */
+    /**
+     * Initialise the form builder Vue.js application.
+     *
+     * Loads SPA assets and prepares the configuration object
+     * for the builder interface.
+     *
+     * @return void
+     * @since 1.0.0
+     */
     private function initialiseBuilder(): void
     {
-        $document = $this->getDocument() ?? Factory::getApplication()->getDocument();
+        $document = $this->document ?? Factory::getDocument();
         $wa = $document->getWebAssetManager();
         AssetHelper::registerEntry('src/admin/main.js');
         HTMLHelper::_('stylesheet', 'com_nxpeasyforms/css/admin-joomla.css', ['version' => 'auto', 'relative' => true]);
@@ -102,16 +103,12 @@ final class HtmlView extends BaseHtmlView
                 'formId' => isset($this->item->id) ? (int) $this->item->id : 0,
                 'builderUrl' => Route::_('index.php?option=com_nxpeasyforms&view=form'),
                 'defaults' => FormDefaults::builderConfig(),
-                'initialData' => [
-                    'title' => $this->item->title ?? Text::_('COM_NXPEASYFORMS_UNTITLED_FORM'),
-                    'fields' => is_array($this->item->fields ?? null) ? $this->item->fields : [],
-                    'settings' => is_array($this->item->settings ?? null) ? $this->item->settings : [],
-                ],
+                'initialData' => $this->buildInitialData($this->item),
                 'integrationsMeta' => [],
                 'joomla' => [
                     'categories' => [],
                 ],
-                'i18n' => [
+                'lang' => [
                     'formSaved' => Text::_('COM_NXPEASYFORMS_FORM_SAVED'),
                     'formCreated' => Text::_('COM_NXPEASYFORMS_FORM_CREATED'),
                     'saving' => Text::_('COM_NXPEASYFORMS_FORM_SAVING'),
@@ -124,6 +121,40 @@ final class HtmlView extends BaseHtmlView
             'window.nxpEasyForms = window.nxpEasyForms || {};'
             . 'window.nxpEasyForms.builder = Joomla.getOptions("com_nxpeasyforms.builder");'
         );
+    }
+
+    /**
+     * Prepare initial builder payload for the current item.
+     *
+     * Ensures the Vue app receives decoded fields and settings so that the
+     * form loads without waiting for an AJAX roundtrip.
+     *
+     * @param object|null $item Loaded form item.
+     *
+     * @return array<string,mixed>
+     * @since 1.0.0
+     */
+    private function buildInitialData(?object $item): array
+    {
+        if ($item === null) {
+            return [
+                'id' => 0,
+                'title' => '',
+                'fields' => [],
+                'settings' => [],
+                'active' => 1,
+            ];
+        }
+
+        return [
+            'id' => (int) ($item->id ?? 0),
+            'title' => (string) ($item->title ?? ''),
+            'fields' => is_array($item->fields ?? null) ? $item->fields : [],
+            'settings' => is_array($item->settings ?? null) ? $item->settings : [],
+            'active' => (int) ($item->active ?? 1),
+            'created_at' => $item->created_at ?? null,
+            'updated_at' => $item->updated_at ?? null,
+        ];
     }
 
     /**

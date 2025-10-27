@@ -45,7 +45,7 @@
 
 <script setup>
 import { inject } from "vue";
-import { __ } from "@/utils/i18n";
+import { __ } from "@/utils/translate";
 
 const ctx = inject("formSettingsContext");
 

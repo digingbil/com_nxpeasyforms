@@ -42,7 +42,18 @@ final class HtmlView extends BaseHtmlView
      */
     public function display($tpl = null)
     {
+        $app = Factory::getApplication();
+        $user = $app->getIdentity();
+
+        if (!$user->authorise('core.view', 'com_nxpeasyforms')) {
+            throw new \RuntimeException(Text::_('JERROR_ALERTNOAUTHOR'), 403);
+        }
+
         $this->item = $this->get('Item');
+
+        if (!empty($this->item['title']) && $this->document !== null) {
+            $this->document->setTitle((string) $this->item['title']);
+        }
 
         $this->prepareAssets();
 

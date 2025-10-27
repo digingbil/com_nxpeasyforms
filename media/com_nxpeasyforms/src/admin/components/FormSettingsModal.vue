@@ -90,7 +90,7 @@
 
 <script setup>
 import { reactive, ref, watch, computed, provide } from "vue";
-import { __ } from "@/utils/i18n";
+import { __ } from "@/utils/translate";
 import { useFormStore } from "@/admin/stores/formStore";
 import { createFormDefaults } from "@/admin/utils/formDefaults";
 import { safeTrim, isObject, createRowId } from "@/admin/utils/strings";
@@ -102,7 +102,10 @@ import IntegrationsSettingsTab from "./settings/IntegrationsSettingsTab.vue";
 import SecuritySettingsTab from "./settings/SecuritySettingsTab.vue";
 import PrivacySettingsTab from "./settings/PrivacySettingsTab.vue";
 import AdvancedSettingsTab from "./settings/AdvancedSettingsTab.vue";
-import ICON_CLOSE from "../../../assets/icons/hexagon-letter-x.svg";
+import { getMediaAssetUrl } from "@/admin/utils/assets";
+import { apiFetch } from "@/admin/utils/http";
+
+const ICON_CLOSE = getMediaAssetUrl("assets/icons/hexagon-letter-x.svg");
 
 const tabs = [
     { id: "general", label: __("General", "nxp-easy-forms") },
@@ -152,10 +155,20 @@ const props = defineProps({
     },
 });
 
-const emit = defineEmits(["update", "close", "test-email"]);
+const emit = defineEmits(["update", "close"]);
 
 const store = useFormStore();
 const builderSettings = window.nxpEasyForms?.builder || {};
+
+const globalEmailSettings = ref(builderSettings.globalEmail || null);
+let globalEmailPromise = null;
+
+const testEmailFeedback = reactive({
+    type: "",
+    message: "",
+});
+
+const testEmailLoading = ref(false);
 
 const local = reactive(createFormDefaults());
 
@@ -681,7 +694,7 @@ const buildOptionsPayload = () => {
     const ipMode = safeTrim(local.ip_storage);
     const allowedIpModes = ["full", "anonymous", "none"];
 
-    return {
+    const payload = {
         store_submissions: !!local.store_submissions,
         send_email: !!local.send_email,
         use_global_email_delivery: local.use_global_email_delivery !== false,
@@ -754,6 +767,12 @@ const buildOptionsPayload = () => {
         },
         integrations: buildIntegrationPayload(),
     };
+
+    if (!payload.email_recipient) {
+        delete payload.email_recipient;
+    }
+
+    return payload;
 };
 
 const save = () => {
@@ -761,15 +780,111 @@ const save = () => {
     emit("close");
 };
 
-const requestTestEmail = () => {
-    const recipient = safeTrim(local.email_recipient);
-    if (!recipient) {
-        return;
+const ensureGlobalEmailSettings = async () => {
+    if (
+        globalEmailSettings.value &&
+        safeTrim(globalEmailSettings.value.recipient || "")
+    ) {
+        return globalEmailSettings.value;
     }
-    emit("test-email", {
-        recipient,
-        options: buildOptionsPayload(),
-    });
+
+    if (globalEmailPromise) {
+        return globalEmailPromise;
+    }
+
+    globalEmailPromise = apiFetch(
+        "settings/email",
+        {},
+        {
+            base: builderSettings.restUrl,
+            nonce: builderSettings.nonce,
+        }
+    )
+        .then(async (response) => {
+            const data = await response.json().catch(() => ({}));
+
+            // FIX: The response is wrapped in data.data, not data.settings
+            const settings = data?.data?.settings || data?.settings;
+
+            if (response.ok && settings) {
+                globalEmailSettings.value = settings;
+            }
+
+            return globalEmailSettings.value;
+        })
+        .catch(() => globalEmailSettings.value)
+        .finally(() => {
+            globalEmailPromise = null;
+        });
+
+    return globalEmailPromise;
+};
+
+const resolveTestEmailRecipient = (
+    globalOverride = globalEmailSettings.value
+) => {
+    // Check if we should use global recipient FIRST
+    if (local.use_global_recipient !== false) {
+        const globalRecipient = safeTrim(globalOverride?.recipient || "");
+
+        if (globalRecipient) {
+            return globalRecipient;
+        }
+    }
+
+    // Then check for direct recipient (form-level)
+    const directRecipient = safeTrim(local.email_recipient);
+
+    if (directRecipient) {
+        return directRecipient;
+    }
+
+    // Finally, fall back to defaults
+    const defaultRecipient = safeTrim(
+        builderSettings.defaults?.options?.email_recipient || ""
+    );
+
+    if (defaultRecipient) {
+        return defaultRecipient;
+    }
+
+    return "";
+};
+
+const requestTestEmail = async () => {
+    testEmailFeedback.type = "";
+    testEmailFeedback.message = "";
+    testEmailLoading.value = true;
+
+    try {
+        let globalOverride = null;
+
+        try {
+            globalOverride = await ensureGlobalEmailSettings();
+        } catch {
+            globalOverride = globalEmailSettings.value;
+        }
+
+        const recipient = resolveTestEmailRecipient(globalOverride);
+
+        const result = await store.sendTestEmail({
+            recipient: safeTrim(recipient) || "",
+            options: buildOptionsPayload(),
+            formId: store.formId,
+        });
+
+        testEmailFeedback.type = "success";
+        testEmailFeedback.message =
+            safeTrim(result?.message || "") ||
+            __("Test email sent.", "nxp-easy-forms");
+    } catch (error) {
+        testEmailFeedback.type = "error";
+        testEmailFeedback.message =
+            safeTrim(error?.message || "") ||
+            __("Test email failed.", "nxp-easy-forms");
+    } finally {
+        testEmailLoading.value = false;
+    }
 };
 
 provide("formSettingsContext", {
@@ -788,6 +903,8 @@ provide("formSettingsContext", {
     mailchimpAudiencesError,
     fetchMailchimpAudiences,
     requestTestEmail,
+    testEmailFeedback,
+    testEmailLoading,
     addSalesforceMapping,
     removeSalesforceMapping,
     addHubspotMapping,
@@ -804,7 +921,7 @@ provide("formSettingsContext", {
 .nxp-modal__header, .nxp-modal__footer { padding: 16px 20px; border-bottom: 1px solid var(--nxp-surface-border); }
 .nxp-modal__header { display: flex; align-items: center; gap: 16px; }
 .nxp-modal__header h2 { margin: 0; flex: 1; }
-.nxp-settings-mode-toggle { display: flex; gap: 4px; background: var(--bs-secondary-bg, rgba(0, 0, 0, 0.04)); padding: 2px; border-radius: 6px;
+.nxp-settings-mode-toggle { display: flex; gap: 4px; background: var(--nxp-button-secondary-hover-bg); padding: 2px; border-radius: 6px;
     margin-right: 30px; }
 .nxp-settings-mode-toggle .button { margin: 0!important; background: transparent!important; border: none!important; box-shadow: none!important; color: var(--nxp-muted-color)!important; font-size: 0.9rem!important; padding: 4px 12px!important; height: auto!important; line-height: 1.4!important; }
 .nxp-settings-mode-toggle .button.is-primary { background: var(--nxp-panel-bg)!important; color: var(--bs-body-color)!important; box-shadow: 0 1px 2px var(--nxp-drawer-shadow)!important; }
@@ -822,6 +939,8 @@ provide("formSettingsContext", {
     align-items: center!important;
     justify-content: center!important;
     line-height: 32px!important;
+    border: none;
+    background-color: var(--nxp-panel-bg);
 }
 
 .nxp-modal-close__icon {
@@ -832,8 +951,52 @@ provide("formSettingsContext", {
     transition: filter 0.2s ease;
 }
 .nxp-modal__footer { border-bottom: 0; border-top: 1px solid var(--nxp-surface-border); display: flex; justify-content: flex-end; gap: 8px; background: var(--nxp-panel-bg); }
+.nxp-modal__footer .button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 40px;
+    padding: 8px 18px;
+    border-radius: 6px;
+    font-weight: 600;
+    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+.nxp-modal__footer .button.button-secondary {
+    background: var(--nxp-panel-bg);
+    color: var(--bs-body-color);
+    border: 1px solid var(--nxp-surface-border);
+}
+.nxp-modal__footer .button.button-secondary:hover,
+.nxp-modal__footer .button.button-secondary:focus-visible {
+    color: var(--bs-primary);
+    border-color: var(--bs-primary);
+    background: var(--nxp-button-secondary-hover-bg);
+    outline: none;
+}
+.nxp-modal__footer .button.button-secondary:focus-visible {
+    box-shadow: 0 0 0 3px rgba(var(--bs-primary-rgb, 34, 113, 177), 0.2);
+}
+.nxp-modal__footer .button.button-primary {
+    border: 1px solid var(--nxp-primary-button-border);
+    background: var(--nxp-primary-button-bg);
+    color: var(--nxp-primary-button-text);
+}
+.nxp-modal__footer .button.button-primary:hover,
+.nxp-modal__footer .button.button-primary:focus-visible {
+    background: var(--nxp-primary-button-bg-hover);
+    border-color: var(--nxp-primary-button-border-hover);
+    outline: none;
+}
+.nxp-modal__footer .button.button-primary:focus-visible {
+    box-shadow: 0 0 0 3px rgba(var(--bs-primary-rgb, 34, 113, 177), 0.32);
+}
+.nxp-modal__footer .button[disabled] {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
 .nxp-modal__body { flex: 1; display: flex; flex-direction: column; padding: 0; max-height: calc(90vh - 112px); }
-.nxp-modal__tabs { display: flex; gap: 4px; padding: 12px 20px 0; border-bottom: 1px solid var(--nxp-surface-border); background: var(--bs-secondary-bg, rgba(0, 0, 0, 0.04)); }
+.nxp-modal__tabs { display: flex; gap: 4px; padding: 12px 20px 0; border-bottom: 1px solid var(--nxp-surface-border); background: var(--nxp-button-secondary-hover-bg); }
 .nxp-tab { background: transparent; border: none; padding: 0 12px 12px; font-size: 1rem; font-weight: 600; cursor: pointer; color: var(--nxp-muted-color); border-bottom: 3px solid transparent; }
 .nxp-tab:hover { color: var(--bs-body-color); }
 .nxp-tab--active { color: var(--bs-body-color); border-bottom-color: var(--bs-primary); }
@@ -853,7 +1016,13 @@ textarea { min-height: 100px; }
 .nxp-integration-card { border: 1px solid var(--nxp-surface-border); border-radius: 8px; padding: 20px; background: var(--nxp-card-bg); display: grid; gap: 16px; }
 .nxp-setting.nxp-setting--switch { justify-content: flex-start; }
 .nxp-integration-header { display: flex; gap: 12px; align-items: flex-start; }
-.nxp-integration-icon { font-size: 32px; line-height: 1; }
+.nxp-integration-icon { font-size: 32px; line-height: 1; display: inline-flex; align-items: center; justify-content: center; }
+.nxp-integration-icon img {
+    max-width: 32px;
+    max-height: 32px;
+    filter: var(--nxp-icon-filter);
+    transition: filter 0.2s ease;
+}
 .nxp-integration-header h3 { margin: 0 0 4px; font-size: 1.1rem; font-weight: 600; }
 .nxp-integration-description { margin: 0; font-size: 0.92rem; color: var(--nxp-muted-color); }
 .nxp-integration-hint { display: block; margin-top: 4px; color: var(--nxp-muted-color); font-size: 0.92rem; }

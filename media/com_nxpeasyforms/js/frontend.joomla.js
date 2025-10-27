@@ -20,6 +20,7 @@
 
         wrapper.dataset.nxpEfBooted = '1';
 
+        const formId = Number(wrapper.dataset.formId || 0);
         const messages = form.querySelector('.nxp-easy-form__messages');
         const submitButton = form.querySelector('button[type="submit"], .nxp-easy-form__button');
 
@@ -40,7 +41,8 @@
 
             try {
                 const formData = new FormData(form);
-                const response = await fetch(`${restUrl}/submissions`, {
+                formData.append('formId', formId);
+                const response = await fetch(`${restUrl}/submission`, {
                     method: 'POST',
                     body: formData,
                     credentials: 'same-origin',

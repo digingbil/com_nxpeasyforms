@@ -56,6 +56,26 @@ final class FormDefaults
                     'sendgrid' => [
                         'api_key' => '',
                     ],
+                    'mailgun' => [
+                        'api_key' => '',
+                        'domain' => '',
+                        'region' => 'us',
+                    ],
+                    'postmark' => [
+                        'api_token' => '',
+                    ],
+                    'brevo' => [
+                        'api_key' => '',
+                    ],
+                    'amazon_ses' => [
+                        'access_key' => '',
+                        'secret_key' => '',
+                        'region' => 'us-east-1',
+                    ],
+                    'mailpit' => [
+                        'host' => '127.0.0.1',
+                        'port' => 1025,
+                    ],
                     'smtp2go' => [
                         'api_key' => '',
                     ],
@@ -65,6 +85,7 @@ final class FormDefaults
                         'encryption' => 'tls',
                         'username' => '',
                         'password' => '',
+                        'password_set' => false,
                     ],
                 ],
                 'webhooks' => [

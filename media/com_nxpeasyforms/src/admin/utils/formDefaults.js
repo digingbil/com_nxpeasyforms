@@ -1,4 +1,4 @@
-import { __ } from '@/utils/i18n';
+import { __ } from '@/utils/translate';
 
 /**
  * Default form options structure

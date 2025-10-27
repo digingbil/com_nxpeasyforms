@@ -1,21 +1,38 @@
 <?php
 declare(strict_types=1);
 
+namespace Psr\SimpleCache;
+
+if (!interface_exists(CacheInterface::class)) {
+    interface CacheInterface
+    {
+        public function get($key, $default = null);
+
+        public function set($key, $value, $ttl = null): bool;
+
+        public function delete($key): bool;
+
+        public function clear(): bool;
+
+        public function getMultiple($keys, $default = null): iterable;
+
+        public function setMultiple($values, $ttl = null): bool;
+
+        public function deleteMultiple($keys): bool;
+
+        public function has($key): bool;
+    }
+}
+
+if (!interface_exists(InvalidArgumentException::class)) {
+    interface InvalidArgumentException extends \Throwable
+    {
+    }
+}
+
 namespace Joomla\Component\Nxpeasyforms\Administrator\Service\Integrations;
 
-
-/**
- * Implementation of a queue system for handling integration dispatches.
- *
- * This class manages the queueing and processing of integration tasks for various
- * third-party services like Zapier, Slack, Teams, etc. It provides:
- * - Asynchronous processing of integration dispatches
- * - Persistent storage using PSR-16 Simple Cache
- * - Retry mechanism with configurable maximum attempts
- * - Batch processing capabilities
- *
- * @since  1.0.0
- */
+use Joomla\Component\Nxpeasyforms\Administrator\Service\Cache\SimpleFileCache;
 use Psr\SimpleCache\CacheInterface;
 use Psr\SimpleCache\InvalidArgumentException;
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;
@@ -163,8 +180,16 @@ final class IntegrationQueue
     private static function createDefaultCache(): CacheInterface
     {
         $cacheDir = defined('JPATH_CACHE') ? JPATH_CACHE : sys_get_temp_dir() . '/joomla_cache';
-        $adapter = new FilesystemAdapter('com_nxpeasyforms_queue', 0, $cacheDir);
+        $namespace = 'com_nxpeasyforms_queue';
 
-        return new Psr16Cache($adapter);
+        if (class_exists(FilesystemAdapter::class) && class_exists(Psr16Cache::class)) {
+            $adapter = new FilesystemAdapter($namespace, 0, $cacheDir);
+
+            return new Psr16Cache($adapter);
+        }
+
+        $storageDir = rtrim($cacheDir, DIRECTORY_SEPARATOR) . '/' . $namespace;
+
+        return new SimpleFileCache($storageDir);
     }
 }

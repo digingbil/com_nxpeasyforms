@@ -103,7 +103,13 @@
             >
                 <option value="joomla">COM_NXPEASYFORMS_CONFIG_EMAIL_PROVIDER_JOOMLA</option>
                 <option value="sendgrid">COM_NXPEASYFORMS_CONFIG_EMAIL_PROVIDER_SENDGRID</option>
+                <option value="mailgun">COM_NXPEASYFORMS_CONFIG_EMAIL_PROVIDER_MAILGUN</option>
+                <option value="postmark">COM_NXPEASYFORMS_CONFIG_EMAIL_PROVIDER_POSTMARK</option>
+                <option value="brevo">COM_NXPEASYFORMS_CONFIG_EMAIL_PROVIDER_BREVO</option>
+                <option value="amazon_ses">COM_NXPEASYFORMS_CONFIG_EMAIL_PROVIDER_AMAZON_SES</option>
+                <option value="mailpit">COM_NXPEASYFORMS_CONFIG_EMAIL_PROVIDER_MAILPIT</option>
                 <option value="smtp2go">COM_NXPEASYFORMS_CONFIG_EMAIL_PROVIDER_SMTP2GO</option>
+                <option value="smtp">COM_NXPEASYFORMS_CONFIG_EMAIL_PROVIDER_SMTP</option>
             </field>
 
             <field
@@ -116,12 +122,154 @@
             />
 
             <field
+                name="email_mailgun_domain"
+                type="text"
+                label="COM_NXPEASYFORMS_CONFIG_EMAIL_MAILGUN_DOMAIN"
+                description="COM_NXPEASYFORMS_CONFIG_EMAIL_MAILGUN_DOMAIN_DESC"
+                default=""
+                showon="email_provider:mailgun"
+            />
+
+            <field
+                name="email_mailgun_region"
+                type="list"
+                label="COM_NXPEASYFORMS_CONFIG_EMAIL_MAILGUN_REGION"
+                description="COM_NXPEASYFORMS_CONFIG_EMAIL_MAILGUN_REGION_DESC"
+                default="us"
+                showon="email_provider:mailgun"
+            >
+                <option value="us">COM_NXPEASYFORMS_CONFIG_EMAIL_MAILGUN_REGION_US</option>
+                <option value="eu">COM_NXPEASYFORMS_CONFIG_EMAIL_MAILGUN_REGION_EU</option>
+            </field>
+
+            <field
+                name="email_mailgun_key"
+                type="password"
+                label="COM_NXPEASYFORMS_CONFIG_EMAIL_MAILGUN_KEY"
+                description="COM_NXPEASYFORMS_CONFIG_EMAIL_MAILGUN_KEY_DESC"
+                default=""
+                showon="email_provider:mailgun"
+            />
+
+            <field
+                name="email_postmark_api_token"
+                type="password"
+                label="COM_NXPEASYFORMS_CONFIG_EMAIL_POSTMARK_TOKEN"
+                description="COM_NXPEASYFORMS_CONFIG_EMAIL_POSTMARK_TOKEN_DESC"
+                default=""
+                showon="email_provider:postmark"
+            />
+
+            <field
+                name="email_brevo_api_key"
+                type="password"
+                label="COM_NXPEASYFORMS_CONFIG_EMAIL_BREVO_KEY"
+                description="COM_NXPEASYFORMS_CONFIG_EMAIL_BREVO_KEY_DESC"
+                default=""
+                showon="email_provider:brevo"
+            />
+
+            <field
+                name="email_amazon_ses_access_key"
+                type="text"
+                label="COM_NXPEASYFORMS_CONFIG_EMAIL_AMAZON_SES_ACCESS_KEY"
+                description="COM_NXPEASYFORMS_CONFIG_EMAIL_AMAZON_SES_ACCESS_KEY_DESC"
+                default=""
+                showon="email_provider:amazon_ses"
+            />
+
+            <field
+                name="email_amazon_ses_secret_key"
+                type="password"
+                label="COM_NXPEASYFORMS_CONFIG_EMAIL_AMAZON_SES_SECRET_KEY"
+                description="COM_NXPEASYFORMS_CONFIG_EMAIL_AMAZON_SES_SECRET_KEY_DESC"
+                default=""
+                showon="email_provider:amazon_ses"
+            />
+
+            <field
+                name="email_amazon_ses_region"
+                type="text"
+                label="COM_NXPEASYFORMS_CONFIG_EMAIL_AMAZON_SES_REGION"
+                description="COM_NXPEASYFORMS_CONFIG_EMAIL_AMAZON_SES_REGION_DESC"
+                default="us-east-1"
+                showon="email_provider:amazon_ses"
+            />
+
+            <field
+                name="email_mailpit_host"
+                type="text"
+                label="COM_NXPEASYFORMS_CONFIG_EMAIL_MAILPIT_HOST"
+                description="COM_NXPEASYFORMS_CONFIG_EMAIL_MAILPIT_HOST_DESC"
+                default="127.0.0.1"
+                showon="email_provider:mailpit"
+            />
+
+            <field
+                name="email_mailpit_port"
+                type="number"
+                label="COM_NXPEASYFORMS_CONFIG_EMAIL_MAILPIT_PORT"
+                description="COM_NXPEASYFORMS_CONFIG_EMAIL_MAILPIT_PORT_DESC"
+                default="1025"
+                showon="email_provider:mailpit"
+            />
+
+            <field
                 name="email_smtp2go_key"
                 type="password"
                 label="COM_NXPEASYFORMS_CONFIG_EMAIL_SMTP2GO_KEY"
                 description="COM_NXPEASYFORMS_CONFIG_EMAIL_SMTP2GO_KEY_DESC"
                 default=""
                 showon="email_provider:smtp2go"
+            />
+
+            <field
+                name="email_smtp_host"
+                type="text"
+                label="COM_NXPEASYFORMS_CONFIG_EMAIL_SMTP_HOST"
+                description="COM_NXPEASYFORMS_CONFIG_EMAIL_SMTP_HOST_DESC"
+                default=""
+                showon="email_provider:smtp"
+            />
+
+            <field
+                name="email_smtp_port"
+                type="number"
+                label="COM_NXPEASYFORMS_CONFIG_EMAIL_SMTP_PORT"
+                description="COM_NXPEASYFORMS_CONFIG_EMAIL_SMTP_PORT_DESC"
+                default="587"
+                showon="email_provider:smtp"
+            />
+
+            <field
+                name="email_smtp_encryption"
+                type="list"
+                label="COM_NXPEASYFORMS_CONFIG_EMAIL_SMTP_ENCRYPTION"
+                description="COM_NXPEASYFORMS_CONFIG_EMAIL_SMTP_ENCRYPTION_DESC"
+                default="tls"
+                showon="email_provider:smtp"
+            >
+                <option value="">COM_NXPEASYFORMS_CONFIG_EMAIL_SMTP_ENCRYPTION_NONE</option>
+                <option value="ssl">COM_NXPEASYFORMS_CONFIG_EMAIL_SMTP_ENCRYPTION_SSL</option>
+                <option value="tls">COM_NXPEASYFORMS_CONFIG_EMAIL_SMTP_ENCRYPTION_TLS</option>
+            </field>
+
+            <field
+                name="email_smtp_username"
+                type="text"
+                label="COM_NXPEASYFORMS_CONFIG_EMAIL_SMTP_USERNAME"
+                description="COM_NXPEASYFORMS_CONFIG_EMAIL_SMTP_USERNAME_DESC"
+                default=""
+                showon="email_provider:smtp"
+            />
+
+            <field
+                name="email_smtp_password"
+                type="password"
+                label="COM_NXPEASYFORMS_CONFIG_EMAIL_SMTP_PASSWORD"
+                description="COM_NXPEASYFORMS_CONFIG_EMAIL_SMTP_PASSWORD_DESC"
+                default=""
+                showon="email_provider:smtp"
             />
         </fieldset>
 

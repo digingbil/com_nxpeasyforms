@@ -11,6 +11,12 @@
     --nxp-quick-bg: rgba(var(--bs-primary-rgb, 34, 113, 177), 0.08);
     --nxp-quick-text: var(--bs-body-color, #1d2327);
     --nxp-icon-filter: none;
+    --nxp-button-secondary-hover-bg: var(--bs-secondary-bg, rgba(0, 0, 0, 0.04));
+    --nxp-primary-button-bg: #2271b1;
+    --nxp-primary-button-border: #1f5ea1;
+    --nxp-primary-button-text: #ffffff;
+    --nxp-primary-button-bg-hover: #1b5a8d;
+    --nxp-primary-button-border-hover: #1a4e7a;
 }
 
 [data-bs-theme="dark"] .nxp-easy-forms-builder {
@@ -26,4 +32,10 @@
     --nxp-quick-bg: rgba(var(--bs-primary-rgb, 106, 183, 255), 0.22);
     --nxp-quick-text: var(--bs-body-color, #f8f9fa);
     --nxp-icon-filter: brightness(0) invert(1);
+    --nxp-button-secondary-hover-bg: rgba(255, 255, 255, 0.08);
+    --nxp-primary-button-bg: #3a8dde;
+    --nxp-primary-button-border: #317fcc;
+    --nxp-primary-button-text: #ffffff;
+    --nxp-primary-button-bg-hover: #367fcc;
+    --nxp-primary-button-border-hover: #2d70b6;
 }

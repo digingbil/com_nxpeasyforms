@@ -11,9 +11,7 @@ use Joomla\CMS\Extension\ComponentInterface;
 use Joomla\CMS\Extension\Service\Provider\ComponentDispatcherFactory;
 use Joomla\CMS\Extension\Service\Provider\MVCFactory;
 use Joomla\CMS\MVC\Factory\MVCFactoryInterface;
-use Joomla\Component\Nxpeasyforms\Administrator\Service\Repository\FormRepository;
 use Joomla\Component\Nxpeasyforms\Site\Extension\NxpeasyformsComponent;
-use Joomla\Database\DatabaseDriver;
 use Joomla\DI\ServiceProviderInterface;
 
 return new class () implements ServiceProviderInterface {
@@ -32,6 +30,13 @@ return new class () implements ServiceProviderInterface {
                     );
                 }
 
+                if (!class_exists('Joomla\\Component\\Nxpeasyforms\\Api\\Extension\\NxpeasyformsComponent')) {
+                    \JLoader::registerNamespace(
+                        'Joomla\\Component\\Nxpeasyforms\\Api',
+                        \JPATH_ROOT . '/api/components/com_nxpeasyforms/src'
+                    );
+                }
+
                 $component = new NxpeasyformsComponent(
                     $container->get(ComponentDispatcherFactoryInterface::class)
                 );
@@ -42,11 +47,7 @@ return new class () implements ServiceProviderInterface {
             }
         );
 
-        $container->share(
-            FormRepository::class,
-            static function (Container $container): FormRepository {
-                return new FormRepository($container->get(DatabaseDriver::class));
-            }
-        );
+        $registerDomainServices = include \JPATH_ADMINISTRATOR . '/components/com_nxpeasyforms/services/domain-services.php';
+        $registerDomainServices($container);
     }
 };

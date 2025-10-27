@@ -43,7 +43,7 @@
 
 <script setup>
 import { FORM_TEMPLATES } from "@/admin/constants/templates";
-import { __ } from "@/utils/i18n";
+import { __ } from "@/utils/translate";
 
 defineProps({
     isOpen: {

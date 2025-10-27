@@ -8,7 +8,15 @@
                     class="button button-link nxp-close-drawer"
                     @click="emit('close')"
                 >
-                    ×
+                    <img
+                        :src="ICON_CLOSE"
+                        alt=""
+                        aria-hidden="true"
+                        class="nxp-close-drawer__icon"
+                    />
+                    <span class="screen-reader-text">
+                        {{ __("Close", "nxp-easy-forms") }}
+                    </span>
                 </button>
             </header>
             <div class="nxp-drawer__content">
@@ -163,7 +171,10 @@
 
 <script setup>
 import { computed, reactive, ref, watch } from "vue";
-import { __ } from "@/utils/i18n";
+import { __ } from "@/utils/translate";
+import { getMediaAssetUrl } from "@/admin/utils/assets";
+
+const ICON_CLOSE = getMediaAssetUrl("assets/icons/hexagon-letter-x.svg");
 
 const props = defineProps({
     field: {
@@ -334,7 +345,7 @@ const updateOptions = () => {
 <style scoped>
 .nxp-drawer {
     position: fixed;
-    top: 32px;
+    top: 80px;
     right: -360px;
     width: 320px;
     height: calc(100% - 32px);
@@ -350,12 +361,23 @@ const updateOptions = () => {
     height: 34px;
     text-align: center;
     border-radius: 50%;
-    font-size: 24px;
     text-decoration: none;
-    display: flex;
-    align-content: center;
+    display: inline-flex;
+    align-items: center;
     justify-content: center;
     line-height: 32px;
+    border: none;
+    background-color: transparent;
+}
+
+.nxp-close-drawer:hover {
+    background: var(--bs-secondary-bg, rgba(0, 0, 0, .04));
+}
+
+.nxp-close-drawer__icon {
+    width: 18px;
+    height: 18px;
+    filter: var(--nxp-icon-filter);
 }
 
 .nxp-drawer--open {

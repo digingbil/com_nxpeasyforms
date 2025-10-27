@@ -31,7 +31,7 @@
 import { onMounted, onBeforeUnmount, ref } from "vue";
 import Sortable from "sortablejs";
 import { FIELD_LIBRARY } from "@/admin/constants/fields";
-import { __ } from "@/utils/i18n";
+import { __ } from "@/utils/translate";
 
 // Icon imports (resolved to URLs by the bundler)
 import ICON_TEXT from "../../../assets/icons/input-check.svg";

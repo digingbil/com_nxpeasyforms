@@ -67,17 +67,38 @@
                 </div>
             </header>
 
-            <div v-if="store.error" class="notice notice-error">
-                <p>{{ store.error }}</p>
-            </div>
-
-            <div v-if="store.notice" class="notice notice-success">
-                <p>{{ store.notice }}</p>
+            <div
+                v-if="store.error"
+                class="alert alert-danger nxp-alert"
+                role="alert"
+            >
+                <span class="fa-solid fa-triangle-exclamation nxp-alert__icon" aria-hidden="true"></span>
+                <p class="nxp-alert__message">{{ store.error }}</p>
                 <button
                     type="button"
-                    class="notice-dismiss"
-                    @click="store.clearNotice()"
+                    class="nxp-alert__dismiss"
+                    @click="store.clearError()"
+                    :title="__('Dismiss')"
                 >
+                    <span class="fa-solid fa-xmark" aria-hidden="true"></span>
+                    <span class="screen-reader-text">{{ __("Dismiss") }}</span>
+                </button>
+            </div>
+
+            <div
+                v-if="store.notice"
+                class="alert alert-success nxp-alert"
+                role="alert"
+            >
+                <span class="fa-solid fa-circle-check nxp-alert__icon" aria-hidden="true"></span>
+                <p class="nxp-alert__message">{{ store.notice }}</p>
+                <button
+                    type="button"
+                    class="nxp-alert__dismiss"
+                    @click="store.clearNotice()"
+                    :title="__('Dismiss')"
+                >
+                    <span class="fa-solid fa-xmark" aria-hidden="true"></span>
                     <span class="screen-reader-text">{{ __("Dismiss") }}</span>
                 </button>
             </div>
@@ -109,7 +130,6 @@
             :fields="store.fields"
             @update="updateOptions"
             @close="toggleSettings(false)"
-            @test-email="sendTestEmail"
         />
 
             <TemplateModal
@@ -140,7 +160,7 @@ import FieldEditorDrawer from "@/admin/components/FieldEditorDrawer.vue";
 import FormSettingsModal from "@/admin/components/FormSettingsModal.vue";
 import TemplateModal from "@/admin/components/TemplateModal.vue";
 import FormPreviewModal from "@/admin/components/FormPreviewModal.vue";
-import { __ } from "@/utils/i18n";
+import { __ } from "@/utils/translate";
 import ICON_HEX_PLUS from "../../assets/icons/hexagon-plus.svg";
 
 const store = useFormStore();
@@ -371,9 +391,6 @@ const applyTemplate = (template) => {
     store.applyTemplate(template);
 };
 
-const sendTestEmail = (payload) => {
-  store.sendTestEmail({ ...payload, formId: store.formId });
-};
 </script>
 
 <style scoped>
@@ -421,15 +438,16 @@ const sendTestEmail = (payload) => {
 }
 
 .nxp-builder__actions .btn-outline-secondary {
-    color: #212529;
-    background-color: #fff;
-    border-color: #ced4da;
+    color: var(--bs-body-color);
+    background-color: var(--nxp-panel-bg);
+    border-color: var(--nxp-surface-border);
 }
 
 .nxp-builder__actions .btn-outline-secondary:hover,
 .nxp-builder__actions .btn-outline-secondary:focus {
-    color: #0b5ed7;
-    border-color: #0b5ed7;
+    color: var(--bs-primary);
+    border-color: var(--bs-primary);
+    background-color: var(--bs-secondary-bg, rgba(0, 0, 0, 0.04));
 }
 
 .nxp-builder__actions .btn[disabled] {
@@ -500,8 +518,44 @@ const sendTestEmail = (payload) => {
     font-size: 1.2rem;
 }
 
-.notice {
-    position: relative;
+.nxp-alert {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px 16px;
+    margin-bottom: 16px;
+    border-radius: 8px;
+}
+
+.nxp-alert__icon {
+    font-size: 18px;
+    line-height: 1;
+    margin-top: 2px;
+}
+
+.nxp-alert__message {
+    flex: 1;
+    margin: 0;
+    line-height: 1.6;
+}
+
+.nxp-alert__dismiss {
+    background: transparent;
+    border: none;
+    color: inherit;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.nxp-alert__dismiss:hover,
+.nxp-alert__dismiss:focus-visible {
+    opacity: 0.75;
+    outline: none;
 }
 
 /* Quick Start notification */

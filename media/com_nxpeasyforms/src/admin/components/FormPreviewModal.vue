@@ -155,7 +155,7 @@
 
 <script setup>
 import { computed, ref } from "vue";
-import { __ } from "@/utils/i18n";
+import { __ } from "@/utils/translate";
 
 const props = defineProps({
     visible: Boolean,

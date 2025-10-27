@@ -1,11 +1,12 @@
 import { defineStore } from 'pinia';
 import { FIELD_LIBRARY, findFieldByType } from '@/admin/constants/fields';
 import { apiFetch } from '@/admin/utils/http';
-import { __ } from '@/utils/i18n';
+import { __ } from '@/utils/translate';
 
 const settings = window.nxpEasyForms?.builder || {};
 const defaults = settings.defaults || { fields: [], options: {} };
 const initialData = settings.initialData || {};
+const translations = settings.lang || {};
 
 const isObject = (value) =>
     value !== null && typeof value === 'object' && !Array.isArray(value);
@@ -251,6 +252,22 @@ function baseOptions() {
             sendgrid: {
                 api_key: '',
             },
+            mailgun: {
+                api_key: '',
+                domain: '',
+                region: 'us',
+            },
+            postmark: {
+                api_token: '',
+            },
+            brevo: {
+                api_key: '',
+            },
+            amazon_ses: {
+                access_key: '',
+                secret_key: '',
+                region: 'us-east-1',
+            },
             mailpit: {
                 host: '127.0.0.1',
                 port: 1025,
@@ -264,6 +281,7 @@ function baseOptions() {
                 encryption: 'tls',
                 username: '',
                 password: '',
+                password_set: false,
             },
         },
         custom_css: '',
@@ -297,6 +315,22 @@ function mergeOptions(options = {}) {
             sendgrid: {
                 ...base.email_delivery.sendgrid,
                 ...(incoming.email_delivery?.sendgrid || {}),
+            },
+            mailgun: {
+                ...base.email_delivery.mailgun,
+                ...(incoming.email_delivery?.mailgun || {}),
+            },
+            postmark: {
+                ...base.email_delivery.postmark,
+                ...(incoming.email_delivery?.postmark || {}),
+            },
+            brevo: {
+                ...base.email_delivery.brevo,
+                ...(incoming.email_delivery?.brevo || {}),
+            },
+            amazon_ses: {
+                ...base.email_delivery.amazon_ses,
+                ...(incoming.email_delivery?.amazon_ses || {}),
             },
             mailpit: {
                 ...base.email_delivery.mailpit,
@@ -369,7 +403,7 @@ export const useFormStore = defineStore('form', {
         formId: settings.formId || 0,
         title:
             initialData.title ||
-            settings.i18n?.defaultTitle ||
+            translations.defaultTitle ||
             __('Untitled form', 'nxp-easy-forms'),
         fields: Array.isArray(initialData.fields) ? initialData.fields.map((field) => ({
             ...field,
@@ -550,15 +584,17 @@ export const useFormStore = defineStore('form', {
             });
 
             if (template.options) {
-                this.options = {
-                    ...this.options,
-                    ...template.options,
-                };
+                this.options = mergeOptions(template.options || {});
+            } else {
+                this.options = mergeOptions({});
             }
             this.hasUnsavedChanges = true;
         },
         clearNotice() {
             this.notice = null;
+        },
+        clearError() {
+            this.error = null;
         },
         async saveForm() {
             if (this.saving) {
@@ -572,7 +608,7 @@ export const useFormStore = defineStore('form', {
             const payload = {
                 title:
                     this.title ||
-                    settings.i18n?.defaultTitle ||
+                    translations.defaultTitle ||
                     __('Untitled form', 'nxp-easy-forms'),
                 config: {
                     fields: this.fields.map((field) => {
@@ -614,20 +650,27 @@ export const useFormStore = defineStore('form', {
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({
-                        id: this.formId || 0,
+                        id: Number(this.formId) || 0,
                         ...payload,
                     }),
                 });
 
-                const data = await response.json().catch(() => ({}));
+                const responseBody = await response.json().catch(() => ({}));
+                const payload = responseBody?.data ?? responseBody;
 
                 if (!response.ok) {
                     throw new Error(
-                        data?.message ||
+                        payload?.message ||
+                            responseBody?.message ||
                             __('Unable to save form.', 'nxp-easy-forms')
                     );
                 }
-                this.formId = data.id;
+
+                const resolvedId = Number(payload?.id) || 0;
+
+                if (resolvedId > 0) {
+                    this.formId = resolvedId;
+                }
 
                 if (wasNewForm && this.formId && settings.builderUrl) {
                     const target = `${settings.builderUrl}&form_id=${this.formId}`;
@@ -641,9 +684,14 @@ export const useFormStore = defineStore('form', {
                     settings.formId = this.formId;
                 }
 
-                this.notice = this.formId
-                    ? settings.i18n?.formSaved
-                    : settings.i18n?.formCreated;
+                const savedMessage =
+                    translations.formSaved ||
+                    __('Form saved.', 'nxp-easy-forms');
+                const createdMessage =
+                    translations.formCreated ||
+                    __('Form created.', 'nxp-easy-forms');
+
+                this.notice = wasNewForm ? createdMessage : savedMessage;
                 this.hasUnsavedChanges = false;
             } catch (error) {
                 this.error = error.message;
@@ -652,28 +700,26 @@ export const useFormStore = defineStore('form', {
             }
         },
         async sendTestEmail({ recipient, options, formId }) {
-            try {
-                const response = await apiFetch('emails/test', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ recipient, options, formId }),
-                });
+            const response = await apiFetch('emails/test', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ recipient, options, formId }),
+            });
 
-                const result = await response.json().catch(() => ({}));
+            const result = await response.json().catch(() => ({}));
+            const payload = result?.data ?? result;
 
-                if (!response.ok || !result.sent) {
-                    throw new Error(
-                        result.message ||
-                            __('Test email failed.', 'nxp-easy-forms')
-                    );
-                }
-
-                this.notice = result.message;
-            } catch (error) {
-                this.error = error.message;
+            if (!response.ok || !payload?.sent) {
+                throw new Error(
+                    payload?.message ||
+                        result?.message ||
+                        __('Test email failed.', 'nxp-easy-forms')
+                );
             }
+
+            return payload;
         },
     },
 });

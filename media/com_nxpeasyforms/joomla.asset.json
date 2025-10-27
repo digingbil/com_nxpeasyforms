@@ -1,0 +1,31 @@
+{
+  "$schema": "https://developer.joomla.org/schemas/json-schema/web_assets.json",
+  "name": "com_nxpeasyforms",
+  "version": "1.0.0",
+  "description": "Media assets for NXP Easy Forms.",
+  "license": "GPL-2.0-or-later",
+  "assets": [
+    {
+      "name": "com_nxpeasyforms.frontend.styles",
+      "type": "style",
+      "uri": "com_nxpeasyforms/css/frontend.css",
+      "dependencies": [],
+      "attributes": {
+        "media": "all"
+      },
+      "version": "1.0.0"
+    },
+    {
+      "name": "com_nxpeasyforms.frontend.scripts",
+      "type": "script",
+      "uri": "com_nxpeasyforms/js/frontend.joomla.js",
+      "dependencies": [
+        "core"
+      ],
+      "attributes": {
+        "defer": true
+      },
+      "version": "1.0.0"
+    }
+  ]
+}

@@ -1,7 +1,7 @@
 import { ref } from "vue";
 import { safeTrim } from "@/admin/utils/strings";
 import { apiFetch } from "@/admin/utils/http";
-import { __ } from "@/utils/i18n";
+import { __ } from "@/utils/translate";
 
 /**
  * Composable for form settings operations

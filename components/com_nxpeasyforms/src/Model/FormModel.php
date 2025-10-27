@@ -40,21 +40,17 @@ final class FormModel extends ItemModel
         $pk = $pk ?? (int) $this->getState('form.id');
 
         if ($pk <= 0) {
-            return [
-                'id' => 0,
-                'title' => '',
-                'active' => 0,
-                'config' => [
-                    'fields' => [],
-                    'options' => [],
-                ],
-            ];
+            throw new \RuntimeException(Text::_('COM_NXPEASYFORMS_ERROR_FORM_NOT_FOUND'), 404);
         }
 
         $item = $this->forms->find($pk);
 
         if (!is_array($item) || empty($item)) {
             throw new \RuntimeException(Text::_('COM_NXPEASYFORMS_ERROR_FORM_NOT_FOUND'), 404);
+        }
+
+        if ((int) ($item['active'] ?? 1) !== 1) {
+            throw new \RuntimeException(Text::_('COM_NXPEASYFORMS_ERROR_FORM_INACTIVE'), 404);
         }
 
         return $item;
@@ -70,6 +66,11 @@ final class FormModel extends ItemModel
         $app = Factory::getApplication();
         $input = $app->input;
         $id = $input->getInt('id');
+
+        if ($id <= 0) {
+            $menuParams = $app->getParams();
+            $id = (int) $menuParams->get('id', 0);
+        }
 
         $this->setState('form.id', $id);
     }

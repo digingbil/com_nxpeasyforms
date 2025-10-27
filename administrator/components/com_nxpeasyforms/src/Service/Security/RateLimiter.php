@@ -1,9 +1,45 @@
 <?php
 declare(strict_types=1);
 
+namespace Psr\SimpleCache;
+
+if (!interface_exists(CacheInterface::class)) {
+    /**
+     * Minimal PSR-16 CacheInterface definition used when the psr/simple-cache package is unavailable.
+     */
+    interface CacheInterface
+    {
+        public function get($key, $default = null);
+
+        public function set($key, $value, $ttl = null): bool;
+
+        public function delete($key): bool;
+
+        public function clear(): bool;
+
+        public function getMultiple($keys, $default = null): iterable;
+
+        public function setMultiple($values, $ttl = null): bool;
+
+        public function deleteMultiple($keys): bool;
+
+        public function has($key): bool;
+    }
+}
+
+if (!interface_exists(InvalidArgumentException::class)) {
+    /**
+     * Minimal PSR-16 InvalidArgumentException definition used when psr/simple-cache is unavailable.
+     */
+    interface InvalidArgumentException extends \Throwable
+    {
+    }
+}
+
 namespace Joomla\Component\Nxpeasyforms\Administrator\Service\Security;
 
 use Joomla\CMS\Language\Text;
+use Joomla\Component\Nxpeasyforms\Administrator\Service\Cache\SimpleFileCache;
 use Joomla\Component\Nxpeasyforms\Administrator\Service\Exception\SubmissionException;
 use Psr\SimpleCache\CacheInterface;
 use Psr\SimpleCache\InvalidArgumentException;
@@ -133,8 +169,16 @@ final class RateLimiter
             ? JPATH_CACHE
             : (defined('JPATH_ROOT') ? JPATH_ROOT . '/cache' : sys_get_temp_dir());
 
-        $adapter = new FilesystemAdapter('com_nxpeasyforms_rate_limiter', 0, $cacheDir);
+        $cacheNamespace = 'com_nxpeasyforms_rate_limiter';
 
-        return new Psr16Cache($adapter);
+        if (class_exists(FilesystemAdapter::class) && class_exists(Psr16Cache::class)) {
+            $adapter = new FilesystemAdapter($cacheNamespace, 0, $cacheDir);
+
+            return new Psr16Cache($adapter);
+        }
+
+        $storageDir = rtrim($cacheDir, DIRECTORY_SEPARATOR) . '/' . $cacheNamespace;
+
+        return new SimpleFileCache($storageDir);
     }
 }

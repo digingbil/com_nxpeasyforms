@@ -189,7 +189,7 @@ final class FormsController extends ApiController
 
     private function assertAuthorised(string $action): void
     {
-        $user = Factory::getUser();
+        $user = $this->app->getIdentity();
 
         if (!$user->authorise($action, 'com_nxpeasyforms')) {
             throw new \RuntimeException(Text::_('JGLOBAL_AUTH_ACCESS_DENIED'), 403);

@@ -17,7 +17,7 @@ const resolvePath = (relative) => path.resolve(__dirname, relative);
 
 export default defineConfig({
   plugins: [vue(), wrapAdminInIIFE()],
-  base: '',
+  base: '/media/com_nxpeasyforms/',
   build: {
     outDir: '.',
     emptyOutDir: false,

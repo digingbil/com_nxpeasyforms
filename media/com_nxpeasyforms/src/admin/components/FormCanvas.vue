@@ -103,7 +103,7 @@
 <script setup>
 import { onMounted, onBeforeUnmount, ref, watch } from "vue";
 import Sortable from "sortablejs";
-import { __ } from "@/utils/i18n";
+import { __ } from "@/utils/translate";
 import ICON_SETTINGS from "../../../assets/icons/settings-cog.svg";
 // Icon imports (resolved to URLs by the bundler)
 import ICON_TEXT from "../../../assets/icons/input-check.svg";

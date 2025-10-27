@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace Joomla\Component\Nxpeasyforms\Administrator\Controller;
 
+use Joomla\CMS\Language\Text;
 use Joomla\CMS\MVC\Controller\AdminController;
 use Joomla\CMS\MVC\Model\BaseDatabaseModel;
 
@@ -33,8 +34,14 @@ final class SubmissionsController extends AdminController
      * @return BaseDatabaseModel
      * @since 1.0.0
      */
-    public function getModel($name = 'Submissions', $prefix = 'Joomla\\Component\\Nxpeasyforms\\Administrator\\Model\\', $config = ['ignore_request' => true]): BaseDatabaseModel
+    public function getModel($name = 'Submissions', $prefix = 'Administrator', $config = ['ignore_request' => true]): BaseDatabaseModel
     {
-        return parent::getModel($name, $prefix, $config);
+        $model = parent::getModel($name, $prefix, $config);
+
+        if (!$model instanceof BaseDatabaseModel) {
+            throw new \RuntimeException(Text::sprintf('JLIB_APPLICATION_ERROR_MODEL_CREATE', $name), 500);
+        }
+
+        return $model;
     }
 }

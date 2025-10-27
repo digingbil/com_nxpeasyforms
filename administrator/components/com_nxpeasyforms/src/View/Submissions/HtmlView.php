@@ -72,7 +72,7 @@ final class HtmlView extends BaseHtmlView
     {
         ToolbarHelper::title(Text::_('COM_NXPEASYFORMS_SUBMENU_SUBMISSIONS'), 'list');
 
-        $user = Factory::getUser();
+        $user = Factory::getApplication()->getIdentity();
 
         if ($user->authorise('nxpeasyforms.export', 'com_nxpeasyforms')) {
             ToolbarHelper::custom('submissions.export', 'download', '', Text::_('COM_NXPEASYFORMS_TOOLBAR_EXPORT'), false);

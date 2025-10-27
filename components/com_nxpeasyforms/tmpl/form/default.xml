@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<metadata>
+    <layout
+        title="COM_NXPEASYFORMS_MENU_FORM_DEFAULT"
+        option="COM_NXPEASYFORMS_MENU_FORM_DEFAULT_DESC"
+    />
+    <fields name="params" addfieldprefix="Joomla\Component\Nxpeasyforms\Administrator\Field">
+        <fieldset name="basic" label="COM_NXPEASYFORMS_MENU_FORM_DEFAULT">
+            <field
+                name="id"
+                type="Forms"
+                label="COM_NXPEASYFORMS_FIELD_FORM_LABEL"
+                description="COM_NXPEASYFORMS_FIELD_FORM_DESC"
+                required="true"
+            />
+        </fieldset>
+    </fields>
+</metadata>

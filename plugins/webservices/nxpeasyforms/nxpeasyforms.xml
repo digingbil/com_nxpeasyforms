@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<extension type="plugin" group="webservices" method="upgrade" version="5.0">
+    <name>plg_webservices_nxpeasyforms</name>
+    <author>nexusplugins.com</author>
+    <creationDate>2025-10-26</creationDate>
+    <version>1.0.0</version>
+    <description>PLG_WEBSERVICES_NXPEASYFORMS_DESC</description>
+    <namespace path="src">Joomla\Plugin\WebServices\Nxpeasyforms</namespace>
+    <files>
+        <folder plugin="nxpeasyforms">services</folder>
+        <folder>src</folder>
+        <filename>index.html</filename>
+    </files>
+    <config>
+        <fields name="params"/>
+    </config>
+</extension>

@@ -16,13 +16,17 @@ use Joomla\Component\Nxpeasyforms\Administrator\Service\Email\EmailService;
 use Joomla\Component\Nxpeasyforms\Administrator\Service\Repository\FormRepository;
 use Joomla\Registry\Registry;
 use Joomla\Database\DatabaseInterface;
+use Joomla\DI\ServiceProviderInterface;
 
 
+use function array_key_exists;
 use function array_replace_recursive;
 use function is_array;
 use function is_numeric;
 use function is_string;
+use function is_file;
 use function rawurldecode;
+use function strtolower;
 use function trim;
 
 // phpcs:disable PSR1.Files.SideEffects
@@ -45,6 +49,8 @@ final class AjaxController extends BaseController
     {
         $app = Factory::getApplication();
         $app->setHeader('Content-Type', 'application/json; charset=utf-8', true);
+
+        $this->bootDomainServices();
 
         $path = trim(rawurldecode((string) $this->input->getString('path', '')), '/');
         $segments = $path === '' ? [] : explode('/', $path);
@@ -70,6 +76,32 @@ final class AjaxController extends BaseController
 
         echo $response;
         $app->close();
+    }
+
+    /**
+     * Make sure component service providers are registered before handling AJAX requests.
+     *
+     * @return void
+     */
+    private function bootDomainServices(): void
+    {
+        $container = Factory::getContainer();
+
+        if ($container->has(EmailService::class) && $container->has(FormRepository::class)) {
+            return;
+        }
+
+        $providerPath = \JPATH_ADMINISTRATOR . '/components/com_nxpeasyforms/services/provider.php';
+
+        if (!is_file($providerPath)) {
+            return;
+        }
+
+        $provider = require $providerPath;
+
+        if ($provider instanceof ServiceProviderInterface) {
+            $container->registerServiceProvider($provider);
+        }
     }
 
     /**
@@ -319,7 +351,9 @@ final class AjaxController extends BaseController
         $defaults = FormDefaults::builderConfig()['options'];
 
         $resolvedOptions = array_replace_recursive($defaults, $baseOptions, $options);
-        $resolvedOptions['email_recipient'] = $recipient;
+        if ($recipient !== '') {
+            $resolvedOptions['email_recipient'] = $recipient;
+        }
         $resolvedOptions['send_email'] = true;
 
         $formTitle = $existing['title'] ?? Text::_('COM_NXPEASYFORMS_UNTITLED_FORM');
@@ -357,10 +391,27 @@ final class AjaxController extends BaseController
         $params = ComponentHelper::getParams('com_nxpeasyforms');
         $config = Factory::getConfig();
 
+        // Handle nested params structure (same as EmailService does)
+        if ($params->exists('params')) {
+            $nested = $params->get('params');
+
+            if ($nested instanceof Registry) {
+                $params = clone $nested;
+            } elseif (is_array($nested)) {
+                $params = new Registry($nested);
+            } elseif (is_string($nested)) {
+                $decoded = json_decode($nested, true);
+
+                if (is_array($decoded)) {
+                    $params = new Registry($decoded);
+                }
+            }
+        }
+
         $settings = [
             'from_name' => (string) $params->get('email_from_name', (string) $config->get('fromname')),
             'from_email' => (string) $params->get('email_from_address', (string) $config->get('mailfrom')),
-            'recipient' => (string) $params->get('email_default_recipient', ''),
+            'recipient' => (string) $params->get('email_default_recipient', (string) $config->get('mailfrom')),
             'delivery' => $this->extractDeliverySettings($params, false),
         ];
 
@@ -792,7 +843,7 @@ final class AjaxController extends BaseController
      */
     private function assertAuthorised(string $action): void
     {
-        $user = Factory::getUser();
+        $user = $this->app->getIdentity();
 
         if (!$user->authorise($action, 'com_nxpeasyforms')) {
             throw new \RuntimeException(Text::_('JGLOBAL_AUTH_ACCESS_DENIED'), 403);
@@ -933,6 +984,79 @@ final class AjaxController extends BaseController
         $provider = isset($delivery['provider']) ? (string) $delivery['provider'] : 'joomla';
 
         $delivery['provider'] = $provider ?: 'joomla';
+
+        $defaults = [
+            'sendgrid' => [
+                'api_key' => '',
+            ],
+            'mailgun' => [
+                'api_key' => '',
+                'domain' => '',
+                'region' => 'us',
+            ],
+            'postmark' => [
+                'api_token' => '',
+            ],
+            'brevo' => [
+                'api_key' => '',
+            ],
+            'amazon_ses' => [
+                'access_key' => '',
+                'secret_key' => '',
+                'region' => 'us-east-1',
+            ],
+            'mailpit' => [
+                'host' => '127.0.0.1',
+                'port' => 1025,
+            ],
+            'smtp2go' => [
+                'api_key' => '',
+            ],
+            'smtp' => [
+                'host' => '',
+                'port' => 587,
+                'encryption' => 'tls',
+                'username' => '',
+                'password' => '',
+                'password_set' => false,
+            ],
+        ];
+
+        foreach ($defaults as $key => $values) {
+            $delivery[$key] = isset($delivery[$key]) && is_array($delivery[$key]) ? $delivery[$key] : [];
+
+            foreach ($values as $field => $defaultValue) {
+                if (!array_key_exists($field, $delivery[$key]) || $delivery[$key][$field] === null) {
+                    $delivery[$key][$field] = $defaultValue;
+                    continue;
+                }
+
+                if (is_string($delivery[$key][$field])) {
+                    $delivery[$key][$field] = trim($delivery[$key][$field]);
+                }
+
+                if ($field === 'port') {
+                    $delivery[$key][$field] = (int) $delivery[$key][$field] ?: $defaultValue;
+                }
+            }
+
+            if ($key === 'mailgun') {
+                $delivery[$key]['region'] = strtolower($delivery[$key]['region'] ?: 'us');
+            }
+
+            if ($key === 'amazon_ses') {
+                $delivery[$key]['region'] = strtolower($delivery[$key]['region'] ?: 'us-east-1');
+            }
+
+            if ($key === 'mailpit') {
+                $delivery[$key]['port'] = (int) ($delivery[$key]['port'] ?? 1025) ?: 1025;
+            }
+
+            if ($key === 'smtp') {
+                $delivery[$key]['port'] = (int) ($delivery[$key]['port'] ?? 587) ?: 587;
+                $delivery[$key]['password_set'] = !empty($delivery[$key]['password_set']);
+            }
+        }
 
         return $delivery;
     }

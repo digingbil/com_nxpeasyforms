@@ -5,10 +5,12 @@
         aria-labelledby="nxp-tab-notifications"
         id="nxp-panel-notifications"
     >
-        <label class="nxp-setting nxp-setting--switch">
-            <span>{{ __("Send email notifications") }}</span>
-            <input type="checkbox" v-model="local.send_email" />
-        </label>
+        <div class="nxp-notification__primary-toggle">
+            <label class="nxp-setting nxp-setting--switch">
+                <span>{{ __("Send email notifications") }}</span>
+                <input type="checkbox" v-model="local.send_email" />
+            </label>
+        </div>
 
         <div v-if="local.send_email" class="nxp-setting-group">
 
@@ -57,9 +59,28 @@
                     }}
                 </small>
             </label>
-            <button type="button" class="button" @click="requestTestEmail">
-                {{ __("Send test email") }}
+            <button
+                type="button"
+                class="button button-secondary nxp-notification__test-email"
+                @click="requestTestEmail"
+                :disabled="testEmailLoading"
+            >
+                <span class="fa-regular fa-paper-plane" aria-hidden="true"></span>
+                <span v-if="testEmailLoading">
+                    {{ __("Sending…", "nxp-easy-forms") }}
+                </span>
+                <span v-else>
+                    {{ __("Send test email") }}
+                </span>
             </button>
+            <p
+                v-if="testEmailFeedback.message"
+                class="nxp-notification__test-email-feedback"
+                :class="`nxp-notification__test-email-feedback--${testEmailFeedback.type}`"
+                role="alert"
+            >
+                {{ testEmailFeedback.message }}
+            </p>
 
             <div class="nxp-setting" v-if="!local.use_global_email_delivery">
                 <span>{{ __("Delivery method", "nxp-easy-forms") }}</span>
@@ -321,7 +342,7 @@
 
 <script setup>
 import { inject } from "vue";
-import { __ } from "@/utils/i18n";
+import { __ } from "@/utils/translate";
 
 const ctx = inject("formSettingsContext");
 
@@ -329,7 +350,7 @@ if (!ctx) {
     throw new Error("Form settings context not provided");
 }
 
-const { local, requestTestEmail } = ctx;
+const { local, requestTestEmail, testEmailFeedback, testEmailLoading } = ctx;
 </script>
 
 <style scoped>
@@ -342,5 +363,45 @@ const { local, requestTestEmail } = ctx;
 .nxp-email-global-controls {
     display: grid;
     gap: 10px;
+}
+
+.nxp-notification__primary-toggle {
+    padding: 12px 16px;
+    margin-bottom: 20px;
+    border: 1px solid var(--nxp-surface-border);
+    border-radius: 10px;
+    background: var(--nxp-panel-bg);
+    box-shadow: 0 1px 2px var(--nxp-drawer-shadow);
+}
+
+.nxp-notification__primary-toggle .nxp-setting {
+    margin: 0;
+}
+
+.nxp-notification__test-email {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border-radius: 6px;
+    line-height: 1.4;
+}
+
+.nxp-notification__test-email .fa-regular,
+.nxp-notification__test-email .fa-solid {
+    font-size: 16px;
+}
+
+.nxp-notification__test-email-feedback {
+    margin-top: 8px;
+    font-size: 0.95rem;
+}
+
+.nxp-notification__test-email-feedback--success {
+    color: var(--bs-success, #198754);
+}
+
+.nxp-notification__test-email-feedback--error {
+    color: var(--bs-danger, #b32d2e);
 }
 </style>
