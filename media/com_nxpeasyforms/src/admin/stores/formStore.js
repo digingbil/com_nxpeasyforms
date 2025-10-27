@@ -656,17 +656,17 @@ export const useFormStore = defineStore('form', {
                 });
 
                 const responseBody = await response.json().catch(() => ({}));
-                const payload = responseBody?.data ?? responseBody;
+                const responseData = responseBody?.data ?? responseBody;
 
                 if (!response.ok) {
                     throw new Error(
-                        payload?.message ||
+                        responseData?.message ||
                             responseBody?.message ||
                             __('Unable to save form.', 'nxp-easy-forms')
                     );
                 }
 
-                const resolvedId = Number(payload?.id) || 0;
+                const resolvedId = Number(responseData?.id) || 0;
 
                 if (resolvedId > 0) {
                     this.formId = resolvedId;
