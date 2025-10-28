@@ -6,8 +6,9 @@ namespace Joomla\Component\Nxpeasyforms\Administrator\Service\Integrations;
 use Joomla\CMS\Application\CMSApplicationInterface;
 use Joomla\CMS\Component\ComponentHelper;
 use Joomla\CMS\Factory;
+use Joomla\CMS\Form\Form;
 use Joomla\Component\Content\Administrator\Model\ArticleModel;
-
+use Joomla\CMS\Uri\Uri;
 
 use function array_filter;
 use function array_map;
@@ -19,7 +20,6 @@ use function sprintf;
 use function str_starts_with;
 use function trim;
 use function strip_tags;
-
 // phpcs:disable PSR1.Files.SideEffects
 \defined('_JEXEC') or die;
 // phpcs:enable PSR1.Files.SideEffects
@@ -40,13 +40,13 @@ final class JoomlaArticleDispatcher implements IntegrationDispatcherInterface
 	 * @param   array<int,array<string,mixed>>  $fieldMeta  Field metadata information
 	 * @since 1.0.0
 	 */
-	public function dispatch(array $settings, array $form, array $payload, array $context, array $fieldMeta): void
+    public function dispatch(array $settings, array $form, array $payload, array $context, array $fieldMeta): void
     {
         if (empty($settings['enabled'])) {
             return;
         }
 
-        $data = $this->buildArticleData($settings, $payload);
+        $data = $this->buildArticleData($settings, $payload, $fieldMeta);
 
         if ($data['title'] === '' && $data['introtext'] === '' && $data['fulltext'] === '') {
             // Nothing meaningful to store.
@@ -73,6 +73,47 @@ final class JoomlaArticleDispatcher implements IntegrationDispatcherInterface
                 sprintf('Joomla article creation failed: %s', $model->getError()),
                 'warning'
             );
+            return;
+        }
+
+        // Defensive post-save fix: if form filtering dropped images, force-persist JSON to the table.
+        if ($saved !== false && !empty($data['images'])) {
+            try {
+                /** @var ArticleModel $model */
+                $table = $model->getTable();
+
+                // Obtain the ID of the just-saved article
+                $id = (int) ($table->id ?? 0);
+                if ($id > 0) {
+                    // Reload to ensure we have the latest persisted values
+                    $table->load($id);
+
+                    $currentImages = (string) ($table->images ?? '');
+
+                    if ($currentImages === '' || $currentImages === '{}') {
+                        $imagesJson = is_array($data['images'])
+                            ? json_encode($data['images'], JSON_UNESCAPED_SLASHES)
+                            : (string) $data['images'];
+
+                        if (is_string($imagesJson) && $imagesJson !== '') {
+                            $table->images = $imagesJson;
+                            // Best-effort store; on failure we log a warning but don't hard-fail submission flow
+                            if (!$table->store()) {
+                                $this->getApplication()->enqueueMessage(
+                                    'Article saved but failed to persist intro/full images to the images column.',
+                                    'warning'
+                                );
+                            }
+                        }
+                    }
+                }
+            } catch (\Throwable $e) {
+                // Non-fatal: keep submission successful but surface an admin-side notice
+                $this->getApplication()->enqueueMessage(
+                    sprintf('Article saved but image metadata may be missing: %s', $e->getMessage()),
+                    'warning'
+                );
+            }
         }
     }
 
@@ -81,11 +122,12 @@ final class JoomlaArticleDispatcher implements IntegrationDispatcherInterface
      *
      * @param array<string,mixed> $settings
      * @param array<string,mixed> $payload
+     * @param array<int,array<string,mixed>> $fieldMeta
      *
      * @return array<string,mixed>
      * @since 1.0.0
      */
-    private function buildArticleData(array $settings, array $payload): array
+    private function buildArticleData(array $settings, array $payload, array $fieldMeta): array
     {
         $map = is_array($settings['map'] ?? null) ? $settings['map'] : [];
 
@@ -118,11 +160,44 @@ final class JoomlaArticleDispatcher implements IntegrationDispatcherInterface
             'access' => (int) ($settings['access'] ?? 1),
             'created_by' => $createdBy,
             'created_by_alias' => $createdBy === 0 ? ($settings['created_by_alias'] ?? '') : '',
-            'metadesc' => $this->stringValue($payload, (string) ($map['meta_description'] ?? '')),
-            'metakey' => $this->stringValue($payload, (string) ($map['meta_keywords'] ?? '')),
             'alias' => $this->stringValue($payload, (string) ($map['alias'] ?? '')),
             'tags' => $this->resolveTags($payload, (string) ($map['tags'] ?? '')),
         ];
+
+        $featuredKey = (string) ($map['featured_image'] ?? '');
+
+        if ($featuredKey !== '') {
+            $imagePath = $this->stringValue($payload, $featuredKey);
+            $fileMeta = $this->resolveFileMeta($fieldMeta, $featuredKey);
+
+            $relative = $this->normaliseImagePath(
+                $imagePath,
+                is_array($fileMeta) ? ($fileMeta['path'] ?? null) : null,
+                is_array($fileMeta) ? ($fileMeta['url'] ?? null) : null
+            );
+
+            if ($relative !== '') {
+                $altKey = (string) ($map['featured_image_alt'] ?? '');
+                $captionKey = (string) ($map['featured_image_caption'] ?? '');
+
+                $imagesData = [
+                    'image_intro' => $relative,
+                    'image_intro_alt' => $this->stringValue($payload, $altKey) ?: $title,
+                    'image_intro_caption' => $this->stringValue($payload, $captionKey),
+                    'image_intro_class' => '',
+                    'image_intro_image' => '',
+                    'float_intro' => '',
+                    'image_fulltext' => $relative,
+                    'image_fulltext_alt' => $this->stringValue($payload, $altKey) ?: $title,
+                    'image_fulltext_caption' => '',
+                    'image_fulltext_class' => '',
+                    'float_fulltext' => '',
+                ];
+
+                // Pass structured images array to align with com_content article form expectations.
+                $data['images'] = $imagesData;
+            }
+        }
 
         if ($data['tags'] === []) {
             unset($data['tags']);
@@ -180,11 +255,11 @@ final class JoomlaArticleDispatcher implements IntegrationDispatcherInterface
 	 */
     private function resolveAuthorId(array $settings): int
     {
-        $mode = (string) ($settings['author_mode'] ?? 'current_user');
+        $mode = (string) ($settings['author_mode'] ?? 'none');
 
         return match ($mode) {
             'fixed' => (int) ($settings['fixed_author_id'] ?? 0),
-            'anonymous' => 0,
+            'anonymous', 'none' => 0,
             default => $this->getApplication()->getIdentity()->id ?? 0,
         };
     }
@@ -237,11 +312,31 @@ final class JoomlaArticleDispatcher implements IntegrationDispatcherInterface
         return array_values($tags);
     }
 
-	/**
-	 * Retrieves a string representation of a field's value from the payload.
-	 *
-	 * @param   array<string,mixed>  $payload    The data payload containing field values
-	 * @param   string               $field      The field name to be retrieved from the payload
+    /**
+     * Resolve file meta information for a given field.
+     *
+     * @param array<int,array<string,mixed>> $fieldMeta
+     * @param string $fieldName
+     *
+     * @return array<string,mixed>|null
+     * @since 1.0.0
+     */
+    private function resolveFileMeta(array $fieldMeta, string $fieldName): ?array
+    {
+        foreach ($fieldMeta as $entry) {
+            if (($entry['name'] ?? null) === $fieldName) {
+                return is_array($entry['meta'] ?? null) ? $entry['meta'] : null;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Retrieves a string representation of a field's value from the payload.
+     *
+     * @param   array<string,mixed>  $payload    The data payload containing field values
+     * @param   string               $field      The field name to be retrieved from the payload
 	 * @param   bool                 $allowHtml  Whether to allow HTML content in the value
 	 *
 	 * @return string                          The string representation of the field's value, sanitized if necessary
@@ -272,6 +367,36 @@ final class JoomlaArticleDispatcher implements IntegrationDispatcherInterface
         return strip_tags($string);
     }
 
+    /**
+     * Normalise image paths to relative Joomla media paths.
+     *
+     * @param string $value
+     * @param string|null $metaPath
+     *
+     * @return string
+     * @since 1.0.0
+     */
+    private function normaliseImagePath(string $value, ?string $metaPath, ?string $metaUrl = null): string
+    {
+        $candidate = $metaPath ?? ($metaUrl ?? $value);
+        $candidate = trim($candidate);
+
+        if ($candidate === '') {
+            return '';
+        }
+
+        $root = Uri::root();
+        $rootRelative = Uri::root(true);
+
+        if ($root !== '' && str_starts_with($candidate, $root)) {
+            $candidate = substr($candidate, strlen($root));
+        } elseif ($rootRelative !== '' && str_starts_with($candidate, $rootRelative)) {
+            $candidate = substr($candidate, strlen($rootRelative));
+        }
+
+        return ltrim($candidate, '/');
+    }
+
 	/**
 	 * Retrieves an instance of the com_content ArticleModel.
 	 *
@@ -286,6 +411,10 @@ final class JoomlaArticleDispatcher implements IntegrationDispatcherInterface
 
         $component = $app->bootComponent('com_content');
         $factory = $component->getMVCFactory();
+
+        // Ensure the form can find the article.xml file when called from API/frontend context
+        Form::addFormPath(\JPATH_ADMINISTRATOR . '/components/com_content/forms');
+        Form::addFormPath(\JPATH_ADMINISTRATOR . '/components/com_content/models/forms');
 
         /** @var ArticleModel $model */
         $model = $factory->createModel('Article', 'Administrator', ['ignore_request' => true]);

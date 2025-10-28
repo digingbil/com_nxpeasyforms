@@ -1091,9 +1091,22 @@ final class AjaxController extends BaseController
     private function normalizeArticleIntegration(array $settings): array
     {
         $map = is_array($settings['map'] ?? null) ? $settings['map'] : [];
+        $map = array_merge(
+            [
+                'title' => '',
+                'introtext' => '',
+                'fulltext' => '',
+                'tags' => '',
+                'alias' => '',
+                'featured_image' => '',
+                'featured_image_alt' => '',
+                'featured_image_caption' => '',
+            ],
+            $map
+        );
 
         // Preserve featured image information in case we later support media handling.
-        if (isset($map['featured_image']) && !isset($map['media'])) {
+        if (($map['featured_image'] ?? '') !== '' && !isset($map['media'])) {
             $map['media'] = [
                 'featured_image' => $map['featured_image'],
             ];

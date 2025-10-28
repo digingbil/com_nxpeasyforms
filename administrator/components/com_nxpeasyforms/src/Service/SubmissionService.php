@@ -155,12 +155,17 @@ final class SubmissionService
                 ? trim((string) $requestData['_nxp_captcha_token'])
                 : '';
 
+            // Extract provider-specific credentials
+            $providerConfig = is_array($captchaConfig[$captchaProvider] ?? null)
+                ? $captchaConfig[$captchaProvider]
+                : [];
+
             $this->captchaService->verify(
                 $captchaProvider,
                 $captchaToken,
                 [
-                    'site_key' => $captchaConfig['site_key'] ?? '',
-                    'secret_key' => $captchaConfig['secret_key'] ?? '',
+                    'site_key' => $providerConfig['site_key'] ?? '',
+                    'secret_key' => $providerConfig['secret_key'] ?? '',
                     'ip' => $context['ip_address'],
                     'form_id' => $formId,
                 ]

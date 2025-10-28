@@ -364,6 +364,7 @@ const mapOptionsToLocal = (value) => {
         integrations?.joomla_article ||
         {};
     const articleMap = isObject(articleSource.map) ? articleSource.map : {};
+    const articleMedia = isObject(articleMap.media) ? articleMap.media : {};
 
     local.integrations.joomla_article = {
         ...defaults.joomla_article,
@@ -378,17 +379,21 @@ const mapOptionsToLocal = (value) => {
         language: articleSource.language || "*",
         access: Number(articleSource.access ?? 1) || 1,
         map: {
+            ...defaults.joomla_article.map,
             title: safeTrim(articleMap.title || ""),
             introtext: safeTrim(
                 articleMap.introtext || articleMap.content || ""
             ),
             fulltext: safeTrim(articleMap.fulltext || ""),
+            featured_image: safeTrim(
+                articleMap.featured_image || articleMedia.featured_image || ""
+            ),
+            featured_image_alt: safeTrim(articleMap.featured_image_alt || ""),
+            featured_image_caption: safeTrim(
+                articleMap.featured_image_caption || ""
+            ),
             tags: safeTrim(articleMap.tags || ""),
             alias: safeTrim(articleMap.alias || ""),
-            meta_description: safeTrim(
-                articleMap.meta_description || articleMap.excerpt || ""
-            ),
-            meta_keywords: safeTrim(articleMap.meta_keywords || ""),
         },
     };
 
@@ -630,14 +635,17 @@ const buildIntegrationPayload = () => ({
                 local.integrations.joomla_article.map.introtext
             ),
             fulltext: safeTrim(local.integrations.joomla_article.map.fulltext),
+            featured_image: safeTrim(
+                local.integrations.joomla_article.map.featured_image
+            ),
+            featured_image_alt: safeTrim(
+                local.integrations.joomla_article.map.featured_image_alt
+            ),
+            featured_image_caption: safeTrim(
+                local.integrations.joomla_article.map.featured_image_caption
+            ),
             tags: safeTrim(local.integrations.joomla_article.map.tags),
             alias: safeTrim(local.integrations.joomla_article.map.alias),
-            meta_description: safeTrim(
-                local.integrations.joomla_article.map.meta_description
-            ),
-            meta_keywords: safeTrim(
-                local.integrations.joomla_article.map.meta_keywords
-            ),
         },
     },
     mailchimp: {

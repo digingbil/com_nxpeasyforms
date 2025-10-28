@@ -63,6 +63,19 @@ final class FormRenderer
         $fieldsMarkup = $this->renderFields($fields);
         $captchaMarkup = $this->renderCaptcha($options['captcha'] ?? []);
         $hiddenInputs = $this->renderHiddenFields($formId);
+        $captchaProvider = $this->escapeAttr((string) ($options['captcha']['provider'] ?? 'none'));
+
+        // Extract provider-specific site key
+        $captchaSiteKey = '';
+        if ($captchaProvider !== 'none' && isset($options['captcha'][$captchaProvider]['site_key'])) {
+            $captchaSiteKey = $this->escapeAttr((string) $options['captcha'][$captchaProvider]['site_key']);
+        }
+
+        $captchaAttributes = sprintf(
+            ' data-captcha-provider="%s"%s',
+            $captchaProvider,
+            $captchaSiteKey !== '' ? sprintf(' data-captcha-site-key="%s"', $captchaSiteKey) : ''
+        );
 
         $enctype = $this->containsFileField($fields) ? ' enctype="multipart/form-data"' : '';
 
@@ -80,8 +93,9 @@ final class FormRenderer
         $customCss = $this->renderCustomCss($formId, $options['custom_css'] ?? '');
 
         return sprintf(
-            '<div class="nxp-easy-form" data-form-id="%d">%s%s<noscript>%s</noscript></div>',
+            '<div class="nxp-easy-form" data-form-id="%d"%s>%s%s<noscript>%s</noscript></div>',
             $formId,
+            $captchaAttributes,
             $formTag,
             $customCss,
             $this->escape(Text::_('COM_NXPEASYFORMS_FORM_REQUIRES_JAVASCRIPT'))
@@ -334,7 +348,12 @@ final class FormRenderer
     private function renderCaptcha(array $config): string
     {
         $provider = is_string($config['provider'] ?? null) ? $config['provider'] : 'none';
-        $siteKey = is_string($config['site_key'] ?? null) ? $config['site_key'] : '';
+
+        // Extract provider-specific site key
+        $siteKey = '';
+        if ($provider !== 'none' && isset($config[$provider]['site_key'])) {
+            $siteKey = is_string($config[$provider]['site_key']) ? $config[$provider]['site_key'] : '';
+        }
 
         $hidden = '<input type="hidden" name="_nxp_captcha_token" value="" />';
 

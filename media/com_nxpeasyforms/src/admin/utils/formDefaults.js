@@ -32,8 +32,18 @@ export const formDefaults = {
     delete_submissions_after_days: 90,
     captcha: {
         provider: 'none',
-        site_key: '',
-        secret_key: '',
+        recaptcha_v3: {
+            site_key: '',
+            secret_key: '',
+        },
+        turnstile: {
+            site_key: '',
+            secret_key: '',
+        },
+        friendlycaptcha: {
+            site_key: '',
+            secret_key: '',
+        },
     },
     email_delivery: {
         provider: 'joomla',
@@ -104,7 +114,7 @@ export const formDefaults = {
             enabled: false,
             category_id: 0,
             status: 'unpublished',
-            author_mode: 'current_user',
+            author_mode: 'none',
             fixed_author_id: 0,
             language: '*',
             access: 1,
@@ -114,8 +124,9 @@ export const formDefaults = {
                 fulltext: '',
                 tags: '',
                 alias: '',
-                meta_description: '',
-                meta_keywords: '',
+                featured_image: '',
+                featured_image_alt: '',
+                featured_image_caption: '',
             },
         },
         mailchimp: {

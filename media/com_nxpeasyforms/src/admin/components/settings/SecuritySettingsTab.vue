@@ -28,15 +28,16 @@
             </select>
         </div>
 
+        <!-- reCAPTCHA v3 credentials -->
         <div
-            v-if="local.captcha.provider !== 'none'"
+            v-if="local.captcha.provider === 'recaptcha_v3' && local.captcha.recaptcha_v3"
             class="nxp-setting-group"
         >
             <label class="nxp-setting">
                 <span>{{ __("Site key", "nxp-easy-forms") }}</span>
                 <input
                     type="text"
-                    v-model="local.captcha.site_key"
+                    v-model="local.captcha.recaptcha_v3.site_key"
                     autocomplete="off"
                 />
             </label>
@@ -44,7 +45,53 @@
                 <span>{{ __("Secret key", "nxp-easy-forms") }}</span>
                 <input
                     type="text"
-                    v-model="local.captcha.secret_key"
+                    v-model="local.captcha.recaptcha_v3.secret_key"
+                    autocomplete="off"
+                />
+            </label>
+        </div>
+
+        <!-- Cloudflare Turnstile credentials -->
+        <div
+            v-if="local.captcha.provider === 'turnstile' && local.captcha.turnstile"
+            class="nxp-setting-group"
+        >
+            <label class="nxp-setting">
+                <span>{{ __("Site key", "nxp-easy-forms") }}</span>
+                <input
+                    type="text"
+                    v-model="local.captcha.turnstile.site_key"
+                    autocomplete="off"
+                />
+            </label>
+            <label class="nxp-setting">
+                <span>{{ __("Secret key", "nxp-easy-forms") }}</span>
+                <input
+                    type="text"
+                    v-model="local.captcha.turnstile.secret_key"
+                    autocomplete="off"
+                />
+            </label>
+        </div>
+
+        <!-- Friendly Captcha credentials -->
+        <div
+            v-if="local.captcha.provider === 'friendlycaptcha' && local.captcha.friendlycaptcha"
+            class="nxp-setting-group"
+        >
+            <label class="nxp-setting">
+                <span>{{ __("Site key", "nxp-easy-forms") }}</span>
+                <input
+                    type="text"
+                    v-model="local.captcha.friendlycaptcha.site_key"
+                    autocomplete="off"
+                />
+            </label>
+            <label class="nxp-setting">
+                <span>{{ __("Secret key", "nxp-easy-forms") }}</span>
+                <input
+                    type="text"
+                    v-model="local.captcha.friendlycaptcha.secret_key"
                     autocomplete="off"
                 />
             </label>
@@ -75,7 +122,7 @@
 </template>
 
 <script setup>
-import { inject } from "vue";
+import { inject, watch, reactive } from "vue";
 import { __ } from "@/utils/translate";
 
 const ctx = inject("formSettingsContext");
@@ -85,4 +132,16 @@ if (!ctx) {
 }
 
 const { local } = ctx;
+
+// Ensure nested provider objects exist when provider changes
+// Initialize all provider objects if they don't exist
+if (!local.captcha.recaptcha_v3) {
+    local.captcha.recaptcha_v3 = reactive({ site_key: '', secret_key: '' });
+}
+if (!local.captcha.turnstile) {
+    local.captcha.turnstile = reactive({ site_key: '', secret_key: '' });
+}
+if (!local.captcha.friendlycaptcha) {
+    local.captcha.friendlycaptcha = reactive({ site_key: '', secret_key: '' });
+}
 </script>

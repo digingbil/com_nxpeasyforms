@@ -62,7 +62,7 @@
                         <select v-model="article.author_mode">
                             <option value="current_user">{{ __("Submitting user", "nxp-easy-forms") }}</option>
                             <option value="fixed">{{ __("Fixed Joomla user", "nxp-easy-forms") }}</option>
-                            <option value="anonymous">{{ __("Anonymous", "nxp-easy-forms") }}</option>
+                            <option value="none">{{ __("No user", "nxp-easy-forms") }}</option>
                         </select>
                     </label>
                     <label v-if="article.author_mode === 'fixed'">
@@ -145,6 +145,45 @@
                         </select>
                     </label>
                     <label>
+                        <span>{{ __("Featured image (file field)", "nxp-easy-forms") }}</span>
+                        <select v-model="article.map.featured_image">
+                            <option value="">{{ "—" }}</option>
+                            <option
+                                v-for="opt in fileFieldOptions"
+                                :key="opt.value"
+                                :value="opt.value"
+                            >
+                                {{ opt.label }}
+                            </option>
+                        </select>
+                    </label>
+                    <label>
+                        <span>{{ __("Featured image alt text", "nxp-easy-forms") }}</span>
+                        <select v-model="article.map.featured_image_alt">
+                            <option value="">{{ "—" }}</option>
+                            <option
+                                v-for="opt in fieldOptions"
+                                :key="opt.value"
+                                :value="opt.value"
+                            >
+                                {{ opt.label }}
+                            </option>
+                        </select>
+                    </label>
+                    <label>
+                        <span>{{ __("Featured image caption", "nxp-easy-forms") }}</span>
+                        <select v-model="article.map.featured_image_caption">
+                            <option value="">{{ "—" }}</option>
+                            <option
+                                v-for="opt in fieldOptions"
+                                :key="opt.value"
+                                :value="opt.value"
+                            >
+                                {{ opt.label }}
+                            </option>
+                        </select>
+                    </label>
+                    <label>
                         <span>{{ __("Tags (field)", "nxp-easy-forms") }}</span>
                         <select v-model="article.map.tags">
                             <option value="">{{ "—" }}</option>
@@ -169,32 +208,9 @@
                                 {{ opt.label }}
                             </option>
                         </select>
-                    </label>
-                    <label>
-                        <span>{{ __("Meta description", "nxp-easy-forms") }}</span>
-                        <select v-model="article.map.meta_description">
-                            <option value="">{{ "—" }}</option>
-                            <option
-                                v-for="opt in fieldOptions"
-                                :key="opt.value"
-                                :value="opt.value"
-                            >
-                                {{ opt.label }}
-                            </option>
-                        </select>
-                    </label>
-                    <label>
-                        <span>{{ __("Meta keywords", "nxp-easy-forms") }}</span>
-                        <select v-model="article.map.meta_keywords">
-                            <option value="">{{ "—" }}</option>
-                            <option
-                                v-for="opt in fieldOptions"
-                                :key="opt.value"
-                                :value="opt.value"
-                            >
-                                {{ opt.label }}
-                            </option>
-                        </select>
+                        <small class="nxp-integration-hint">
+                            {{ __("Leave empty to auto-generate from title.", "nxp-easy-forms") }}
+                        </small>
                     </label>
                 </div>
             </div>
@@ -214,7 +230,7 @@ if (!ctx) {
     throw new Error("Form settings context not provided");
 }
 
-const { local, fieldOptions, builderSettings } = ctx;
+const { local, fieldOptions, fileFieldOptions, builderSettings } = ctx;
 
 const article = local.integrations.joomla_article;
 

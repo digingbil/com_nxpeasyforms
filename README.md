@@ -5,10 +5,32 @@ This repository contains the Joomla 5 port of the NXP Easy Forms WordPress plugi
 ## Recent Changes
 
 ### Bug Fixes
-- Restored the administrator form builder boot sequence so existing forms hydrate their saved title, fields, and settings immediately instead of flashing empty state or “Untitled form”.
+- Restored the administrator form builder boot sequence so existing forms hydrate their saved title, fields, and settings immediately instead of flashing empty state or "Untitled form".
 - Normalised the content plugin so it now parses `{nxpeasyform ...}` shortcodes coming from both objects and raw strings (articles, custom modules, custom fields), ensuring rendered markup replaces the placeholder across every Joomla content source while keeping asset loading idempotent.
-- Corrected the administrator controllers to request models via Joomla’s `Administrator` prefix, eliminating the “Failed to create model” error when deleting or otherwise acting on forms and submissions.
-- Ensured frontend ACL defaults allow public rendering of shortcode-driven forms, restored the menu “Single Form” selector, and hardened duplication to work even when the DI container has not pre-registered repository services.
+- Corrected the administrator controllers to request models via Joomla's `Administrator` prefix, eliminating the "Failed to create model" error when deleting or otherwise acting on forms and submissions.
+- Ensured frontend ACL defaults allow public rendering of shortcode-driven forms, restored the menu "Single Form" selector, and hardened duplication to work even when the DI container has not pre-registered repository services.
+- Removed the redundant bootstrap PHP entry file now that the DI service provider instantiates the plugin, relying solely on the manifest namespace for PSR-4 loading.
+- Bootstrapped the component service provider inside the administrator AJAX controller so test-email and other builder requests always have access to registered services without relying on global dispatcher state.
+- **Fixed Joomla Article integration form path loading**: Updated `JoomlaArticleDispatcher` to use `Form::addFormPath()` static method instead of the non-existent `ArticleModel::addFormPath()` instance method, resolving "Call to undefined method" errors when creating articles from form submissions in Joomla 5.4.0+.
+- **Fixed frontend validation error display**: Updated `frontend.joomla.js` to properly extract and display field-level validation errors from the nested `JsonResponse` wrapper structure (`data.errors.fields`), ensuring error messages now appear next to form fields in `.nxp-easy-form__error` elements with proper ARIA attributes.
+- **Fixed file upload handling**: Replaced deprecated `Folder::exists()` with native `is_dir()` in `FileUploader` for Joomla 5.4.0 compatibility.
+- **Fixed Joomla Article integration author modes**: Added support for 'none' author mode in `JoomlaArticleDispatcher::resolveAuthorId()`, allowing articles to be created without an assigned author (created_by = 0).
+- **Removed deprecated meta fields from Joomla Article integration**: Cleaned up `metadesc` and `metakey` fields from article creation payload as these are no longer used in Joomla content articles.
+- **Fixed duplicate variable declaration**: Resolved JavaScript error "can't access lexical declaration 'o' before initialization" in `formStore.js` by renaming duplicate `payload` variable to `responseData`.
+- **Fixed test email recipient resolution**: Updated email settings retrieval in `AjaxController` to handle nested component params structure and corrected recipient resolution logic in `FormSettingsModal.vue` to check `use_global_recipient` flag before local field values.
+- **Restored script options for builder Vue app**: Injected `initialData` and `lang` script options so editing existing forms no longer relies on an AJAX fetch and translations display correctly.
+- **Improved developer notices**: Replaced the WordPress `notice` markup with Bootstrap-flavoured alerts in the administrator builder (FA6 icons, close buttons) to match Joomla styling.
+- **Prevented duplicate forms on save**: Ensured the builder always posts the numeric form id when saving so empty-field saves update the current form rather than creating a new one.
+- **Frontend CAPTCHA handling**:
+  - Added `data-captcha-provider` / `data-captcha-site-key` attributes to rendered forms so the frontend knows which provider/keys to use.
+  - Rebuilt `frontend.joomla.js` to load the appropriate provider script (reCAPTCHA v3, Cloudflare Turnstile, Friendly Captcha), request tokens, populate `_nxp_captcha_token`, and surface provider-specific error messages when verification fails.
+- **Featured image propagation**: Joomla article submissions now copy the uploaded featured image into `images/nxpeasyforms/` and populate the article's intro/full image metadata automatically, so the image appears on the created article without manual edits.
+- **Featured image mapping persistence**: Normalised Joomla article integration defaults so the featured image, alt text, and caption field selections survive subsequent edits and legacy configurations continue to hydrate correctly.
+- **Featured image mapping controls**: Added dedicated mapping inputs (file selector plus alt/caption fields) and adjusted the dispatcher to pass the structured `images` payload expected by `com_content`, ensuring the intro image metadata is retained without the post-save shim.
+- Restored the administrator form builder boot sequence so existing forms hydrate their saved title, fields, and settings immediately instead of flashing empty state or "Untitled form".
+- Normalised the content plugin so it now parses `{nxpeasyform ...}` shortcodes coming from both objects and raw strings (articles, custom modules, custom fields), ensuring rendered markup replaces the placeholder across every Joomla content source while keeping asset loading idempotent.
+- Corrected the administrator controllers to request models via Joomla's `Administrator` prefix, eliminating the "Failed to create model" error when deleting or otherwise acting on forms and submissions.
+- Ensured frontend ACL defaults allow public rendering of shortcode-driven forms, restored the menu "Single Form" selector, and hardened duplication to work even when the DI container has not pre-registered repository services.
 - Removed the redundant bootstrap PHP entry file now that the DI service provider instantiates the plugin, relying solely on the manifest namespace for PSR-4 loading.
 - Bootstrapped the component service provider inside the administrator AJAX controller so test-email and other builder requests always have access to registered services without relying on global dispatcher state.
 
@@ -29,8 +51,11 @@ This repository contains the Joomla 5 port of the NXP Easy Forms WordPress plugi
 - Improved the administrator “Send test email” flow so success and failure notifications surface the translated message returned by the backend rather than raw HTTP status codes.
 
 ### Administrator Builder UX
+- **Hidden sidebar in form builder**: Updated `Form/HtmlView.php` to hide the Joomla administrator sidebar (`#sidebarmenu`) when editing forms in the builder, providing more screen real estate and a cleaner editing experience.
+- **Updated post-submission template**: Removed "Custom URL Alias" and "Author Attribution" fields from the post-submission form template, streamlining the article submission workflow.
+- **Updated Joomla Article integration defaults**: Changed default author mode from "Anonymous" to "No user" (value: 'none'), removed meta description and meta keywords field mappings from integration settings and form defaults.
 - Injected Vue script options as `lang`/`initialData`, bringing the Joomla builder into parity with the WordPress app and avoiding unnecessary AJAX fetches when editing existing forms.
-- Added a dedicated callout for the “Send email notifications” switch to visually separate the primary toggle from advanced delivery checkboxes in the settings modal.
+- Added a dedicated callout for the "Send email notifications" switch to visually separate the primary toggle from advanced delivery checkboxes in the settings modal.
 
 ### Internationalisation Utilities
 - Replaced legacy `i18n` helpers with a new `@/utils/translate` helper that falls back to Joomla’s `Text` API and WordPress’ `wp.i18n` when available.
@@ -53,6 +78,7 @@ This repository contains the Joomla 5 port of the NXP Easy Forms WordPress plugi
 ## Development Notes
 
 - **Assets:** The admin Vue bundle (`media/com_nxpeasyforms`) now consumes `@/utils/translate`. Re-run `npm install` (if needed) and `npm run build` inside `media/com_nxpeasyforms` after pulling these changes.
+- **Frontend JavaScript:** The Joomla version uses `js/frontend.joomla.js` (hand-written, ~5.4KB) instead of the Vite-built `js/frontend.js` (~15KB). The Joomla-specific file is loaded by `components/com_nxpeasyforms/src/View/Form/HtmlView.php` and `plugins/content/nxpeasyforms/src/Extension/Nxpeasyforms.php`. The Vite-built version (`src/frontend/form-client.js`) remains from the WordPress codebase but is not referenced in Joomla. Both files now include proper validation error handling for field-level error display.
 - **Events:** Custom events continue to mirror WordPress hook behaviour. New duplication logic exposes `onNxpEasyFormsFilterDuplicateTitle` for plugins.
 - **Routing:** Friendly URLs rely on the new router class; ensure caches are cleared and menus rebuilt after installation.
 

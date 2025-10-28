@@ -87,17 +87,25 @@ export class NxpEasyForm {
 
             const result = await response.json().catch(() => ({}));
 
-            if (!response.ok || !result.success) {
-                if (result?.errors?.fields) {
-                    this.applyErrors(result.errors.fields);
+            // Handle nested JsonResponse wrapper (data.errors vs errors)
+            const actualData = result.data || result;
+            const isSuccess = response.ok && (result.success || actualData.success);
+
+            console.log('[NXP Debug] Response:', { response: result, actualData, isSuccess, responseOk: response.ok });
+
+            if (!isSuccess) {
+                const errorFields = actualData?.errors?.fields || result?.errors?.fields;
+                console.log('[NXP Debug] Error fields:', errorFields);
+                if (errorFields) {
+                    this.applyErrors(errorFields);
                 }
-                const message = result.message || this.errorMessage;
+                const message = actualData.message || result.message || this.errorMessage;
                 this.showMessage("error", message);
                 requestAnimationFrame(() => this.focusFirstInvalid());
                 return;
             }
 
-            this.showMessage("success", result.message || this.successMessage);
+            this.showMessage("success", actualData.message || result.message || this.successMessage);
             this.formElement.reset();
             this.resetCaptcha();
         } catch (error) {
@@ -388,15 +396,20 @@ export class NxpEasyForm {
     }
 
     applyErrors(errors) {
+        console.log('[NXP Debug] applyErrors called with:', errors);
         let hasErrors = false;
 
         Object.entries(errors).forEach(([name, message]) => {
+            console.log('[NXP Debug] Processing error for field:', name, 'message:', message);
             const errorHolder =
                 this.formElement.querySelector(
                     `[data-error-for="${this.escapeSelector(name)}"]`,
                 ) || this.ensureErrorHolder(name);
 
+            console.log('[NXP Debug] Error holder for', name, ':', errorHolder);
+
             if (!errorHolder) {
+                console.log('[NXP Debug] No error holder found for', name);
                 return;
             }
 
@@ -405,6 +418,8 @@ export class NxpEasyForm {
             const control = this.formElement.querySelector(
                 this.getFieldSelector(name),
             );
+
+            console.log('[NXP Debug] Control for', name, ':', control);
 
             if (control) {
                 control.setAttribute("aria-invalid", "true");

@@ -38,7 +38,7 @@ function baseIntegrations() {
             enabled: false,
             category_id: 0,
             status: 'unpublished',
-            author_mode: 'current_user',
+            author_mode: 'none',
             fixed_author_id: 0,
             language: '*',
             access: 1,
@@ -48,8 +48,6 @@ function baseIntegrations() {
                 fulltext: '',
                 tags: '',
                 alias: '',
-                meta_description: '',
-                meta_keywords: '',
             },
         },
         mailchimp: {
@@ -244,8 +242,18 @@ function baseOptions() {
         ),
         captcha: {
             provider: 'none',
-            site_key: '',
-            secret_key: '',
+            recaptcha_v3: {
+                site_key: '',
+                secret_key: '',
+            },
+            turnstile: {
+                site_key: '',
+                secret_key: '',
+            },
+            friendlycaptcha: {
+                site_key: '',
+                secret_key: '',
+            },
         },
         email_delivery: {
             provider: 'joomla',
@@ -305,10 +313,47 @@ function mergeOptions(options = {}) {
             ...base.throttle,
             ...(incoming.throttle || {}),
         },
-        captcha: {
-            ...base.captcha,
-            ...(incoming.captcha || {}),
-        },
+        captcha: (() => {
+            const incomingCaptcha = incoming.captcha || {};
+            const provider = incomingCaptcha.provider || base.captcha.provider;
+
+            // Migrate legacy flat structure to provider-specific nested structure
+            const legacySiteKey = incomingCaptcha.site_key;
+            const legacySecretKey = incomingCaptcha.secret_key;
+            const hasLegacyKeys = legacySiteKey !== undefined || legacySecretKey !== undefined;
+
+            // If we have legacy keys and a valid provider, migrate them
+            const migratedProvider = {};
+            if (hasLegacyKeys && provider !== 'none' && (provider === 'recaptcha_v3' || provider === 'turnstile' || provider === 'friendlycaptcha')) {
+                migratedProvider[provider] = {
+                    site_key: legacySiteKey || '',
+                    secret_key: legacySecretKey || '',
+                };
+            }
+
+            const result = {
+                ...base.captcha,
+                ...incomingCaptcha,
+                recaptcha_v3: {
+                    ...base.captcha.recaptcha_v3,
+                    ...(migratedProvider.recaptcha_v3 || incomingCaptcha.recaptcha_v3 || {}),
+                },
+                turnstile: {
+                    ...base.captcha.turnstile,
+                    ...(migratedProvider.turnstile || incomingCaptcha.turnstile || {}),
+                },
+                friendlycaptcha: {
+                    ...base.captcha.friendlycaptcha,
+                    ...(migratedProvider.friendlycaptcha || incomingCaptcha.friendlycaptcha || {}),
+                },
+            };
+
+            // Remove legacy keys from the final object
+            delete result.site_key;
+            delete result.secret_key;
+
+            return result;
+        })(),
         email_delivery: {
             ...base.email_delivery,
             ...(incoming.email_delivery || {}),

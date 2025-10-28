@@ -121,7 +121,7 @@ final class FileUploader
 	 */
     private function ensureStorageDirectory(): void
     {
-        if (Folder::exists($this->basePath)) {
+        if (is_dir($this->basePath)) {
             return;
         }
 

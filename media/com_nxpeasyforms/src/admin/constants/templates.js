@@ -738,26 +738,6 @@ export const FORM_TEMPLATES = [
                 placeholder: __('Separate tags with commas', 'nxp-easy-forms'),
             },
             {
-                type: 'text',
-                name: 'article_alias',
-                label: __('Custom URL Alias (Optional)', 'nxp-easy-forms'),
-                required: false,
-                placeholder: __('leave blank to auto-generate', 'nxp-easy-forms'),
-            },
-            {
-                type: 'radio',
-                name: 'author_handling',
-                label: __('Author Attribution', 'nxp-easy-forms'),
-                required: true,
-                options: [
-                    __('Use the logged-in submitter', 'nxp-easy-forms'),
-                    __(
-                        'Store as anonymous / editorial team submission',
-                        'nxp-easy-forms'
-                    ),
-                ],
-            },
-            {
                 type: 'checkbox',
                 name: 'content_guidelines',
                 label: __(

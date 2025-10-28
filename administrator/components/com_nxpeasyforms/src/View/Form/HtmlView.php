@@ -63,6 +63,10 @@ final class HtmlView extends BaseHtmlView
             throw new \RuntimeException(implode("\n", $errors), 500);
         }
 
+        // Hide the sidebar in form builder for better UX
+        Factory::getApplication()->input->set('hidemainmenu', true);
+        $this->sidebar = '';
+
         $this->addToolbar();
 
         parent::display($tpl);
