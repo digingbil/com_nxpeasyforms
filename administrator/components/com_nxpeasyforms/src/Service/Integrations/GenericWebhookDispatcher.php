@@ -4,6 +4,8 @@ declare(strict_types=1);
 namespace Joomla\Component\Nxpeasyforms\Administrator\Service\Integrations;
 
 
+use function trim;
+
 // phpcs:disable PSR1.Files.SideEffects
 \defined('_JEXEC') or die;
 // phpcs:enable PSR1.Files.SideEffects
@@ -40,7 +42,11 @@ final class GenericWebhookDispatcher implements IntegrationDispatcherInterface
         array $context,
         array $fieldMeta
     ): void {
-        $endpoint = isset($settings['endpoint']) ? (string) $settings['endpoint'] : '';
+        $endpoint = isset($settings['endpoint'])
+            ? (string) $settings['endpoint']
+            : (string) ($settings['webhook_url'] ?? '');
+
+        $endpoint = trim($endpoint);
 
         if ($endpoint === '') {
             return;
