@@ -17,6 +17,12 @@
             />
 
             <field
+                name="alias"
+                type="hidden"
+                filter="string"
+            />
+
+            <field
                 name="active"
                 type="radio"
                 label="JSTATUS"

@@ -50,6 +50,11 @@ final class FormsField extends ListField
 
         foreach ($forms as $form) {
             $title = $form['title'] ?: Text::_('COM_NXPEASYFORMS_UNTITLED_FORM');
+            $alias = (string) ($form['alias'] ?? '');
+
+            if ($alias !== '') {
+                $title = sprintf('%s (%s)', $title, $alias);
+            }
 
             if ((int) ($form['active'] ?? 0) !== 1) {
                 $title = sprintf(

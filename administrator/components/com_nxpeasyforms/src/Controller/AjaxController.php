@@ -889,6 +889,7 @@ final class AjaxController extends BaseController
 
         $data = [
             'title' => is_string($payload['title'] ?? null) ? trim($payload['title']) : '',
+            'alias' => is_string($payload['alias'] ?? null) ? trim($payload['alias']) : '',
             'fields' => $fields,
             'settings' => $options,
         ];
@@ -927,6 +928,7 @@ final class AjaxController extends BaseController
         return [
             'id' => (int) ($item->id ?? 0),
             'title' => (string) ($item->title ?? Text::_('COM_NXPEASYFORMS_UNTITLED_FORM')),
+            'alias' => (string) ($item->alias ?? ''),
             'active' => (int) ($item->active ?? 1),
             'config' => [
                 'fields' => $fields,

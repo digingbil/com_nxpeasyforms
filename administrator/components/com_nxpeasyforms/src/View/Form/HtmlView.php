@@ -99,6 +99,10 @@ final class HtmlView extends BaseHtmlView
         AssetHelper::registerEntry('src/admin/main.js');
         HTMLHelper::_('stylesheet', 'com_nxpeasyforms/css/admin-joomla.css', ['version' => 'auto', 'relative' => true]);
 
+        Text::script('COM_NXPEASYFORMS_FIELD_ALIAS_LABEL');
+        Text::script('COM_NXPEASYFORMS_FIELD_ALIAS_PLACEHOLDER');
+        Text::script('COM_NXPEASYFORMS_FIELD_ALIAS_HINT');
+
         $document->addScriptOptions(
             'com_nxpeasyforms.builder',
             [
@@ -144,6 +148,7 @@ final class HtmlView extends BaseHtmlView
             return [
                 'id' => 0,
                 'title' => '',
+                'alias' => '',
                 'fields' => [],
                 'settings' => [],
                 'active' => 1,
@@ -153,6 +158,7 @@ final class HtmlView extends BaseHtmlView
         return [
             'id' => (int) ($item->id ?? 0),
             'title' => (string) ($item->title ?? ''),
+            'alias' => (string) ($item->alias ?? ''),
             'fields' => is_array($item->fields ?? null) ? $item->fields : [],
             'settings' => is_array($item->settings ?? null) ? $item->settings : [],
             'active' => (int) ($item->active ?? 1),

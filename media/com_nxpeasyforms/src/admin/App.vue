@@ -37,6 +37,20 @@
                         v-model="formTitle"
                     />
                 </div>
+                <div class="nxp-builder__alias">
+                    <label for="nxp-form-alias">
+                        {{ __("COM_NXPEASYFORMS_FIELD_ALIAS_LABEL") }}
+                        <span class="nxp-builder__alias-hint">
+                            {{ __("COM_NXPEASYFORMS_FIELD_ALIAS_HINT") }}
+                        </span>
+                    </label>
+                    <input
+                        id="nxp-form-alias"
+                        type="text"
+                        :placeholder="__('COM_NXPEASYFORMS_FIELD_ALIAS_PLACEHOLDER')"
+                        v-model="formAlias"
+                    />
+                </div>
                 <div class="nxp-builder__actions">
                     <button
                         type="button"
@@ -172,6 +186,7 @@ const showNewFormTip = ref(false);
 const layoutRef = ref(null);
 const hiddenFieldInputs = {
     title: null,
+    alias: null,
     fields: null,
     settings: null,
 };
@@ -180,6 +195,14 @@ const formTitle = computed({
     get: () => store.title,
     set: (value) => {
         store.title = value;
+        store.hasUnsavedChanges = true;
+    },
+});
+
+const formAlias = computed({
+    get: () => store.alias,
+    set: (value) => {
+        store.alias = value;
         store.hasUnsavedChanges = true;
     },
 });
@@ -210,12 +233,14 @@ const ensureHiddenInputs = () => {
 
     if (!formEl) {
         hiddenFieldInputs.title = null;
+        hiddenFieldInputs.alias = null;
         hiddenFieldInputs.fields = null;
         hiddenFieldInputs.settings = null;
         return;
     }
 
     hiddenFieldInputs.title = hiddenFieldInputs.title || formEl.querySelector("input[name=\"jform[title]\"]");
+    hiddenFieldInputs.alias = hiddenFieldInputs.alias || formEl.querySelector("input[name=\"jform[alias]\"]");
     hiddenFieldInputs.fields = hiddenFieldInputs.fields || formEl.querySelector("input[name=\"jform[fields]\"]");
     hiddenFieldInputs.settings = hiddenFieldInputs.settings || formEl.querySelector("input[name=\"jform[settings]\"]");
 };
@@ -241,6 +266,10 @@ const syncHiddenInputs = () => {
 
     if (hiddenFieldInputs.title) {
         hiddenFieldInputs.title.value = store.title || "";
+    }
+
+    if (hiddenFieldInputs.alias) {
+        hiddenFieldInputs.alias.value = store.alias || "";
     }
 
     if (hiddenFieldInputs.fields) {
@@ -309,6 +338,13 @@ watch(
 
 watch(
     () => store.title,
+    () => {
+        syncHiddenInputs();
+    },
+);
+
+watch(
+    () => store.alias,
     () => {
         syncHiddenInputs();
     },

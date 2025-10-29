@@ -76,7 +76,13 @@ final class Router extends RouterView
             $form = $this->forms->find($id);
 
             if (!empty($form['title'])) {
-                $slug = OutputFilter::stringURLSafe((string) $form['title']);
+                $slugSource = $form['alias'] ?? '';
+
+                if ($slugSource === '') {
+                    $slugSource = (string) $form['title'];
+                }
+
+                $slug = OutputFilter::stringURLSafe((string) $slugSource);
 
                 if ($slug !== '') {
                     $segment = sprintf('%d-%s', $id, $slug);

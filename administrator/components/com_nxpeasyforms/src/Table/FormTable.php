@@ -3,11 +3,21 @@ declare(strict_types=1);
 
 namespace Joomla\Component\Nxpeasyforms\Administrator\Table;
 
+use Joomla\CMS\Application\ApplicationHelper;
 use Joomla\CMS\Table\Table;
 use Joomla\Database\DatabaseDriver;
 use Joomla\Database\Exception\DatabaseExceptionInterface;
+use Joomla\Database\ParameterType;
 use Joomla\Utilities\ArrayHelper;
 
+use function json_decode;
+use function json_encode;
+use function sprintf;
+use function trim;
+
+use const JSON_PRESERVE_ZERO_FRACTION;
+use const JSON_THROW_ON_ERROR;
+use const JSON_UNESCAPED_UNICODE;
 
 // phpcs:disable PSR1.Files.SideEffects
 \defined('_JEXEC') or die;
@@ -17,11 +27,12 @@ use Joomla\Utilities\ArrayHelper;
  * Table class for NXP Easy Forms definitions.
  *
  * Manages persistence and retrieval of form definitions, including
- * JSON field encoding/decoding and validation.
+ * JSON field encoding/decoding, alias management and validation.
  *
  * @psalm-type FormPayload = array{
  *     id?: int,
  *     title?: string,
+ *     alias?: string|null,
  *     fields?: array<mixed>|string|null,
  *     settings?: array<mixed>|string|null,
  *     active?: int|bool,
@@ -33,25 +44,27 @@ use Joomla\Utilities\ArrayHelper;
  */
 final class FormTable extends Table
 {
-    public $id = 0;
+public $id = 0;
 
-    public $title = '';
+public $title = '';
 
-    /**
-     * JSON encoded field definitions.
-     */
-    public $fields = '[]';
+public $alias = null;
 
-    /**
-     * JSON encoded settings payload.
-     */
-    public $settings = '{}';
+/**
+ * JSON encoded field definitions.
+ */
+public $fields = '[]';
 
-    public $active = 1;
+/**
+ * JSON encoded settings payload.
+ */
+public $settings = '{}';
 
-    public $created_at = null;
+public $active = 1;
 
-    public $updated_at = null;
+public $created_at = null;
+
+public $updated_at = null;
 
     /**
      * Constructor.
@@ -69,7 +82,7 @@ final class FormTable extends Table
      * Bind data to the table object.
      *
      * Converts incoming data, encoding arrays as JSON for JSON fields
-     * and 1 boolean/integer fields.
+     * and normalising boolean/integer fields.
      *
      * @param array<string,mixed>|object $src Source data to bind.
      * @param array<int,string>|string $ignore Fields to ignore during binding.
@@ -93,6 +106,10 @@ final class FormTable extends Table
             $data['active'] = (int) ($data['active'] ? 1 : 0);
         }
 
+        if (array_key_exists('alias', $data)) {
+            $data['alias'] = $data['alias'] !== null ? trim((string) $data['alias']) : null;
+        }
+
         return parent::bind($data, $ignore);
     }
 
@@ -100,20 +117,23 @@ final class FormTable extends Table
      * Validate and prepare table data before storage.
      *
      * Ensures the title is not empty, normalizes JSON strings for
-     * encoded fields, and validates the active flag.
+     * encoded fields, validates the active flag, and generates a unique alias.
      *
      * @return bool
      *
      * @throws \InvalidArgumentException When required data is missing.
      * @since 1.0.0
      */
-    public function check()
+    public function check(): bool
     {
         $this->title = trim($this->title);
 
         if ($this->title === '') {
             throw new \InvalidArgumentException('COM_NXPEASYFORMS_ERROR_FORM_TITLE_REQUIRED');
         }
+
+        $this->alias = $this->prepareAlias($this->alias, $this->title);
+        $this->alias = $this->ensureUniqueAlias($this->alias, $this->id);
 
         $this->fields = $this->normalizeJsonString($this->fields, 'fields', '[]');
         $this->settings = $this->normalizeJsonString($this->settings, 'settings', '{}');
@@ -133,8 +153,7 @@ final class FormTable extends Table
      *
      * @return bool
      *
-     * @throws \Joomla\Database\Exception\DatabaseExceptionInterface
-     * @return bool
+     * @throws DatabaseExceptionInterface
      * @since 1.0.0
      */
     public function store($updateNulls = false)
@@ -151,10 +170,84 @@ final class FormTable extends Table
     }
 
     /**
+     * Normalise the provided alias or generate it from the title.
+     *
+     * @param string|null $alias Incoming alias value.
+     * @param string      $title Form title used as fallback.
+     *
+     * @return string Normalised alias string.
+     */
+    private function prepareAlias(?string $alias, string $title): string
+    {
+        $alias = trim((string) ($alias ?? ''));
+
+        if ($alias === '') {
+            $alias = $title;
+        }
+
+        $alias = ApplicationHelper::stringURLSafe($alias);
+
+        if ($alias === '') {
+            // Final fallback if title produces an empty alias (e.g. multibyte-only titles)
+            $alias = ApplicationHelper::stringURLSafe((string) \microtime(true));
+        }
+
+        return $alias;
+    }
+
+    /**
+     * Ensure the alias is unique by appending a numeric suffix when required.
+     *
+     * @param string $alias Candidate alias.
+     * @param int    $id    Current record identifier.
+     *
+     * @return string Unique alias string.
+     */
+    private function ensureUniqueAlias(string $alias, int $id): string
+    {
+        $base = $alias;
+        $suffix = 2;
+
+        while (!$this->isAliasAvailable($alias, $id)) {
+            $alias = sprintf('%s-%d', $base, $suffix);
+            $suffix++;
+        }
+
+        return $alias;
+    }
+
+    /**
+     * Determines whether the alias is available (unused by other records).
+     *
+     * @param string $alias Alias to check.
+     * @param int    $id    Current record identifier (excluded from the lookup).
+     *
+     * @return bool True if the alias is available.
+     */
+    private function isAliasAvailable(string $alias, int $id): bool
+    {
+        $query = $this->getDbo()->getQuery(true)
+            ->select($this->getDbo()->quoteName('id'))
+            ->from($this->getDbo()->quoteName('#__nxpeasyforms_forms'))
+            ->where($this->getDbo()->quoteName('alias') . ' = :alias')
+            ->bind(':alias', $alias, ParameterType::STRING)
+            ->setLimit(1);
+
+        if ($id > 0) {
+            $query->where($this->getDbo()->quoteName('id') . ' != :currentId')
+                ->bind(':currentId', $id, ParameterType::INTEGER);
+        }
+
+        $existingId = $this->getDbo()->setQuery($query)->loadResult();
+
+        return empty($existingId);
+    }
+
+    /**
      * Encode an array payload as JSON.
      *
      * @param array  $payload  The array to encode.
-     * @param string   $field    The field name for error reporting.
+     * @param string $field    The field name for error reporting.
      *
      * @return string JSON encoded payload.
      *
@@ -181,8 +274,8 @@ final class FormTable extends Table
      * Normalize and validate a JSON string.
      *
      * @param string|null $value The JSON string to normalize.
-     * @param string $field The field name for error reporting.
-     * @param string $fallback Default value if normalization fails.
+     * @param string      $field The field name for error reporting.
+     * @param string      $fallback Default value if normalization fails.
      *
      * @return string Normalized JSON string or fallback.
      *

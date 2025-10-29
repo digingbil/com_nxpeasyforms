@@ -26,6 +26,7 @@ HTMLHelper::_('behavior.formvalidator');
     <div class="d-none" aria-hidden="true">
         <?php echo $this->form->getInput('id'); ?>
         <?php echo $this->form->getInput('title'); ?>
+        <?php echo $this->form->getInput('alias'); ?>
         <?php echo $this->form->getInput('active'); ?>
         <?php echo $this->form->getInput('fields'); ?>
         <?php echo $this->form->getInput('settings'); ?>

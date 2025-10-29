@@ -48,6 +48,7 @@ class FormRepository
             ->select([
                 $this->db->quoteName('id'),
                 $this->db->quoteName('title'),
+                $this->db->quoteName('alias'),
                 $this->db->quoteName('fields'),
                 $this->db->quoteName('settings'),
                 $this->db->quoteName('active'),
@@ -71,6 +72,7 @@ class FormRepository
         return [
             'id' => (int) $row['id'],
             'title' => $row['title'] ?? '',
+            'alias' => $row['alias'] ?? '',
             'active' => (int) ($row['active'] ?? 1),
             'date' => $row['created_at'] ?? null,
             'config' => [
@@ -133,6 +135,7 @@ class FormRepository
         $object = (object) [
             'id' => 0,
             'title' => $copyTitle,
+            'alias' => null,
             'fields' => $fieldsJson,
             'settings' => $settingsJson,
             'active' => (int) ($form['active'] ?? 1),
@@ -208,6 +211,7 @@ class FormRepository
             ->select([
                 $this->db->quoteName('id'),
                 $this->db->quoteName('title'),
+                $this->db->quoteName('alias'),
                 $this->db->quoteName('active'),
             ])
             ->from($this->db->quoteName('#__nxpeasyforms_forms'))
@@ -218,6 +222,7 @@ class FormRepository
         foreach ($rows as &$row) {
             $row['id'] = (int) ($row['id'] ?? 0);
             $row['title'] = (string) ($row['title'] ?? '');
+            $row['alias'] = $row['alias'] ?? '';
             $row['active'] = (int) ($row['active'] ?? 0);
         }
 

@@ -450,6 +450,7 @@ export const useFormStore = defineStore('form', {
             initialData.title ||
             translations.defaultTitle ||
             __('Untitled form', 'nxp-easy-forms'),
+        alias: initialData.alias || '',
         fields: Array.isArray(initialData.fields) ? initialData.fields.map((field) => ({
             ...field,
             multiple: field.multiple ?? false,
@@ -505,6 +506,7 @@ export const useFormStore = defineStore('form', {
                     );
                 }
                 this.title = data.title;
+                this.alias = data.alias || '';
                 this.fields = Array.isArray(data.config?.fields)
                     ? data.config.fields.map((field) => ({
                           ...field,
@@ -655,6 +657,7 @@ export const useFormStore = defineStore('form', {
                     this.title ||
                     translations.defaultTitle ||
                     __('Untitled form', 'nxp-easy-forms'),
+                alias: this.alias || '',
                 config: {
                     fields: this.fields.map((field) => {
                         const mapped = {
@@ -715,6 +718,10 @@ export const useFormStore = defineStore('form', {
 
                 if (resolvedId > 0) {
                     this.formId = resolvedId;
+                }
+
+                if (typeof responseData?.alias === 'string') {
+                    this.alias = responseData.alias;
                 }
 
                 if (wasNewForm && this.formId && settings.builderUrl) {

@@ -43,6 +43,9 @@ return new class () implements ServiceProviderInterface {
 
                 $component->setMVCFactory($container->get(MVCFactoryInterface::class));
 
+                // Call boot() to register field paths
+                $component->boot($container);
+
                 return $component;
             }
         );

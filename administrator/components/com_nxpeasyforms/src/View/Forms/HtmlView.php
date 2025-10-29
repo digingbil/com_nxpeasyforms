@@ -44,6 +44,8 @@ final class HtmlView extends BaseHtmlView
 
     protected $activeFilters;
 
+    private bool $modal = false;
+
     /**
      * Render the view.
      *
@@ -64,14 +66,31 @@ final class HtmlView extends BaseHtmlView
         $this->pagination = $this->get('Pagination');
         $this->filterForm = $this->get('FilterForm');
         $this->activeFilters = $this->get('ActiveFilters');
+        $this->modal = Factory::getApplication()->input->getCmd('layout') === 'modal';
 
         if ($errors = $this->get('Errors')) {
             throw new \RuntimeException(implode("\n", $errors), 500);
         }
 
-        $this->addToolbar();
+        if ($this->modal) {
+            $document = $this->document ?? Factory::getDocument();
+            $document->setTitle(Text::_('COM_NXPEASYFORMS_SELECT_FORM'));
+        } else {
+            $this->addToolbar();
+        }
 
         parent::display($tpl);
+    }
+
+    /**
+     * Indicates if the view is rendered within a modal.
+     *
+     * @return bool
+     * @since 1.0.1
+     */
+    public function isModal(): bool
+    {
+        return $this->modal;
     }
 
     /**
