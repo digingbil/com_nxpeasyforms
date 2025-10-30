@@ -1,4 +1,4 @@
-@import "./vars.css";
+@import './vars.css';
 
 .nxp-easy-forms-builder {
     max-width: 1100px;
@@ -16,6 +16,27 @@
 
 .nxp-easy-forms-builder .notice {
     margin: 0;
+}
+
+.js-stools-container-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 10px;
+}
+
+.js-stools-container-bar .filter-search,
+.js-stools-container-bar .js-stools-field-filter,
+.js-stools-container-bar .js-stools-field-filter select,
+.js-stools-container-bar .js-stools-field-filter input {
+    flex: 0 0 auto;
+    width: auto;
+}
+
+@media (min-width: 720px) {
+    .js-stools-container-bar {
+        flex-wrap: nowrap;
+    }
 }
 
 .screen-reader-text {

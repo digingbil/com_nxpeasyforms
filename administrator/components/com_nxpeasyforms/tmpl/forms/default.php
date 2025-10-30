@@ -17,7 +17,7 @@ $listDirn = $this->escape($this->state->get('list.direction', 'DESC'));
 ?>
 <form action="<?php echo Route::_('index.php?option=com_nxpeasyforms&view=forms'); ?>" method="post" name="adminForm" id="adminForm">
     <div class="row">
-        <div class="col-12 col-lg-6">
+        <div class="col-12">
             <?php if (!empty($this->filterForm)) : ?>
                 <?php echo LayoutHelper::render('joomla.searchtools.default', ['view' => $this]); ?>
             <?php endif; ?>
