@@ -6,6 +6,7 @@ This repository contains the Joomla 5 port of the NXP Easy Forms WordPress plugi
 
 ### Bug Fixes
 
+-   **Login submission reload fallback**: User Login integration responses now explicitly request a page reload when no redirect URL is configured, ensuring successful login submissions refresh the current page instead of leaving the user on a stale form view. PHPUnit coverage verifies the behaviour in `UserLoginHandlerTest`.
 -   **Fixed modal form selector for menu items**: Implemented proper modal field support for "Single Form" menu item type, allowing users to select forms via a modal popup (like core Joomla components) instead of manual ID entry. Fixed by:
     -   Adding `BootableExtensionInterface` and `boot()` method to both administrator and site component extension classes to register the Modal field path via `Form::addFieldPath()`.
     -   Registering the Administrator namespace in the site service provider so modal fields can be discovered when creating menu items.
@@ -69,6 +70,7 @@ This repository contains the Joomla 5 port of the NXP Easy Forms WordPress plugi
 
 ### Administrator Builder UX
 
+-   **Integration capsules and toolbar polish**: The builder header now surfaces enabled integrations as compact capsule tags (existing forms only), stays reactive as configurations change, and restyled integration actions (Mailchimp fetch, Salesforce/HubSpot mapping buttons, "Add a Password field") with icon-labeled secondary buttons for visual consistency. The administrator toolbar (`.js-stools-container-bar`) also adopts a flex layout so search, filter, and select controls remain on a single row across screen sizes.
 -   **Hidden sidebar in form builder**: Updated `Form/HtmlView.php` to hide the Joomla administrator sidebar (`#sidebarmenu`) when editing forms in the builder, providing more screen real estate and a cleaner editing experience.
 -   **Updated post-submission template**: Removed "Custom URL Alias" and "Author Attribution" fields from the post-submission form template, streamlining the article submission workflow.
 -   **Updated Joomla Article integration defaults**: Changed default author mode from "Anonymous" to "No user" (value: 'none'), removed meta description and meta keywords field mappings from integration settings and form defaults.
