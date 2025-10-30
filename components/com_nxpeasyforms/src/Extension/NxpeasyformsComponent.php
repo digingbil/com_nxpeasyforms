@@ -3,13 +3,15 @@ declare(strict_types=1);
 
 namespace Joomla\Component\Nxpeasyforms\Site\Extension;
 
+use Joomla\CMS\Application\CMSApplicationInterface;
 use Joomla\CMS\Application\SiteApplication;
+use Joomla\CMS\Component\Router\RouterInterface;
+use Joomla\CMS\Component\Router\RouterServiceInterface;
 use Joomla\CMS\Extension\BootableExtensionInterface;
 use Joomla\CMS\Factory;
 use Joomla\CMS\Extension\MVCComponent;
 use Joomla\CMS\Form\Form;
 use Joomla\CMS\Menu\AbstractMenu;
-use Joomla\Component\Nxpeasyforms\Administrator\Service\Repository\FormRepository;
 use Joomla\Component\Nxpeasyforms\Site\Service\Router;
 use Psr\Container\ContainerInterface;
 
@@ -21,7 +23,7 @@ use Psr\Container\ContainerInterface;
 /**
  * Component entry point for the site application.
  */
-final class NxpeasyformsComponent extends MVCComponent implements BootableExtensionInterface
+final class NxpeasyformsComponent extends MVCComponent implements BootableExtensionInterface, RouterServiceInterface
 {
     /**
      * Booting the extension. This is the function to set up the environment of the extension like
@@ -42,7 +44,6 @@ final class NxpeasyformsComponent extends MVCComponent implements BootableExtens
         // Also try adding with addfieldprefix
         Form::addFormPath(JPATH_ADMINISTRATOR . '/components/com_nxpeasyforms/src/Field');
 
-        error_log('NXP DEBUG: boot() called, added field path: ' . $path);
     }
 
     /**
@@ -52,9 +53,17 @@ final class NxpeasyformsComponent extends MVCComponent implements BootableExtens
     {
         $app  = $app ?? Factory::getApplication();
         $menu = $menu ?? $app->getMenu();
+        // Avoid forcing DI registration; Router will resolve repository with its own fallback
+        return new Router($app, $menu, null);
+    }
 
-        $forms = Factory::getContainer()->get(FormRepository::class);
+    /**
+     * {@inheritDoc}
+     */
+    public function createRouter(CMSApplicationInterface $application, AbstractMenu $menu): RouterInterface
+    {
+        $app = $application instanceof SiteApplication ? $application : Factory::getApplication();
 
-        return new Router($app, $menu, $forms);
+        return new Router($app, $menu, null);
     }
 }

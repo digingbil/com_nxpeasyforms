@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Joomla\Component\Nxpeasyforms\Site\Service;
 
 use Joomla\CMS\Application\SiteApplication;
+use Joomla\CMS\Categories\CategoryFactoryInterface;
 use Joomla\CMS\Component\Router\RouterView;
 use Joomla\CMS\Component\Router\RouterViewConfiguration;
 use Joomla\CMS\Component\Router\Rules\MenuRules;
@@ -11,9 +12,10 @@ use Joomla\CMS\Component\Router\Rules\NomenuRules;
 use Joomla\CMS\Component\Router\Rules\StandardRules;
 use Joomla\CMS\Filter\OutputFilter;
 use Joomla\CMS\Menu\AbstractMenu;
+use Joomla\CMS\Log\Log;
 use Joomla\CMS\Factory;
 use Joomla\Component\Nxpeasyforms\Administrator\Service\Repository\FormRepository;
-use Joomla\Database\DatabaseDriver;
+use Joomla\Database\DatabaseInterface;
 
 
 // phpcs:disable PSR1.Files.SideEffects
@@ -30,21 +32,20 @@ final class Router extends RouterView
     private FormRepository $forms;
 
     public function __construct(
-        ?SiteApplication $app = null,
-        ?AbstractMenu $menu = null,
-        ?FormRepository $forms = null
+        SiteApplication $app,
+        AbstractMenu $menu,
+        ?CategoryFactoryInterface $categoryFactory = null,
+        ?DatabaseInterface $db = null
     ) {
-        if ($forms !== null) {
-            $this->forms = $forms;
+        // Initialize FormRepository
+        if ($db !== null) {
+            $this->forms = new FormRepository($db);
         } else {
             $container = Factory::getContainer();
-
             if (method_exists($container, 'has') && $container->has(FormRepository::class)) {
                 $this->forms = $container->get(FormRepository::class);
             } else {
-                /** @var DatabaseDriver $db */
-                $db = $container->get(DatabaseDriver::class);
-                $this->forms = new FormRepository($db);
+                $this->forms = new FormRepository($container->get(DatabaseInterface::class));
             }
         }
 
@@ -57,6 +58,87 @@ final class Router extends RouterView
         $this->attachRule(new MenuRules($this));
         $this->attachRule(new StandardRules($this));
         $this->attachRule(new NomenuRules($this));
+
+    }
+
+    /**
+     * Override build to ensure view/id parameters are stripped when they match a menu item.
+     */
+    public function build(&$query)
+    {
+        $segments = parent::build($query);
+
+        // If we have an Itemid, check if the menu item matches our query exactly
+        if (isset($query['Itemid'])) {
+            $menu = $this->menu;
+            $item = $menu->getItem($query['Itemid']);
+
+            if ($item && isset($item->query['option']) && $item->query['option'] === 'com_nxpeasyforms') {
+                // Parse the link string to get the actual query parameters
+                if (isset($item->link)) {
+                    parse_str(parse_url($item->link, PHP_URL_QUERY), $linkVars);
+                    
+                    // Remove query vars that match the menu item's link
+                    foreach ($linkVars as $key => $value) {
+                        if ($key === 'option' || $key === 'Itemid') {
+                            continue;
+                        }
+
+                        if (isset($query[$key]) && $query[$key] == $value) {
+                            unset($query[$key]);
+                        }
+                    }
+                }
+                
+                // Also check the menu item's query array
+                foreach ($item->query as $key => $value) {
+                    if ($key === 'option' || $key === 'Itemid') {
+                        continue;
+                    }
+
+                    if (isset($query[$key]) && $query[$key] == $value) {
+                        unset($query[$key]);
+                    }
+                }
+            }
+        }
+
+        // Ensure form routes never leak their view/id query variables when the menu already defines them.
+        // StandardRules normally handles this, but it relies on an Itemid being present. When MenuRules fails
+        // to locate a matching Itemid (for example when building links programmatically), we still want the
+        // SEF URL without duplicated query data.
+        if (($query['view'] ?? null) === 'form' && isset($query['id'])) {
+            unset($query['view'], $query['id']);
+        }
+
+        return $segments;
+    }
+
+    /**
+     * Ensure duplicate view/id pairs are stripped before Joomla's menu preprocessing runs.
+     */
+    public function preprocess($query)
+    {
+        $query = parent::preprocess($query);
+
+        if (($query['option'] ?? '') !== 'com_nxpeasyforms' || !isset($query['Itemid'])) {
+            return $query;
+        }
+
+        $item = $this->menu->getItem((int) $query['Itemid']);
+
+        if (!$item || ($item->component ?? '') !== 'com_nxpeasyforms') {
+            return $query;
+        }
+
+        $menuView = $item->query['view'] ?? null;
+        $menuId   = isset($item->query['id']) ? (int) $item->query['id'] : null;
+
+        if (($query['view'] ?? null) === $menuView && isset($query['id']) && (int) $query['id'] === $menuId) {
+            unset($query['view'], $query['id']);
+        }
+
+        return $query;
     }
 
     /**
@@ -90,6 +172,7 @@ final class Router extends RouterView
             }
         }
 
+        // Use the numeric identifier as the array key so Joomla's router rules can strip matching menu queries
         return [$id => $segment];
     }
 

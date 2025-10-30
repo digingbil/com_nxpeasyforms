@@ -1,8 +1,39 @@
 (() => {
-    const settings = window.nxpEasyFormsFrontend || {};
-    const restUrl = settings.restUrl || '';
+    // Robustly resolve settings: prefer global, else Joomla.getOptions if available
+    let settings = window.nxpEasyFormsFrontend || {};
+    if (
+        (!settings || Object.keys(settings).length === 0) &&
+        window.Joomla &&
+        typeof window.Joomla.getOptions === 'function'
+    ) {
+        try {
+            const opt = window.Joomla.getOptions('com_nxpeasyforms.frontend');
+            if (opt && typeof opt === 'object') {
+                settings = opt;
+            }
+        } catch (e) {
+            // ignore
+        }
+    }
+
+    const restUrl = settings && settings.restUrl ? settings.restUrl : '';
+
+    function showMissingConfigMessage() {
+        const forms = document.querySelectorAll('.nxp-easy-form');
+        forms.forEach((wrapper) => {
+            const messages = wrapper.querySelector('.nxp-easy-form__messages');
+            if (messages) {
+                messages.textContent =
+                    (settings && settings.errorMessage) ||
+                    'Form configuration missing. Please contact the site administrator.';
+                messages.classList.add('nxp-easy-form__messages--error');
+            }
+        });
+    }
 
     if (!restUrl) {
+        // Provide visible feedback instead of silently doing nothing
+        showMissingConfigMessage();
         return;
     }
 
@@ -191,15 +222,17 @@
     }
 
     function clearFieldErrors(form) {
-        form.querySelectorAll('.nxp-easy-form__group--error').forEach(group => {
-            group.classList.remove('nxp-easy-form__group--error');
-        });
+        form.querySelectorAll('.nxp-easy-form__group--error').forEach(
+            (group) => {
+                group.classList.remove('nxp-easy-form__group--error');
+            }
+        );
 
-        form.querySelectorAll('.nxp-easy-form__error').forEach(errorEl => {
+        form.querySelectorAll('.nxp-easy-form__error').forEach((errorEl) => {
             errorEl.textContent = '';
         });
 
-        form.querySelectorAll('[aria-invalid="true"]').forEach(field => {
+        form.querySelectorAll('[aria-invalid="true"]').forEach((field) => {
             field.removeAttribute('aria-invalid');
             field.removeAttribute('aria-describedby');
         });
@@ -295,8 +328,7 @@
 
                 if (!isSuccess) {
                     const errorFields =
-                        actualData?.errors?.fields ||
-                        result?.errors?.fields;
+                        actualData?.errors?.fields || result?.errors?.fields;
 
                     if (errorFields) {
                         clearFieldErrors(form);
@@ -305,7 +337,9 @@
 
                     if (messages) {
                         messages.textContent =
-                            actualData.message || result.message || errorMessage;
+                            actualData.message ||
+                            result.message ||
+                            errorMessage;
                         messages.classList.add(
                             'nxp-easy-form__messages--error'
                         );
@@ -316,9 +350,7 @@
                 if (messages) {
                     messages.textContent =
                         actualData.message || result.message || successMessage;
-                    messages.classList.add(
-                        'nxp-easy-form__messages--success'
-                    );
+                    messages.classList.add('nxp-easy-form__messages--success');
                 }
 
                 form.reset();

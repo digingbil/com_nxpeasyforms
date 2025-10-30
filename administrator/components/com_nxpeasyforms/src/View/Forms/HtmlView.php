@@ -34,15 +34,15 @@ final class HtmlView extends BaseHtmlView
     /**
      * @var array<int,FormListItem>
      */
-    protected $items = [];
+    public $items = [];
 
-    protected $pagination;
+    public $pagination;
 
-    protected $state;
+    public $state;
 
-    protected $filterForm;
+    public $filterForm;
 
-    protected $activeFilters;
+    public $activeFilters;
 
     private bool $modal = false;
 

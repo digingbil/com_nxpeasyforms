@@ -1089,6 +1089,21 @@ export const FORM_TEMPLATES = [
                 'Registration successful! Please check your email to confirm your account.',
                 'nxp-easy-forms'
             ),
+            integrations: {
+                user_registration: {
+                    enabled: true,
+                    user_group: 2,
+                    require_activation: true,
+                    send_activation_email: true,
+                    auto_login: false,
+                    field_mapping: {
+                        username: 'username',
+                        email: 'email',
+                        password: 'password',
+                        name: '',
+                    },
+                },
+            },
         },
     },
 ];

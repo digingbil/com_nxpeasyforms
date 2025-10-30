@@ -2,9 +2,10 @@
 <extension type="component" method="upgrade" version="5.0">
     <name>COM_NXPEASYFORMS</name>
     <title>NXP Easy Forms</title>
-    <creationDate>2024-05-28</creationDate>
+    <creationDate>2025-09-22</creationDate>
     <author>nexusplugins.com</author>
     <authorUrl>https://nexusplugins.com</authorUrl>
+    <license>GNU General Public License version 2 or later; see LICENSE.txt</license>
     <version>1.0.1</version>
     <description>COM_NXPEASYFORMS_XML_DESCRIPTION</description>
 

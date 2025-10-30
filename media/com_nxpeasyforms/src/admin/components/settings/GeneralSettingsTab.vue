@@ -7,7 +7,7 @@
     >
         <label class="nxp-setting nxp-setting--switch">
             <span>{{ __("Store submissions in Joomla") }}</span>
-            <input type="checkbox" v-model="local.store_submissions" />
+            <input type="checkbox" v-model="local.store_submissions" @change="saveStoreSubmissionsPreference" />
         </label>
 
         <div class="nxp-setting">
@@ -33,4 +33,13 @@ if (!ctx) {
 }
 
 const { local } = ctx;
+
+// Save preference to localStorage when changed
+const saveStoreSubmissionsPreference = () => {
+    try {
+        localStorage.setItem('nxp_form_store_submissions_default', String(local.store_submissions));
+    } catch {
+        // localStorage not available
+    }
+};
 </script>

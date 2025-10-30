@@ -5,8 +5,10 @@ namespace Joomla\Component\Nxpeasyforms\Site\Model;
 
 use Joomla\CMS\Factory;
 use Joomla\CMS\Language\Text;
+use Joomla\CMS\MVC\Factory\MVCFactoryInterface;
 use Joomla\CMS\MVC\Model\ItemModel;
 use Joomla\Component\Nxpeasyforms\Administrator\Service\Repository\FormRepository;
+use Joomla\Database\DatabaseDriver;
 
 
 use function is_array;
@@ -22,10 +24,34 @@ final class FormModel extends ItemModel
 {
     private FormRepository $forms;
 
-    public function __construct($config = [], ?FormRepository $forms = null)
+    public function __construct($config = [], ?MVCFactoryInterface $factory = null, ?FormRepository $forms = null)
     {
-        parent::__construct($config);
-        $this->forms = $forms ?? Factory::getContainer()->get(FormRepository::class);
+        parent::__construct($config, $factory);
+
+        if ($forms !== null) {
+            $this->forms = $forms;
+        } else {
+            $container = Factory::getContainer();
+
+            $resolved = null;
+
+            // Try container->get() if available; on failure, fallback to manual construction
+            try {
+                if (method_exists($container, 'has') && $container->has(FormRepository::class)) {
+                    $resolved = $container->get(FormRepository::class);
+                }
+            } catch (\Throwable $e) {
+                $resolved = null;
+            }
+
+            if ($resolved instanceof FormRepository) {
+                $this->forms = $resolved;
+            } else {
+                /** @var DatabaseDriver $db */
+                $db = $container->get(DatabaseDriver::class);
+                $this->forms = new FormRepository($db);
+            }
+        }
     }
 
     /**

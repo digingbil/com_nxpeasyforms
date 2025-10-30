@@ -8,7 +8,7 @@
         <div class="nxp-notification__primary-toggle">
             <label class="nxp-setting nxp-setting--switch">
                 <span>{{ __("Send email notifications") }}</span>
-                <input type="checkbox" v-model="local.send_email" />
+                <input type="checkbox" v-model="local.send_email" @change="saveSendEmailPreference" />
             </label>
         </div>
 
@@ -351,6 +351,15 @@ if (!ctx) {
 }
 
 const { local, requestTestEmail, testEmailFeedback, testEmailLoading } = ctx;
+
+// Save preference to localStorage when changed
+const saveSendEmailPreference = () => {
+    try {
+        localStorage.setItem('nxp_form_send_email_default', String(local.send_email));
+    } catch {
+        // localStorage not available
+    }
+};
 </script>
 
 <style scoped>

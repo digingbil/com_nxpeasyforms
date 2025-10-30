@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<form>
+    <fields name="filter">
+        <field
+            name="search"
+            type="text"
+            label="JSEARCH_FILTER"
+            hint="COM_NXPEASYFORMS_SEARCH_FORMS"
+        />
+
+        <field
+            name="status"
+            type="list"
+            label="JSTATUS"
+            default="all"
+            class="w-100"
+        >
+            <option value="all">JOPTION_SELECT_PUBLISHED</option>
+            <option value="active">JENABLED</option>
+            <option value="inactive">JDISABLED</option>
+        </field>
+    </fields>
+
+    <fields name="list">
+        <field
+            name="fullordering"
+            type="list"
+            label="JGRID_HEADING_ORDERING"
+            default="created_at DESC"
+            validate="options"
+        >
+            <option value="created_at DESC">COM_NXPEASYFORMS_COLUMN_CREATED_DESC</option>
+            <option value="created_at ASC">COM_NXPEASYFORMS_COLUMN_CREATED_ASC</option>
+            <option value="updated_at DESC">COM_NXPEASYFORMS_COLUMN_MODIFIED_DESC</option>
+            <option value="updated_at ASC">COM_NXPEASYFORMS_COLUMN_MODIFIED_ASC</option>
+            <option value="title ASC">JGLOBAL_TITLE_ASC</option>
+            <option value="title DESC">JGLOBAL_TITLE_DESC</option>
+        </field>
+    </fields>
+</form>

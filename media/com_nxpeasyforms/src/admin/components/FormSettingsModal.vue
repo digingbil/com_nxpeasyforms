@@ -397,6 +397,32 @@ const mapOptionsToLocal = (value) => {
         },
     };
 
+    // User Registration (Joomla) - map with backward compatibility
+    const urSource = integrations?.user_registration || {};
+    const urDefaults = defaults.user_registration;
+    const inferredMode = typeof urSource.password_mode === 'string'
+        ? urSource.password_mode
+        : (typeof urSource.field_mapping?.password === 'string' && urSource.field_mapping.password !== ''
+            ? 'mapped'
+            : 'auto');
+
+    local.integrations.user_registration = {
+        ...urDefaults,
+        enabled: urSource.enabled === true,
+        user_group: Number(urSource.user_group ?? 2) || 2,
+        require_activation: urSource.require_activation !== false,
+        send_activation_email: urSource.send_activation_email !== false,
+        auto_login: urSource.auto_login === true,
+        password_mode: (inferredMode === 'mapped' ? 'mapped' : 'auto'),
+        field_mapping: {
+            ...urDefaults.field_mapping,
+            username: urSource.field_mapping?.username || urDefaults.field_mapping.username,
+            email: urSource.field_mapping?.email || urDefaults.field_mapping.email,
+            password: urSource.field_mapping?.password || '',
+            name: urSource.field_mapping?.name || urDefaults.field_mapping.name,
+        },
+    };
+
     const mailchimpTags = Array.isArray(integrations?.mailchimp?.tags)
         ? integrations.mailchimp.tags
         : [];
@@ -696,6 +722,25 @@ const buildIntegrationPayload = () => ({
         legal_consent: !!local.integrations.hubspot.legal_consent,
         consent_text: local.integrations.hubspot.consent_text,
     },
+    user_registration: (() => {
+        const src = local.integrations.user_registration || {};
+        const mode = src.password_mode === 'mapped' ? 'mapped' : 'auto';
+        const mapping = {
+            username: src.field_mapping?.username || '',
+            email: src.field_mapping?.email || '',
+            password: mode === 'mapped' ? (src.field_mapping?.password || '') : '',
+            name: src.field_mapping?.name || '',
+        };
+        return {
+            enabled: !!src.enabled,
+            user_group: Number(src.user_group) || 2,
+            require_activation: !!src.require_activation,
+            send_activation_email: !!src.send_activation_email,
+            auto_login: !!src.auto_login,
+            password_mode: mode,
+            field_mapping: mapping,
+        };
+    })(),
 });
 
 const buildOptionsPayload = () => {

@@ -50,6 +50,20 @@ function baseIntegrations() {
                 alias: '',
             },
         },
+        user_registration: {
+            enabled: false,
+            user_group: 2,
+            require_activation: true,
+            send_activation_email: true,
+            auto_login: false,
+            password_mode: 'auto',
+            field_mapping: {
+                username: 'username',
+                email: 'email',
+                password: 'password',
+                name: '',
+            },
+        },
         mailchimp: {
             enabled: false,
             api_key: '',
@@ -186,6 +200,15 @@ function mergeIntegrations(integrations = {}) {
             };
         }
 
+        if (isObject(baseConfig.field_mapping)) {
+            merged[key].field_mapping = {
+                ...baseConfig.field_mapping,
+                ...(isObject(incoming.field_mapping)
+                    ? incoming.field_mapping
+                    : {}),
+            };
+        }
+
         if (isObject(baseConfig.customer)) {
             const baseCustomer = baseConfig.customer;
             const incomingCustomer = isObject(incoming.customer)
@@ -220,6 +243,8 @@ function mergeIntegrations(integrations = {}) {
 
 function baseOptions() {
     return {
+        // Defaults must be enabled by default for new forms; do not read localStorage here
+        // so builder always starts from a known-good baseline.
         store_submissions: true,
         send_email: true,
         email_recipient: '',
@@ -320,11 +345,18 @@ function mergeOptions(options = {}) {
             // Migrate legacy flat structure to provider-specific nested structure
             const legacySiteKey = incomingCaptcha.site_key;
             const legacySecretKey = incomingCaptcha.secret_key;
-            const hasLegacyKeys = legacySiteKey !== undefined || legacySecretKey !== undefined;
+            const hasLegacyKeys =
+                legacySiteKey !== undefined || legacySecretKey !== undefined;
 
             // If we have legacy keys and a valid provider, migrate them
             const migratedProvider = {};
-            if (hasLegacyKeys && provider !== 'none' && (provider === 'recaptcha_v3' || provider === 'turnstile' || provider === 'friendlycaptcha')) {
+            if (
+                hasLegacyKeys &&
+                provider !== 'none' &&
+                (provider === 'recaptcha_v3' ||
+                    provider === 'turnstile' ||
+                    provider === 'friendlycaptcha')
+            ) {
                 migratedProvider[provider] = {
                     site_key: legacySiteKey || '',
                     secret_key: legacySecretKey || '',
@@ -336,15 +368,21 @@ function mergeOptions(options = {}) {
                 ...incomingCaptcha,
                 recaptcha_v3: {
                     ...base.captcha.recaptcha_v3,
-                    ...(migratedProvider.recaptcha_v3 || incomingCaptcha.recaptcha_v3 || {}),
+                    ...(migratedProvider.recaptcha_v3 ||
+                        incomingCaptcha.recaptcha_v3 ||
+                        {}),
                 },
                 turnstile: {
                     ...base.captcha.turnstile,
-                    ...(migratedProvider.turnstile || incomingCaptcha.turnstile || {}),
+                    ...(migratedProvider.turnstile ||
+                        incomingCaptcha.turnstile ||
+                        {}),
                 },
                 friendlycaptcha: {
                     ...base.captcha.friendlycaptcha,
-                    ...(migratedProvider.friendlycaptcha || incomingCaptcha.friendlycaptcha || {}),
+                    ...(migratedProvider.friendlycaptcha ||
+                        incomingCaptcha.friendlycaptcha ||
+                        {}),
                 },
             };
 
@@ -451,19 +489,34 @@ export const useFormStore = defineStore('form', {
             translations.defaultTitle ||
             __('Untitled form', 'nxp-easy-forms'),
         alias: initialData.alias || '',
-        fields: Array.isArray(initialData.fields) ? initialData.fields.map((field) => ({
-            ...field,
-            multiple: field.multiple ?? false,
-            country_field:
-                field.type === 'state'
-                    ? field.country_field || ''
-                    : field.country_field,
-            allow_text_input:
-                field.type === 'state'
-                    ? field.allow_text_input !== false
-                    : field.allow_text_input,
-        })) : [],
-        options: initialData.settings ? mergeOptions(initialData.settings) : makeOptions(),
+        fields: Array.isArray(initialData.fields)
+            ? initialData.fields.map((field) => ({
+                  ...field,
+                  multiple: field.multiple ?? false,
+                  country_field:
+                      field.type === 'state'
+                          ? field.country_field || ''
+                          : field.country_field,
+                  allow_text_input:
+                      field.type === 'state'
+                          ? field.allow_text_input !== false
+                          : field.allow_text_input,
+              }))
+            : [],
+        // When creating a brand-new form, PHP sends settings as an empty array ([]).
+        // Treat only a non-empty plain object as incoming settings; otherwise use full defaults.
+        options: (() => {
+            const opts =
+                isObject(initialData.settings) &&
+                Object.keys(initialData.settings).length > 0
+                    ? mergeOptions(initialData.settings)
+                    : makeOptions();
+            // Force critical defaults ON for brand-new forms or ambiguous payloads
+            // to avoid any unintended false from stale data paths.
+            opts.store_submissions = true;
+            opts.send_email = true;
+            return opts;
+        })(),
         loading: false,
         saving: false,
         error: null,
@@ -476,7 +529,11 @@ export const useFormStore = defineStore('form', {
     actions: {
         async bootstrap() {
             // If we have initial data from server, we don't need to fetch via AJAX
-            if (initialData.title || (Array.isArray(initialData.fields) && initialData.fields.length > 0)) {
+            if (
+                initialData.title ||
+                (Array.isArray(initialData.fields) &&
+                    initialData.fields.length > 0)
+            ) {
                 // Data already loaded in state initialization
                 return;
             }

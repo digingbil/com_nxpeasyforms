@@ -95,6 +95,20 @@ final class FormDefaults
                 ],
                 'custom_css' => '',
                 'integrations' => [
+                    'user_registration' => [
+                        'enabled' => false,
+                        'user_group' => 2,
+                        'require_activation' => true,
+                        'send_activation_email' => true,
+                        'auto_login' => false,
+                        'password_mode' => 'auto',
+                        'field_mapping' => [
+                            'username' => 'username',
+                            'email' => 'email',
+                            'password' => 'password',
+                            'name' => 'name',
+                        ],
+                    ],
                     'joomla_article' => [
                         'enabled' => false,
                         'category_id' => 0,

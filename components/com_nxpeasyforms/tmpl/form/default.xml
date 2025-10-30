@@ -5,10 +5,10 @@
         option="COM_NXPEASYFORMS_MENU_FORM_DEFAULT_DESC"
     />
     <fields name="request">
-        <fieldset name="request" label="COM_NXPEASYFORMS_MENU_FORM_DEFAULT" addfieldprefix="Joomla\Component\Nxpeasyforms\Administrator\Field\Modal" addfieldpath="JPATH_ADMINISTRATOR/components/com_nxpeasyforms/src/Field/Modal">
+        <fieldset name="request" label="COM_NXPEASYFORMS_MENU_FORM_DEFAULT" addfieldpath="administrator/components/com_nxpeasyforms/models/fields">
             <field
                 name="id"
-                type="Form"
+                type="Modal_Form"
                 label="COM_NXPEASYFORMS_FIELD_FORM_LABEL"
                 description="COM_NXPEASYFORMS_FIELD_FORM_DESC"
                 required="true"

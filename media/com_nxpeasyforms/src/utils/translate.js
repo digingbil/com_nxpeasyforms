@@ -1,5 +1,5 @@
 /**
- * Lightweight translation helper that falls back to Joomla and WordPress globals when available.
+ * Lightweight translation helper that falls back to Joomla globals when available.
  *
  * @param {string} text - Source string to translate.
  * @param {string} [domain='com_nxpeasyforms'] - Translation domain/context.

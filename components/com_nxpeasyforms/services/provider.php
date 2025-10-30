@@ -17,6 +17,10 @@ use Joomla\DI\ServiceProviderInterface;
 return new class () implements ServiceProviderInterface {
     public function register(Container $container): void
     {
+        // Register domain services early so models can resolve repositories during factory instantiation
+        $registerDomainServices = include \JPATH_ADMINISTRATOR . '/components/com_nxpeasyforms/services/domain-services.php';
+        $registerDomainServices($container);
+
         $container->registerServiceProvider(new MVCFactory('\\Joomla\\Component\\Nxpeasyforms'));
         $container->registerServiceProvider(new ComponentDispatcherFactory('\\Joomla\\Component\\Nxpeasyforms'));
 
@@ -37,6 +41,14 @@ return new class () implements ServiceProviderInterface {
                     );
                 }
 
+                // Ensure Administrator namespace is available in site context (needed for fields used by menu XML)
+                if (!class_exists('Joomla\\Component\\Nxpeasyforms\\Administrator\\Extension\\NxpeasyformsComponent')) {
+                    \JLoader::registerNamespace(
+                        'Joomla\\Component\\Nxpeasyforms\\Administrator',
+                        \JPATH_ADMINISTRATOR . '/components/com_nxpeasyforms/src'
+                    );
+                }
+
                 $component = new NxpeasyformsComponent(
                     $container->get(ComponentDispatcherFactoryInterface::class)
                 );
@@ -50,7 +62,5 @@ return new class () implements ServiceProviderInterface {
             }
         );
 
-        $registerDomainServices = include \JPATH_ADMINISTRATOR . '/components/com_nxpeasyforms/services/domain-services.php';
-        $registerDomainServices($container);
     }
 };

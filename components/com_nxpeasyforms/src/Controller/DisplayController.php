@@ -11,14 +11,17 @@ use Joomla\CMS\MVC\Controller\BaseController;
 // phpcs:enable PSR1.Files.SideEffects
 
 /**
- * Default controller for site-facing requests.
+ * Default display controller for site-facing requests.
+ *
+ * @since 1.0.0
  */
-final class DisplayController extends BaseController
+class DisplayController extends BaseController
 {
     /**
      * Default view name for the site application.
      *
      * @var string
+     * @since 1.0.0
      */
     protected $default_view = 'form';
 }

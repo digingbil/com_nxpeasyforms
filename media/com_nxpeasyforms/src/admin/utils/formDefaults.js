@@ -129,6 +129,20 @@ export const formDefaults = {
                 featured_image_caption: '',
             },
         },
+        user_registration: {
+            enabled: false,
+            user_group: 2,
+            require_activation: true,
+            send_activation_email: true,
+            auto_login: false,
+            password_mode: 'auto', // 'auto' | 'mapped'
+            field_mapping: {
+                username: 'username',
+                email: 'email',
+                password: 'password',
+                name: '',
+            },
+        },
         mailchimp: {
             enabled: false,
             api_key: '',

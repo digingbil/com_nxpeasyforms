@@ -12,6 +12,7 @@ use Joomla\Component\Nxpeasyforms\Administrator\Service\Exception\SubmissionExce
 use Joomla\Component\Nxpeasyforms\Administrator\Service\File\FileUploader;
 use Joomla\Component\Nxpeasyforms\Administrator\Service\Integrations\IntegrationManager;
 use Joomla\Component\Nxpeasyforms\Administrator\Service\Integrations\IntegrationQueue;
+use Joomla\Component\Nxpeasyforms\Administrator\Service\Registration\UserRegistrationHandler;
 use Joomla\Component\Nxpeasyforms\Administrator\Service\Repository\FormRepository;
 use Joomla\Component\Nxpeasyforms\Administrator\Service\Repository\SubmissionRepository;
 use Joomla\Component\Nxpeasyforms\Administrator\Service\Security\CaptchaService;
@@ -74,6 +75,8 @@ final class SubmissionService
 
     private IntegrationQueue $integrationQueue;
 
+    private UserRegistrationHandler $userRegistrationHandler;
+
     public function __construct(
         ?FormRepository $forms = null,
         ?SubmissionRepository $submissions = null,
@@ -85,7 +88,8 @@ final class SubmissionService
         ?FileUploader $fileUploader = null,
         ?EmailService $emailService = null,
         ?IntegrationManager $integrationManager = null,
-        ?IntegrationQueue $integrationQueue = null
+        ?IntegrationQueue $integrationQueue = null,
+        ?UserRegistrationHandler $userRegistrationHandler = null
     ) {
         $container = Factory::getContainer();
 
@@ -100,6 +104,7 @@ final class SubmissionService
         $this->emailService = $emailService ?? $container->get(EmailService::class);
         $this->integrationManager = $integrationManager ?? $container->get(IntegrationManager::class);
         $this->integrationQueue = $integrationQueue ?? $container->get(IntegrationQueue::class);
+        $this->userRegistrationHandler = $userRegistrationHandler ?? $container->get(UserRegistrationHandler::class);
     }
 
 	/**
@@ -241,29 +246,66 @@ final class SubmissionService
             );
         }
 
+    // Redact sensitive values (e.g., password) from any notifications
+    $sanitisedForNotify = $this->redactSensitiveFields($sanitised, $fieldMeta);
+    $fieldMetaForNotify = $this->redactSensitiveFieldMeta($fieldMeta);
+
         $emailResult = $this->emailService->dispatchSubmission(
             $form,
-            $sanitised,
+            $sanitisedForNotify,
             [
-                'field_meta' => $fieldMeta,
+                'field_meta' => $fieldMetaForNotify,
                 'ip_address' => $storedIp,
                 'user_agent' => $context['user_agent'],
             ]
         );
 
-        $this->dispatchIntegrations($options, $form, $sanitised, $context, $fieldMeta);
+        // Handle user registration if enabled
+        $registrationResult = null;
+        $integrations = isset($options['integrations']) && is_array($options['integrations'])
+            ? $options['integrations']
+            : [];
+
+        if (!empty($integrations['user_registration']['enabled'])) {
+            $registrationConfig = is_array($integrations['user_registration'])
+                ? $integrations['user_registration']
+                : [];
+
+            $registrationResult = $this->userRegistrationHandler->registerUser($sanitised, $registrationConfig);
+
+            if (!$registrationResult['success']) {
+                throw new SubmissionException(
+                    $registrationResult['message'],
+                    422,
+                    [
+                        'registration_error' => $registrationResult['message'],
+                        'data' => $sanitised,
+                    ]
+                );
+            }
+        }
+
+    // Dispatch third-party integrations with redacted payload
+    $this->dispatchIntegrations($options, $form, $sanitisedForNotify, $context, $fieldMetaForNotify);
+
+        // Use registration success message if user was registered
+        $successMessage = $registrationResult !== null && $registrationResult['success']
+            ? $registrationResult['message']
+            : ($options['success_message'] ?? Text::_('COM_NXPEASYFORMS_MESSAGE_SUBMISSION_SUCCESS'));
 
         $result = [
             'success' => true,
-            'message' => $options['success_message'] ?? Text::_('COM_NXPEASYFORMS_MESSAGE_SUBMISSION_SUCCESS'),
-            'data' => $sanitised,
+            'message' => $successMessage,
+            // Return redacted data in API response
+            'data' => $sanitisedForNotify,
             'uuid' => $uuid,
             'submission_id' => $submissionId,
             'meta' => [
                 'ip_address' => $storedIp,
-                'field_meta' => $fieldMeta,
+                'field_meta' => $fieldMetaForNotify,
             ],
             'email' => $emailResult,
+            'registration' => $registrationResult,
         ];
 
         $this->dispatchEvent('onNxpEasyFormsAfterSubmission', [
@@ -684,5 +726,167 @@ final class SubmissionService
         } catch (\Throwable $exception) {
             return null;
         }
+    }
+
+    /**
+     * Redacts sensitive fields (e.g., password) from a submission payload.
+     * This is used for notifications and third‑party integrations to avoid
+     * leaking secrets while keeping the original values for internal use.
+     *
+     * @param array<string, mixed>             $data      Sanitized submission data
+     * @param array<int, array<string, mixed>> $fieldMeta Field meta entries including type and name
+     *
+     * @return array<string, mixed> Redacted copy of the data
+     * @since 1.0.0
+     */
+    private function redactSensitiveFields(array $data, array $fieldMeta): array
+    {
+        $redacted = $data;
+
+        foreach ($fieldMeta as $meta) {
+            $name = $meta['name'] ?? null;
+            $type = $meta['type'] ?? '';
+
+            if (is_string($name) && $name !== '' && $type === 'password' && array_key_exists($name, $redacted)) {
+                $redacted[$name] = '********';
+            }
+        }
+
+        // Extra safety: redact common password-like field names even if meta is missing
+        $commonPasswordFields = [
+            'password',
+            'pass',
+            'pwd',
+            'user_password',
+            'login_password',
+            'password1',
+            'pass1',
+            'pwd1',
+            'password2',
+            'pass2',
+            'pwd2',
+            'user_pass',
+            'auth_password',
+            'password_1',
+            'pass_1',
+            'pwd_1',
+            'password_2',
+            'pass_2',
+            'pwd_2',
+            'user_password1',
+            'user_password2',
+            'user_password_1',
+            'user_password_2',
+            'login_password_1',
+            'login_password_2',
+            'auth_password_1',
+            'auth_password_2',
+            'passwd',
+            'pass_word',
+            'user_pass_word',
+            'pass_word_1',
+            'pass_word_2',
+            'password-1',
+            'pass-1',
+            'pwd-1',
+            'password-2',
+            'pass-2',
+            'pwd-2',
+            'user-password',
+            'login-password',
+            'auth-password',
+            'user-password-1',
+            'user-password-2',
+            'login-password-1',
+            'login-password-2',
+            'auth-password-1',
+            'auth-password-2',
+            'pass-word',
+            'user-pass-word',
+            'pass-word-1',
+            'pass-word-2'
+        ];
+        foreach ($commonPasswordFields as $key) {
+            if (array_key_exists($key, $redacted)) {
+                $redacted[$key] = '********';
+            }
+        }
+
+        return $redacted;
+    }
+
+    /**
+     * Redact sensitive values in field meta for notifications and integrations.
+     *
+     * @param array<int, array<string, mixed>> $fieldMeta
+     * @return array<int, array<string, mixed>>
+     * @since 1.0.0
+     */
+    private function redactSensitiveFieldMeta(array $fieldMeta): array
+    {
+        $commonPasswordFields = [
+            'password',
+            'pass',
+            'pwd',
+            'user_password',
+            'login_password',
+            'password1',
+            'pass1',
+            'pwd1',
+            'password2',
+            'pass2',
+            'pwd2',
+            'user_pass',
+            'auth_password',
+            'password_1',
+            'pass_1',
+            'pwd_1',
+            'password_2',
+            'pass_2',
+            'pwd_2',
+            'user_password1',
+            'user_password2',
+            'user_password_1',
+            'user_password_2',
+            'login_password_1',
+            'login_password_2',
+            'auth_password_1',
+            'auth_password_2',
+            'passwd',
+            'pass_word',
+            'user_pass_word',
+            'pass_word_1',
+            'pass_word_2',
+            'password-1',
+            'pass-1',
+            'pwd-1',
+            'password-2',
+            'pass-2',
+            'pwd-2',
+            'user-password',
+            'login-password',
+            'auth-password',
+            'user-password-1',
+            'user-password-2',
+            'login-password-1',
+            'login-password-2',
+            'auth-password-1',
+            'auth-password-2',
+            'pass-word',
+            'user-pass-word',
+            'pass-word-1',
+            'pass-word-2'
+        ];
+
+        foreach ($fieldMeta as &$meta) {
+            $type = $meta['type'] ?? '';
+            $name = (string) ($meta['name'] ?? '');
+            if ($type === 'password' || in_array(strtolower($name), $commonPasswordFields, true)) {
+                $meta['value'] = '********';
+            }
+        }
+        unset($meta);
+
+        return $fieldMeta;
     }
 }
