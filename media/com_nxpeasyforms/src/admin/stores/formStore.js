@@ -64,6 +64,17 @@ function baseIntegrations() {
                 name: '',
             },
         },
+        user_login: {
+            enabled: false,
+            identity_mode: 'auto',
+            remember_me: true,
+            redirect_url: '',
+            field_mapping: {
+                identity: 'username',
+                password: 'password',
+                twofactor: '',
+            },
+        },
         mailchimp: {
             enabled: false,
             api_key: '',

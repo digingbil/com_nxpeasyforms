@@ -688,7 +688,10 @@ export const FORM_TEMPLATES = [
                 name: 'article_title',
                 label: __('Article Title', 'nxp-easy-forms'),
                 required: true,
-                placeholder: __('Give your article a headline', 'nxp-easy-forms'),
+                placeholder: __(
+                    'Give your article a headline',
+                    'nxp-easy-forms'
+                ),
             },
             {
                 type: 'textarea',
@@ -1101,6 +1104,49 @@ export const FORM_TEMPLATES = [
                         email: 'email',
                         password: 'password',
                         name: '',
+                    },
+                },
+            },
+        },
+    },
+    {
+        id: 'user-login',
+        name: __('User Login', 'nxp-easy-forms'),
+        description: __(
+            'Login form with username/email and password fields',
+            'nxp-easy-forms'
+        ),
+        fields: [
+            {
+                type: 'text',
+                name: 'username_or_email',
+                label: __('Username or Email', 'nxp-easy-forms'),
+                required: true,
+            },
+            {
+                type: 'password',
+                name: 'password',
+                label: __('Password', 'nxp-easy-forms'),
+                required: true,
+            },
+            {
+                type: 'button',
+                label: __('Log In', 'nxp-easy-forms'),
+            },
+        ],
+        options: {
+            send_email: false,
+            success_message: __('You are now logged in.', 'nxp-easy-forms'),
+            integrations: {
+                user_login: {
+                    enabled: true,
+                    identity_mode: 'auto',
+                    remember_me: true,
+                    redirect_url: '',
+                    field_mapping: {
+                        identity: 'username_or_email',
+                        password: 'password',
+                        twofactor: '',
                     },
                 },
             },

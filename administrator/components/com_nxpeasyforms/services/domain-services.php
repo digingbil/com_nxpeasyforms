@@ -14,6 +14,7 @@ use Joomla\Component\Nxpeasyforms\Administrator\Service\Integrations\SalesforceD
 use Joomla\Component\Nxpeasyforms\Administrator\Service\Integrations\SlackDispatcher;
 use Joomla\Component\Nxpeasyforms\Administrator\Service\Integrations\TeamsDispatcher;
 use Joomla\Component\Nxpeasyforms\Administrator\Service\Integrations\WebhookDispatcher;
+use Joomla\Component\Nxpeasyforms\Administrator\Service\Authentication\UserLoginHandler;
 use Joomla\Component\Nxpeasyforms\Administrator\Service\Registration\UserRegistrationHandler;
 use Joomla\Component\Nxpeasyforms\Administrator\Service\Repository\FormRepository;
 use Joomla\Component\Nxpeasyforms\Administrator\Service\Repository\SubmissionRepository;
@@ -214,6 +215,13 @@ return static function (Container $container): void {
     );
 
     $container->share(
+        UserLoginHandler::class,
+        static function (Container $container): UserLoginHandler {
+            return new UserLoginHandler(null, $container->get(DatabaseDriver::class));
+        }
+    );
+
+    $container->share(
         IntegrationManager::class,
         static function (Container $container): IntegrationManager {
             $manager = new IntegrationManager();
@@ -246,7 +254,8 @@ return static function (Container $container): void {
                 $container->get(EmailService::class),
                 $container->get(IntegrationManager::class),
                 $container->get(IntegrationQueue::class),
-                $container->get(UserRegistrationHandler::class)
+                $container->get(UserRegistrationHandler::class),
+                $container->get(UserLoginHandler::class)
             );
         }
     );

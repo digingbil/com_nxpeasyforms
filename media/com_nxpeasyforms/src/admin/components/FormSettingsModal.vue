@@ -423,6 +423,23 @@ const mapOptionsToLocal = (value) => {
         },
     };
 
+    // User Login (Joomla) - map persisted values if present
+    const ulSource = integrations?.user_login || {};
+    const ulDefaults = defaults.user_login;
+
+    local.integrations.user_login = {
+        ...ulDefaults,
+        enabled: ulSource.enabled === true,
+        identity_mode: ulSource.identity_mode || 'auto',
+        remember_me: ulSource.remember_me !== false,
+        redirect_url: ulSource.redirect_url || '',
+        field_mapping: {
+            identity: ulSource.field_mapping?.identity || ulDefaults.field_mapping.identity,
+            password: ulSource.field_mapping?.password || ulDefaults.field_mapping.password,
+            twofactor: ulSource.field_mapping?.twofactor || '',
+        },
+    };
+
     const mailchimpTags = Array.isArray(integrations?.mailchimp?.tags)
         ? integrations.mailchimp.tags
         : [];
@@ -739,6 +756,23 @@ const buildIntegrationPayload = () => ({
             auto_login: !!src.auto_login,
             password_mode: mode,
             field_mapping: mapping,
+        };
+    })(),
+    user_login: (() => {
+        const src = local.integrations.user_login || {};
+        const identityMode = typeof src.identity_mode === 'string' && src.identity_mode !== ''
+            ? src.identity_mode
+            : 'auto';
+        return {
+            enabled: !!src.enabled,
+            identity_mode: identityMode, // 'auto' | 'username' | 'email'
+            remember_me: src.remember_me !== false,
+            redirect_url: src.redirect_url || '',
+            field_mapping: {
+                identity: src.field_mapping?.identity || '',
+                password: src.field_mapping?.password || '',
+                twofactor: src.field_mapping?.twofactor || '',
+            },
         };
     })(),
 });
@@ -1080,6 +1114,10 @@ textarea { min-height: 100px; }
 .nxp-integration-description { margin: 0; font-size: 0.92rem; color: var(--nxp-muted-color); }
 .nxp-integration-hint { display: block; margin-top: 4px; color: var(--nxp-muted-color); font-size: 0.92rem; }
 .nxp-integration-inline-error { margin-top: 6px; color: var(--bs-danger, #b32d2e); font-size: 0.92rem; }
+.nxp-integration-inline-error--with-action { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.nxp-integration__action { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: 6px; line-height: 1.4; }
+.nxp-integration__action .fa-regular,
+.nxp-integration__action .fa-solid { font-size: 16px; }
 .nxp-integration-mappings { display: flex; flex-direction: column; gap: 10px; }
 .nxp-integration-mapping__row {
     display: grid;

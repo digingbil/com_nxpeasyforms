@@ -143,6 +143,17 @@ export const formDefaults = {
                 name: '',
             },
         },
+        user_login: {
+            enabled: false,
+            identity_mode: 'auto', // 'auto' | 'username' | 'email'
+            remember_me: true,
+            redirect_url: '',
+            field_mapping: {
+                identity: 'username', // or 'email'
+                password: 'password',
+                twofactor: '',
+            },
+        },
         mailchimp: {
             enabled: false,
             api_key: '',

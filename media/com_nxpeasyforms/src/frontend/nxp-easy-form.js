@@ -4,13 +4,13 @@
 export class NxpEasyForm {
     constructor(wrapper, config) {
         this.wrapper = wrapper;
-        this.formElement = wrapper.querySelector(".nxp-easy-form__form");
+        this.formElement = wrapper.querySelector('.nxp-easy-form__form');
         this.formId = Number(wrapper.dataset.formId || 0);
         this.messageEl = this.formElement.querySelector(
-            ".nxp-easy-form__messages",
+            '.nxp-easy-form__messages'
         );
         this.submitButton = this.formElement.querySelector(
-            ".nxp-easy-form__submit",
+            '.nxp-easy-form__submit'
         );
 
         this.config = config;
@@ -18,30 +18,33 @@ export class NxpEasyForm {
         this.successMessage =
             this.formElement.dataset.successMessage ||
             config.successMessage ||
-            "Thanks!";
+            'Thanks!';
         this.errorMessage =
             this.formElement.dataset.errorMessage ||
             config.errorMessage ||
-            "Submission failed. Please try again.";
+            'Submission failed. Please try again.';
 
         this.captchaConfig = {
-            provider: wrapper.dataset.captchaProvider || "none",
-            siteKey: wrapper.dataset.captchaSiteKey || "",
+            provider: wrapper.dataset.captchaProvider || 'none',
+            siteKey: wrapper.dataset.captchaSiteKey || '',
         };
 
         this.scriptLoader = config.scriptLoader;
         this.isSubmitting = false;
+
+        // Detect if this is a login form (has user_login integration enabled)
+        this.isLoginForm = wrapper.dataset.isLoginForm === '1';
 
         this.init();
     }
 
     init() {
         // Preload captcha script if needed
-        if (this.captchaConfig.provider !== "none") {
+        if (this.captchaConfig.provider !== 'none') {
             this.scriptLoader
                 .loadCaptchaScript(
                     this.captchaConfig.provider,
-                    this.captchaConfig.siteKey,
+                    this.captchaConfig.siteKey
                 )
                 .catch(() => {
                     /* noop - handled during submission */
@@ -49,8 +52,8 @@ export class NxpEasyForm {
         }
 
         // Bind submit handler
-        this.formElement.addEventListener("submit", (e) =>
-            this.handleSubmit(e),
+        this.formElement.addEventListener('submit', (e) =>
+            this.handleSubmit(e)
         );
     }
 
@@ -67,10 +70,10 @@ export class NxpEasyForm {
 
             if (captchaStatus !== true) {
                 const message =
-                    typeof captchaStatus === "string"
+                    typeof captchaStatus === 'string'
                         ? captchaStatus
                         : this.config.captchaFailedMessage;
-                this.showMessage("error", message);
+                this.showMessage('error', message);
                 requestAnimationFrame(() => this.focusFirstInvalid());
                 return;
             }
@@ -80,36 +83,57 @@ export class NxpEasyForm {
 
             const requestOptions = this.buildRequestOptions(payload, files);
 
-            const response = await fetch(
-                `${this.restUrl}/submission`,
-                requestOptions,
-            );
+            // Use Site controller for login forms to establish a real session
+            const endpoint = this.isLoginForm
+                ? `${window.location.origin}/index.php?option=com_nxpeasyforms&task=login.submit&format=json`
+                : `${this.restUrl}/submission`;
+
+            const response = await fetch(endpoint, requestOptions);
 
             const result = await response.json().catch(() => ({}));
 
             // Handle nested JsonResponse wrapper (data.errors vs errors)
             const actualData = result.data || result;
-            const isSuccess = response.ok && (result.success || actualData.success);
+            const isSuccess =
+                response.ok && (result.success || actualData.success);
 
-            console.log('[NXP Debug] Response:', { response: result, actualData, isSuccess, responseOk: response.ok });
+            console.log('[NXP Debug] Response:', {
+                response: result,
+                actualData,
+                isSuccess,
+                responseOk: response.ok,
+            });
 
             if (!isSuccess) {
-                const errorFields = actualData?.errors?.fields || result?.errors?.fields;
+                const errorFields =
+                    actualData?.errors?.fields || result?.errors?.fields;
                 console.log('[NXP Debug] Error fields:', errorFields);
                 if (errorFields) {
                     this.applyErrors(errorFields);
                 }
-                const message = actualData.message || result.message || this.errorMessage;
-                this.showMessage("error", message);
+                const message =
+                    actualData.message || result.message || this.errorMessage;
+                this.showMessage('error', message);
                 requestAnimationFrame(() => this.focusFirstInvalid());
                 return;
             }
 
-            this.showMessage("success", actualData.message || result.message || this.successMessage);
+            this.showMessage(
+                'success',
+                actualData.message || result.message || this.successMessage
+            );
             this.formElement.reset();
             this.resetCaptcha();
+
+            // Handle redirect for login forms
+            if (this.isLoginForm && (actualData.redirect || result.redirect)) {
+                const redirectUrl = actualData.redirect || result.redirect;
+                setTimeout(() => {
+                    window.location.href = redirectUrl;
+                }, 1000);
+            }
         } catch (error) {
-            this.showMessage("error", this.errorMessage);
+            this.showMessage('error', this.errorMessage);
         } finally {
             this.setSubmitting(false);
         }
@@ -140,7 +164,7 @@ export class NxpEasyForm {
                 }
                 checkboxState[name].total += 1;
                 if (checkbox.checked) {
-                    const value = checkbox.value || "on";
+                    const value = checkbox.value || 'on';
                     checkboxState[name].values.push(value);
                 }
                 if (
@@ -161,10 +185,10 @@ export class NxpEasyForm {
         });
 
         this.formElement
-            .querySelectorAll("select[multiple][name]")
+            .querySelectorAll('select[multiple][name]')
             .forEach((select) => {
                 const values = Array.from(select.selectedOptions).map(
-                    (option) => option.value,
+                    (option) => option.value
                 );
                 payload[select.name] = values;
             });
@@ -181,29 +205,29 @@ export class NxpEasyForm {
 
         if (!hasFiles) {
             return {
-                method: "POST",
+                method: 'POST',
                 headers: {
-                    "Content-Type": "application/json",
+                    'Content-Type': 'application/json',
                 },
                 body: JSON.stringify(payload),
             };
         }
 
         const formData = new FormData();
-        formData.append("payload", JSON.stringify(payload));
+        formData.append('payload', JSON.stringify(payload));
 
         Object.entries(files).forEach(([name, file]) => {
             formData.append(`files[${name}]`, file);
         });
 
         return {
-            method: "POST",
+            method: 'POST',
             body: formData,
         };
     }
 
     async attachCaptchaToken(payload) {
-        if (!this.captchaConfig || this.captchaConfig.provider === "none") {
+        if (!this.captchaConfig || this.captchaConfig.provider === 'none') {
             delete payload._nxp_captcha_token;
             delete payload._nxp_captcha_provider;
             return true;
@@ -211,15 +235,15 @@ export class NxpEasyForm {
 
         payload._nxp_captcha_provider = this.captchaConfig.provider;
 
-        if (this.captchaConfig.provider === "recaptcha_v3") {
+        if (this.captchaConfig.provider === 'recaptcha_v3') {
             return await this.handleRecaptchaV3(payload);
         }
 
-        if (this.captchaConfig.provider === "turnstile") {
+        if (this.captchaConfig.provider === 'turnstile') {
             return this.handleTurnstile(payload);
         }
 
-        if (this.captchaConfig.provider === "friendlycaptcha") {
+        if (this.captchaConfig.provider === 'friendlycaptcha') {
             return this.handleFriendlyCaptcha(payload);
         }
 
@@ -233,8 +257,8 @@ export class NxpEasyForm {
 
         try {
             await this.scriptLoader.loadCaptchaScript(
-                "recaptcha_v3",
-                this.captchaConfig.siteKey,
+                'recaptcha_v3',
+                this.captchaConfig.siteKey
             );
 
             if (!window.grecaptcha || !window.grecaptcha.execute) {
@@ -245,7 +269,7 @@ export class NxpEasyForm {
                 window.grecaptcha.ready(() => {
                     window.grecaptcha
                         .execute(this.captchaConfig.siteKey, {
-                            action: "nxp_easy_forms_submit",
+                            action: 'nxp_easy_forms_submit',
                         })
                         .then(resolve)
                         .catch(reject);
@@ -258,7 +282,7 @@ export class NxpEasyForm {
 
             payload._nxp_captcha_token = token;
             const hidden = this.formElement.querySelector(
-                'input[name="_nxp_captcha_token"]',
+                'input[name="_nxp_captcha_token"]'
             );
             if (hidden) {
                 hidden.value = token;
@@ -271,14 +295,14 @@ export class NxpEasyForm {
     }
 
     async handleTurnstile(payload) {
-        await this.scriptLoader.loadCaptchaScript("turnstile");
+        await this.scriptLoader.loadCaptchaScript('turnstile');
         const input = this.formElement.querySelector(
-            'input[name="cf-turnstile-response"]',
+            'input[name="cf-turnstile-response"]'
         );
         const token = (
-            payload["cf-turnstile-response"] ||
+            payload['cf-turnstile-response'] ||
             input?.value ||
-            ""
+            ''
         ).trim();
 
         if (!token) {
@@ -286,9 +310,9 @@ export class NxpEasyForm {
         }
 
         payload._nxp_captcha_token = token;
-        delete payload["cf-turnstile-response"];
+        delete payload['cf-turnstile-response'];
         const hidden = this.formElement.querySelector(
-            'input[name="_nxp_captcha_token"]',
+            'input[name="_nxp_captcha_token"]'
         );
         if (hidden) {
             hidden.value = token;
@@ -298,17 +322,15 @@ export class NxpEasyForm {
     }
 
     async handleFriendlyCaptcha(payload) {
-        await this.scriptLoader.loadCaptchaScript("friendlycaptcha");
+        await this.scriptLoader.loadCaptchaScript('friendlycaptcha');
         const token = (
-            payload["frc-captcha-response"] ||
-            payload["frc-captcha-solution"] ||
-            this.formElement.querySelector(
-                'input[name="frc-captcha-response"]',
-            )?.value ||
-            this.formElement.querySelector(
-                'input[name="frc-captcha-solution"]',
-            )?.value ||
-            ""
+            payload['frc-captcha-response'] ||
+            payload['frc-captcha-solution'] ||
+            this.formElement.querySelector('input[name="frc-captcha-response"]')
+                ?.value ||
+            this.formElement.querySelector('input[name="frc-captcha-solution"]')
+                ?.value ||
+            ''
         ).trim();
 
         if (!token) {
@@ -316,10 +338,10 @@ export class NxpEasyForm {
         }
 
         payload._nxp_captcha_token = token;
-        delete payload["frc-captcha-response"];
-        delete payload["frc-captcha-solution"];
+        delete payload['frc-captcha-response'];
+        delete payload['frc-captcha-solution'];
         const hidden = this.formElement.querySelector(
-            'input[name="_nxp_captcha_token"]',
+            'input[name="_nxp_captcha_token"]'
         );
         if (hidden) {
             hidden.value = token;
@@ -329,19 +351,19 @@ export class NxpEasyForm {
     }
 
     resetCaptcha() {
-        if (!this.captchaConfig || this.captchaConfig.provider === "none") {
+        if (!this.captchaConfig || this.captchaConfig.provider === 'none') {
             return;
         }
 
         if (
-            this.captchaConfig.provider === "turnstile" &&
+            this.captchaConfig.provider === 'turnstile' &&
             window.turnstile?.reset
         ) {
             window.turnstile.reset();
         }
 
         if (
-            this.captchaConfig.provider === "friendlycaptcha" &&
+            this.captchaConfig.provider === 'friendlycaptcha' &&
             window.friendlyChallenge?.widgets?.reset
         ) {
             try {
@@ -352,26 +374,26 @@ export class NxpEasyForm {
         }
 
         const hidden = this.formElement.querySelector(
-            'input[name="_nxp_captcha_token"]',
+            'input[name="_nxp_captcha_token"]'
         );
         if (hidden) {
-            hidden.value = "";
+            hidden.value = '';
         }
     }
 
     showMessage(type, text) {
         if (!this.messageEl) return;
-        this.messageEl.innerHTML = "";
-        const notice = document.createElement("div");
+        this.messageEl.innerHTML = '';
+        const notice = document.createElement('div');
         notice.className = `nxp-easy-form__notice nxp-easy-form__notice--${type}`;
         notice.id = `nxp-ef-message-${this.formId}`;
-        notice.setAttribute("role", "status");
-        notice.setAttribute("tabindex", "-1");
+        notice.setAttribute('role', 'status');
+        notice.setAttribute('tabindex', '-1');
         notice.textContent = text;
         this.messageEl.appendChild(notice);
 
         requestAnimationFrame(() => {
-            notice.scrollIntoView({ behavior: "smooth", block: "nearest" });
+            notice.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
             setTimeout(() => {
                 notice.focus({ preventScroll: true });
             }, 300);
@@ -380,7 +402,7 @@ export class NxpEasyForm {
 
     clearMessages() {
         if (this.messageEl) {
-            this.messageEl.innerHTML = "";
+            this.messageEl.innerHTML = '';
         }
     }
 
@@ -390,8 +412,8 @@ export class NxpEasyForm {
             this.submitButton.disabled = isSubmitting;
         }
         this.wrapper.classList.toggle(
-            "nxp-easy-form--submitting",
-            isSubmitting,
+            'nxp-easy-form--submitting',
+            isSubmitting
         );
     }
 
@@ -400,10 +422,15 @@ export class NxpEasyForm {
         let hasErrors = false;
 
         Object.entries(errors).forEach(([name, message]) => {
-            console.log('[NXP Debug] Processing error for field:', name, 'message:', message);
+            console.log(
+                '[NXP Debug] Processing error for field:',
+                name,
+                'message:',
+                message
+            );
             const errorHolder =
                 this.formElement.querySelector(
-                    `[data-error-for="${this.escapeSelector(name)}"]`,
+                    `[data-error-for="${this.escapeSelector(name)}"]`
                 ) || this.ensureErrorHolder(name);
 
             console.log('[NXP Debug] Error holder for', name, ':', errorHolder);
@@ -416,21 +443,21 @@ export class NxpEasyForm {
             hasErrors = true;
 
             const control = this.formElement.querySelector(
-                this.getFieldSelector(name),
+                this.getFieldSelector(name)
             );
 
             console.log('[NXP Debug] Control for', name, ':', control);
 
             if (control) {
-                control.setAttribute("aria-invalid", "true");
+                control.setAttribute('aria-invalid', 'true');
                 const errorId = this.ensureErrorId(errorHolder, control);
-                control.setAttribute("aria-describedby", errorId);
+                control.setAttribute('aria-describedby', errorId);
             }
 
             errorHolder.textContent = message;
             errorHolder
-                .closest(".nxp-easy-form__group")
-                ?.classList.add("nxp-easy-form__group--error");
+                .closest('.nxp-easy-form__group')
+                ?.classList.add('nxp-easy-form__group--error');
         });
 
         if (hasErrors) {
@@ -440,43 +467,41 @@ export class NxpEasyForm {
 
     clearErrors() {
         this.formElement
-            .querySelectorAll(".nxp-easy-form__group--error")
+            .querySelectorAll('.nxp-easy-form__group--error')
             .forEach((group) => {
-                group.classList.remove("nxp-easy-form__group--error");
+                group.classList.remove('nxp-easy-form__group--error');
             });
 
         this.formElement
-            .querySelectorAll(".nxp-easy-form__error")
+            .querySelectorAll('.nxp-easy-form__error')
             .forEach((error) => {
                 const control = this.formElement.querySelector(
-                    this.getFieldSelector(error.dataset.errorFor),
+                    this.getFieldSelector(error.dataset.errorFor)
                 );
                 if (control) {
-                    control.removeAttribute("aria-invalid");
-                    if (
-                        control.getAttribute("aria-describedby") === error.id
-                    ) {
-                        control.removeAttribute("aria-describedby");
+                    control.removeAttribute('aria-invalid');
+                    if (control.getAttribute('aria-describedby') === error.id) {
+                        control.removeAttribute('aria-describedby');
                     }
                 }
-                error.textContent = "";
+                error.textContent = '';
             });
     }
 
     ensureErrorHolder(fieldName) {
         const field = this.formElement.querySelector(
-            this.getFieldSelector(fieldName),
+            this.getFieldSelector(fieldName)
         );
-        const group = field?.closest(".nxp-easy-form__group");
+        const group = field?.closest('.nxp-easy-form__group');
 
         if (!group) {
             return null;
         }
 
-        const errorHolder = document.createElement("p");
-        errorHolder.className = "nxp-easy-form__error";
+        const errorHolder = document.createElement('p');
+        errorHolder.className = 'nxp-easy-form__error';
         errorHolder.dataset.errorFor = fieldName;
-        errorHolder.setAttribute("role", "alert");
+        errorHolder.setAttribute('role', 'alert');
         group.appendChild(errorHolder);
 
         return errorHolder;
@@ -486,17 +511,15 @@ export class NxpEasyForm {
         if (errorHolder.id) {
             return errorHolder.id;
         }
-        const baseId = control.id || control.name || "nxp-ef-field";
-        const sanitisedId = baseId.replace(/[^a-z0-9_-]/gi, "");
-        const errorId = `${sanitisedId || "nxp-ef-field"}-error`;
+        const baseId = control.id || control.name || 'nxp-ef-field';
+        const sanitisedId = baseId.replace(/[^a-z0-9_-]/gi, '');
+        const errorId = `${sanitisedId || 'nxp-ef-field'}-error`;
         errorHolder.id = errorId;
         return errorId;
     }
 
     focusFirstInvalid() {
-        const invalid = this.formElement.querySelector(
-            '[aria-invalid="true"]',
-        );
+        const invalid = this.formElement.querySelector('[aria-invalid="true"]');
         if (invalid) {
             invalid.focus({ preventScroll: false });
         }
@@ -514,7 +537,7 @@ export class NxpEasyForm {
 
         return String(value).replace(
             /([ #;?%&,.+*~':"!^$\[\]\\(){}|<>@])/g,
-            "\\$1",
+            '\\$1'
         );
     }
 }

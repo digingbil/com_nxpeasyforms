@@ -3,9 +3,9 @@ declare(strict_types=1);
 
 namespace Joomla\Component\Nxpeasyforms\Site\Helper;
 
+use Joomla\CMS\Factory;
 use Joomla\CMS\Filter\InputFilter;
 use Joomla\CMS\Language\Text;
-use Joomla\CMS\Session\Session;
 use Joomla\Component\Nxpeasyforms\Administrator\Helper\FormDefaults;
 use Joomla\Component\Nxpeasyforms\Administrator\Service\SubmissionService;
 
@@ -79,6 +79,16 @@ final class FormRenderer
 
         $enctype = $this->containsFileField($fields) ? ' enctype="multipart/form-data"' : '';
 
+        // Check if this is a login form (user_login integration enabled)
+        $isLoginForm = !empty($options['integrations']['user_login']['enabled']);
+        $loginFormAttr = $isLoginForm ? ' data-is-login-form="1"' : '';
+
+        $customCss = $this->renderCustomCss($formId, $options['custom_css'] ?? '');
+
+        if ($isLoginForm && $this->isUserLoggedIn()) {
+            return $this->renderLoggedInState($formId, $customCss);
+        }
+
         $formTag = sprintf(
             '<form class="nxp-easy-form__form" method="post" novalidate role="form" data-success-message="%s" data-error-message="%s"%s>%s%s%s%s</form>',
             $successMessage,
@@ -90,12 +100,11 @@ final class FormRenderer
             $hiddenInputs
         );
 
-        $customCss = $this->renderCustomCss($formId, $options['custom_css'] ?? '');
-
         return sprintf(
-            '<div class="nxp-easy-form" data-form-id="%d"%s>%s%s<noscript>%s</noscript></div>',
+            '<div class="nxp-easy-form" data-form-id="%d"%s%s>%s%s<noscript>%s</noscript></div>',
             $formId,
             $captchaAttributes,
+            $loginFormAttr,
             $formTag,
             $customCss,
             $this->escape(Text::_('COM_NXPEASYFORMS_FORM_REQUIRES_JAVASCRIPT'))
@@ -370,8 +379,16 @@ final class FormRenderer
 
     private function renderHiddenFields(int $formId): string
     {
-        $tokenField = Session::getFormToken();
-        $tokenInput = sprintf('<input type="hidden" name="%s" value="1" />', $tokenField);
+        try {
+            $tokenField = Factory::getApplication()->getFormToken();
+        } catch (\Throwable $exception) {
+            $tokenField = '';
+        }
+
+        $tokenInput = $tokenField !== ''
+            ? sprintf('<input type="hidden" name="%s" value="1" />', $this->escapeAttr($tokenField))
+            : '';
+
         $formIdInput = sprintf('<input type="hidden" name="formId" value="%d" />', $formId);
 
         $honeypotName = SubmissionService::honeypotFieldName($formId);
@@ -402,6 +419,91 @@ final class FormRenderer
         }
 
         return sprintf('<style id="nxp-easy-form-style-%d">%s</style>', $formId, json_decode($encoded, true));
+    }
+
+    private function renderLoggedInState(int $formId, string $customCss): string
+    {
+        $userName = $this->getLoggedInUserName();
+        $messageRaw = $userName !== ''
+            ? Text::sprintf('COM_NXPEASYFORMS_MESSAGE_ALREADY_LOGGED_IN_AS', $userName)
+            : Text::_('COM_NXPEASYFORMS_MESSAGE_ALREADY_LOGGED_IN');
+        $message = $this->escape($messageRaw);
+
+        $logoutAction = $this->escapeAttr('index.php?option=com_users&task=user.logout');
+
+        try {
+            $token = Factory::getApplication()->getFormToken();
+        } catch (\Throwable $exception) {
+            $token = '';
+        }
+
+        $tokenName = $token !== '' ? $this->escapeAttr($token) : '';
+        $tokenInput = $tokenName !== ''
+            ? sprintf('<input type="hidden" name="%s" value="1" />', $tokenName)
+            : '';
+
+        $returnRaw = base64_encode('index.php');
+        $returnAttr = $this->escapeAttr($returnRaw);
+        $buttonLabel = $this->escape(Text::_('COM_NXPEASYFORMS_BUTTON_LOGOUT'));
+        $noscript = $this->escape(Text::_('COM_NXPEASYFORMS_FORM_REQUIRES_JAVASCRIPT'));
+
+        $messageContainer = sprintf(
+            '<div class="nxp-easy-form__messages" aria-live="polite"><div class="nxp-easy-form__notice nxp-easy-form__notice--info">%s</div></div>',
+            $message
+        );
+
+        $logoutForm = sprintf(
+            '<form class="nxp-easy-form__logout" action="%s" method="post">'
+            . '%s'
+            . '<input type="hidden" name="return" value="%s" />'
+            . '<button type="submit" class="nxp-easy-form__button nxp-easy-form__button--logout">%s</button>'
+            . '</form>',
+            $logoutAction,
+            $tokenInput,
+            $returnAttr,
+            $buttonLabel
+        );
+
+        return sprintf(
+            '<div class="nxp-easy-form nxp-easy-form--logged-in" data-form-id="%d" data-is-login-form="1">%s%s%s<noscript>%s</noscript></div>',
+            $formId,
+            $messageContainer,
+            $logoutForm,
+            $customCss,
+            $noscript
+        );
+    }
+
+    private function isUserLoggedIn(): bool
+    {
+        try {
+            $app = Factory::getApplication();
+            $user = $app->getIdentity();
+
+            return (int) ($user->id ?? 0) > 0;
+        } catch (\Throwable $exception) {
+            return false;
+        }
+    }
+
+    private function getLoggedInUserName(): string
+    {
+        try {
+            $app = Factory::getApplication();
+            $user = $app->getIdentity();
+
+            if (!empty($user->name)) {
+                return (string) $user->name;
+            }
+
+            if (!empty($user->username)) {
+                return (string) $user->username;
+            }
+        } catch (\Throwable $exception) {
+            return '';
+        }
+
+        return '';
     }
 
     /**

@@ -335,10 +335,15 @@
                                         <div class="nxp-setting">
                                             <button
                                                 type="button"
-                                                class="button button-secondary"
+                                                class="button button-secondary nxp-integration__action"
                                                 @click="fetchMailchimpAudiences"
                                                 :disabled="mailchimpAudiencesLoading"
                                             >
+                                                <span
+                                                    class="fa-solid fa-arrows-rotate"
+                                                    :class="{ 'fa-spin': mailchimpAudiencesLoading }"
+                                                    aria-hidden="true"
+                                                ></span>
                                                 <span v-if="mailchimpAudiencesLoading">
                                                     {{ __("Fetching…", "nxp-easy-forms") }}
                                                 </span>
@@ -655,12 +660,11 @@
                                             </small>
                                             <button
                                                 type="button"
-                                                class="button button-secondary"
+                                                class="button button-secondary nxp-integration__action"
                                                 @click="addSalesforceMapping"
                                             >
-                                                {{
-                                                    __("Add mapping", "nxp-easy-forms")
-                                                }}
+                                                <span class="fa-solid fa-plus" aria-hidden="true"></span>
+                                                <span>{{ __("Add mapping", "nxp-easy-forms") }}</span>
                                             </button>
                                         </div>
                                     </div>
@@ -842,12 +846,11 @@
                                             </small>
                                             <button
                                                 type="button"
-                                                class="button button-secondary"
+                                                class="button button-secondary nxp-integration__action"
                                                 @click="addHubspotMapping"
                                             >
-                                                {{
-                                                    __("Add mapping", "nxp-easy-forms")
-                                                }}
+                                                <span class="fa-solid fa-plus" aria-hidden="true"></span>
+                                                <span>{{ __("Add mapping", "nxp-easy-forms") }}</span>
                                             </button>
                                         </div>
                                         <label class="nxp-setting nxp-setting--switch">

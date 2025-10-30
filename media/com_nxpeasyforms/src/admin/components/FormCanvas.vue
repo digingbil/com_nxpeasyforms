@@ -9,6 +9,19 @@
                     )
                 }}
             </p>
+            <p
+                v-if="integrationTags.length"
+                class="nxp-canvas__integrations"
+                :aria-label="__('Enabled integrations', 'nxp-easy-forms')"
+            >
+                <span
+                    v-for="tag in integrationTags"
+                    :key="tag.key"
+                    class="nxp-canvas__integration-tag"
+                >
+                    {{ tag.label }}
+                </span>
+            </p>
             <button
                 type="button"
                 class="button button-secondary nxp-canvas__settings"
@@ -131,6 +144,10 @@ const props = defineProps({
     selectedId: {
         type: String,
         default: null,
+    },
+    integrationTags: {
+        type: Array,
+        default: () => [],
     },
 });
 
@@ -270,6 +287,30 @@ watch(
     color: var(--nxp-muted-color);
     font-size: 1rem;
     grid-column: 1 / 2;
+}
+
+.nxp-canvas__integrations {
+    grid-column: 1 / 2;
+    margin: 0 0 12px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    font-size: 0.875rem;
+    color: var(--nxp-muted-color);
+}
+
+.nxp-canvas__integration-tag {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: var(--nxp-chip-bg, rgba(0, 0, 0, 0.06));
+    color: var(--nxp-chip-color, var(--nxp-muted-color));
+    border: 1px solid var(--nxp-surface-border);
+    font-size: 0.75rem;
+    line-height: 1.2;
+    font-weight: 500;
+    letter-spacing: 0.01em;
 }
 
 .nxp-canvas__settings {

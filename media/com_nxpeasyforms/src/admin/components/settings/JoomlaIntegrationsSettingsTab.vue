@@ -330,10 +330,18 @@
                                 ? __("Select a password field from your form.", "nxp-easy-forms")
                                 : __("Leave empty to auto-generate a secure password.", "nxp-easy-forms") }}
                         </small>
-                        <div v-if="passwordFieldOptions.length === 0" class="nxp-integration-inline-error" style="margin-top:6px;">
-                            {{ __("No password fields found in this form.", "nxp-easy-forms") }}
-                            <button type="button" class="button button-link" @click="addPasswordFieldAndMap" style="margin-left:8px;">
-                                {{ __("Add a Password field", "nxp-easy-forms") }}
+                        <div
+                            v-if="passwordFieldOptions.length === 0"
+                            class="nxp-integration-inline-error nxp-integration-inline-error--with-action"
+                        >
+                            <span>{{ __("No password fields found in this form.", "nxp-easy-forms") }}</span>
+                            <button
+                                type="button"
+                                class="button button-secondary nxp-integration__action"
+                                @click="addPasswordFieldAndMap"
+                            >
+                                <span class="fa-solid fa-lock" aria-hidden="true"></span>
+                                <span>{{ __("Add a Password field", "nxp-easy-forms") }}</span>
                             </button>
                         </div>
                     </label>
@@ -351,6 +359,102 @@
                         </select>
                         <small class="nxp-integration-hint">
                             {{ __("User's full name. Uses username as fallback if empty.", "nxp-easy-forms") }}
+                        </small>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <!-- User Login Integration -->
+        <div class="nxp-integration-card">
+            <div class="nxp-integration-header">
+                <span class="nxp-integration-icon"><img :src="ICON_JOOMLA" alt="" /></span>
+                <div>
+                    <h3>{{ __("User Login", "nxp-easy-forms") }}</h3>
+                    <p class="nxp-integration-description">
+                        {{ __("Log an existing Joomla user in when this form is submitted.", "nxp-easy-forms") }}
+                    </p>
+                </div>
+            </div>
+
+            <label class="nxp-setting nxp-setting--switch">
+                <span>{{ __("Enable user login", "nxp-easy-forms") }}</span>
+                <input type="checkbox" v-model="userLogin.enabled" />
+            </label>
+
+            <div v-if="userLogin.enabled" class="nxp-setting-group">
+                <div class="nxp-setting nxp-setting--split">
+                    <label>
+                        <span>{{ __("Identity mode", "nxp-easy-forms") }}</span>
+                        <select v-model="userLogin.identity_mode">
+                            <option value="auto">{{ __("Auto (username or email)", "nxp-easy-forms") }}</option>
+                            <option value="username">{{ __("Username", "nxp-easy-forms") }}</option>
+                            <option value="email">{{ __("Email", "nxp-easy-forms") }}</option>
+                        </select>
+                    </label>
+                    <label class="nxp-setting nxp-setting--switch">
+                        <span>{{ __("Remember me", "nxp-easy-forms") }}</span>
+                        <input type="checkbox" v-model="userLogin.remember_me" />
+                    </label>
+                </div>
+
+                <div class="nxp-setting">
+                    <label>
+                        <span>{{ __("Redirect URL after login (optional)", "nxp-easy-forms") }}</span>
+                        <input type="text" v-model="userLogin.redirect_url" placeholder="/" />
+                        <small class="nxp-integration-hint">
+                            {{ __("Leave empty to stay on the same page.", "nxp-easy-forms") }}
+                        </small>
+                    </label>
+                </div>
+
+                <div class="nxp-integration-mappings">
+                    <h4 class="nxp-integration-subtitle">
+                        {{ __("Field mappings", "nxp-easy-forms") }}
+                    </h4>
+                    <label>
+                        <span>{{ __("Username or Email field", "nxp-easy-forms") }} <strong>*</strong></span>
+                        <select v-model="userLogin.field_mapping.identity">
+                            <option value="">{{ "—" }}</option>
+                            <option
+                                v-for="opt in fieldOptions"
+                                :key="opt.value"
+                                :value="opt.value"
+                            >
+                                {{ opt.label }}
+                            </option>
+                        </select>
+                        <small class="nxp-integration-hint">
+                            {{ __("Select the field that contains the username or email.", "nxp-easy-forms") }}
+                        </small>
+                    </label>
+                    <label>
+                        <span>{{ __("Password field", "nxp-easy-forms") }} <strong>*</strong></span>
+                        <select v-model="userLogin.field_mapping.password">
+                            <option value="">{{ "—" }}</option>
+                            <option
+                                v-for="opt in passwordFieldOptions"
+                                :key="opt.value"
+                                :value="opt.value"
+                            >
+                                {{ opt.label }}
+                            </option>
+                        </select>
+                    </label>
+                    <label>
+                        <span>{{ __("Two‑factor code field (optional)", "nxp-easy-forms") }}</span>
+                        <select v-model="userLogin.field_mapping.twofactor">
+                            <option value="">{{ "—" }}</option>
+                            <option
+                                v-for="opt in fieldOptions"
+                                :key="opt.value"
+                                :value="opt.value"
+                            >
+                                {{ opt.label }}
+                            </option>
+                        </select>
+                        <small class="nxp-integration-hint">
+                            {{ __("Provide the TOTP/2FA code field if your site requires it for login.", "nxp-easy-forms") }}
                         </small>
                     </label>
                 </div>
@@ -397,6 +501,23 @@ if (!local.integrations.user_registration) {
 }
 
 const userRegistration = local.integrations.user_registration;
+
+// Ensure user_login integration exists (backward compatibility)
+if (!local.integrations.user_login) {
+    local.integrations.user_login = reactive({
+        enabled: false,
+        identity_mode: 'auto',
+        remember_me: true,
+        redirect_url: '',
+        field_mapping: {
+            identity: 'username',
+            password: 'password',
+            twofactor: '',
+        },
+    });
+}
+
+const userLogin = local.integrations.user_login;
 
 // Password field options (only show password type fields)
 const passwordFieldOptions = computed(() => {

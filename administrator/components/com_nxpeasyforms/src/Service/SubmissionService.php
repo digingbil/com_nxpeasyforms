@@ -12,6 +12,7 @@ use Joomla\Component\Nxpeasyforms\Administrator\Service\Exception\SubmissionExce
 use Joomla\Component\Nxpeasyforms\Administrator\Service\File\FileUploader;
 use Joomla\Component\Nxpeasyforms\Administrator\Service\Integrations\IntegrationManager;
 use Joomla\Component\Nxpeasyforms\Administrator\Service\Integrations\IntegrationQueue;
+use Joomla\Component\Nxpeasyforms\Administrator\Service\Authentication\UserLoginHandler;
 use Joomla\Component\Nxpeasyforms\Administrator\Service\Registration\UserRegistrationHandler;
 use Joomla\Component\Nxpeasyforms\Administrator\Service\Repository\FormRepository;
 use Joomla\Component\Nxpeasyforms\Administrator\Service\Repository\SubmissionRepository;
@@ -76,6 +77,7 @@ final class SubmissionService
     private IntegrationQueue $integrationQueue;
 
     private UserRegistrationHandler $userRegistrationHandler;
+    private UserLoginHandler $userLoginHandler;
 
     public function __construct(
         ?FormRepository $forms = null,
@@ -89,7 +91,8 @@ final class SubmissionService
         ?EmailService $emailService = null,
         ?IntegrationManager $integrationManager = null,
         ?IntegrationQueue $integrationQueue = null,
-        ?UserRegistrationHandler $userRegistrationHandler = null
+        ?UserRegistrationHandler $userRegistrationHandler = null,
+        ?UserLoginHandler $userLoginHandler = null
     ) {
         $container = Factory::getContainer();
 
@@ -104,7 +107,8 @@ final class SubmissionService
         $this->emailService = $emailService ?? $container->get(EmailService::class);
         $this->integrationManager = $integrationManager ?? $container->get(IntegrationManager::class);
         $this->integrationQueue = $integrationQueue ?? $container->get(IntegrationQueue::class);
-        $this->userRegistrationHandler = $userRegistrationHandler ?? $container->get(UserRegistrationHandler::class);
+    $this->userRegistrationHandler = $userRegistrationHandler ?? $container->get(UserRegistrationHandler::class);
+    $this->userLoginHandler = $userLoginHandler ?? $container->get(UserLoginHandler::class);
     }
 
 	/**
@@ -285,6 +289,33 @@ final class SubmissionService
             }
         }
 
+        // Handle user login if enabled
+        $loginResult = null;
+        $loginRedirect = null;
+        $loginShouldReload = false;
+        if (!empty($integrations['user_login']['enabled'])) {
+            $loginConfig = is_array($integrations['user_login']) ? $integrations['user_login'] : [];
+            $loginResult = $this->userLoginHandler->login($sanitised, $loginConfig);
+
+            if (!$loginResult['success']) {
+                throw new SubmissionException(
+                    $loginResult['message'] ?? Text::_('COM_NXPEASYFORMS_ERROR_LOGIN_INVALID_CREDENTIALS'),
+                    401,
+                    [
+                        'login_error' => $loginResult['message'] ?? 'login_failed',
+                        // Do not include sensitive values
+                        'data' => $sanitisedForNotify,
+                    ]
+                );
+            }
+
+            if (!empty($loginResult['redirect'])) {
+                $loginRedirect = (string) $loginResult['redirect'];
+            } elseif (!empty($loginResult['reload'])) {
+                $loginShouldReload = true;
+            }
+        }
+
     // Dispatch third-party integrations with redacted payload
     $this->dispatchIntegrations($options, $form, $sanitisedForNotify, $context, $fieldMetaForNotify);
 
@@ -306,7 +337,14 @@ final class SubmissionService
             ],
             'email' => $emailResult,
             'registration' => $registrationResult,
+            'login' => $loginResult,
         ];
+
+        if ($loginRedirect !== null) {
+            $result['redirect'] = $loginRedirect;
+        } elseif ($loginShouldReload) {
+            $result['reload'] = true;
+        }
 
         $this->dispatchEvent('onNxpEasyFormsAfterSubmission', [
             'formId' => $formId,

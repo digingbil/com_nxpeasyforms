@@ -122,6 +122,7 @@
             <FormCanvas
                 :fields="store.fields"
                 :selected-id="selectedFieldId"
+                :integration-tags="enabledIntegrationTags"
                 @select="selectField"
                 @remove="removeField"
                 @duplicate="duplicateField"
@@ -167,6 +168,7 @@
 
 <script setup>
 import { computed, nextTick, onMounted, onBeforeUnmount, ref, watch } from "vue";
+import { storeToRefs } from "pinia";
 import { useFormStore } from "@/admin/stores/formStore";
 import FieldPalette from "@/admin/components/FieldPalette.vue";
 import FormCanvas from "@/admin/components/FormCanvas.vue";
@@ -191,6 +193,21 @@ const hiddenFieldInputs = {
     settings: null,
 };
 
+const { options, formId } = storeToRefs(store);
+
+const integrationTagDefinitions = [
+    { key: "zapier", label: __("Zapier", "nxp-easy-forms") },
+    { key: "make", label: __("Make", "nxp-easy-forms") },
+    { key: "slack", label: __("Slack", "nxp-easy-forms") },
+    { key: "teams", label: __("Microsoft Teams", "nxp-easy-forms") },
+    { key: "joomla_article", label: __("Joomla Article", "nxp-easy-forms") },
+    { key: "user_registration", label: __("User Registration", "nxp-easy-forms") },
+    { key: "user_login", label: __("User Login", "nxp-easy-forms") },
+    { key: "mailchimp", label: __("Mailchimp", "nxp-easy-forms") },
+    { key: "salesforce", label: __("Salesforce", "nxp-easy-forms") },
+    { key: "hubspot", label: __("HubSpot", "nxp-easy-forms") },
+];
+
 const formTitle = computed({
     get: () => store.title,
     set: (value) => {
@@ -212,6 +229,22 @@ const selectedField = computed(
         store.fields.find((field) => field.id === selectedFieldId.value) ||
         null,
 );
+
+const enabledIntegrationTags = computed(() => {
+    if (!formId.value) {
+        return [];
+    }
+
+    const integrations = options.value?.integrations;
+
+    if (!integrations || typeof integrations !== "object") {
+        return [];
+    }
+
+    return integrationTagDefinitions
+        .filter(({ key }) => integrations?.[key]?.enabled === true)
+        .map(({ key, label }) => ({ key, label }));
+});
 
 const handleBeforeUnload = (event) => {
     if (store.hasUnsavedChanges) {
@@ -359,7 +392,7 @@ watch(
 );
 
 watch(
-    () => store.options,
+    options,
     () => {
         syncHiddenInputs();
     },
@@ -367,7 +400,7 @@ watch(
 );
 
 watch(
-    () => store.formId,
+    formId,
     (newId) => {
         if (newId) {
             showNewFormTip.value = false;

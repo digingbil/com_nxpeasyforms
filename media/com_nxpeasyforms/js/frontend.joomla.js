@@ -257,6 +257,7 @@
             provider: wrapper.dataset.captchaProvider || 'none',
             siteKey: wrapper.dataset.captchaSiteKey || '',
         };
+        const isLoginForm = wrapper.dataset.isLoginForm === '1';
         const messages = form.querySelector('.nxp-easy-form__messages');
         const submitButton = form.querySelector(
             'button[type="submit"], .nxp-easy-form__button'
@@ -314,7 +315,11 @@
                     return;
                 }
 
-                const response = await fetch(`${restUrl}/submission`, {
+                const endpoint = isLoginForm
+                    ? `${window.location.origin}/index.php?option=com_nxpeasyforms&task=login.submit&format=json`
+                    : `${restUrl}/submission`;
+
+                const response = await fetch(endpoint, {
                     method: 'POST',
                     body: formData,
                     credentials: 'same-origin',
@@ -354,6 +359,21 @@
                 }
 
                 form.reset();
+
+                if (isLoginForm) {
+                    const redirectTarget =
+                        actualData.redirect || result.redirect || '';
+
+                    if (redirectTarget) {
+                        setTimeout(() => {
+                            window.location.href = redirectTarget;
+                        }, 1000);
+                    } else {
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 1000);
+                    }
+                }
             } catch (error) {
                 if (messages) {
                     messages.textContent =
