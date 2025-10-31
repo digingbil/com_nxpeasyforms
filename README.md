@@ -4,6 +4,14 @@ This repository contains the Joomla 5 port of the NXP Easy Forms WordPress plugi
 
 ## Recent Changes
 
+### Administrator AJAX Refactor
+
+-   Replaced the monolithic administrator `AjaxController` with a lightweight delegator that bootstraps domain services on demand, wraps the request in `AjaxRequestContext`, and forwards execution to a dedicated `AjaxRouter`. The controller now emits JSON manually so both Joomla runtime and test environments get consistent payloads and status codes even when `JsonResponse` is unavailable.
+-   Introduced a service-oriented routing layer under `administrator/components/com_nxpeasyforms/src/Ajax/`, covering resource-specific handlers for forms (`FormAjaxHandler`), ad-hoc email tests (`EmailAjaxHandler`), component settings (`Settings/EmailSettingsAjaxHandler`, `Settings/JoomlaSettingsAjaxHandler`), and Mailchimp lookups (`Integrations/MailchimpAjaxHandler`). Each handler performs its own ACL checks through the shared `PermissionGuard`, validates CSRF tokens where appropriate, and returns an immutable `AjaxResult` value object.
+-   Added support utilities (`FormModelFactory`, `FormPayloadMapper`, `FormOptionsNormalizer`, `CategoryProvider`, `EmailSettingsRepository`, `MailchimpIntegrationService`) to keep payload normalisation, repository access, and third-party API calls reusable and easily testable. These helpers mirror the legacy controller’s behaviour while tightening error handling, secret redaction, and default fallbacks.
+-   Updated `administrator/components/com_nxpeasyforms/services/domain-services.php` to register all new handlers and support services with the Joomla DI container. Existing services (repositories, email delivery, integrations, queue) remain intact, so dependency wiring stays centralised and test suites can request the new classes directly.
+-   The Mailchimp audience fetch flow now resolves API keys via `MailchimpIntegrationService::resolveApiKey()`, allowing administrators to reuse stored encrypted keys when they request the list picker. Error responses are translated to user-facing messages (invalid key, HTTP failure, payload too large) with appropriate HTTP status codes.
+
 ### Bug Fixes
 
 -   **Encrypted CAPTCHA secrets**: Added the `Support/CaptchaOptions` helper so CAPTCHA credentials are stored encrypted-at-rest, redacted when delivered back to the builder, and only re-encrypted when the user supplies a new secret. Updated `FormRepository`, `AjaxController`, `SubmissionService`, `formStore.js`, and the Vue security settings modal to preserve existing secrets, honour remove-secret toggles, and keep form saves idempotent.
