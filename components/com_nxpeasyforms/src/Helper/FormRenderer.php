@@ -37,6 +37,10 @@ final class FormRenderer
     public function __construct(?InputFilter $filter = null)
     {
         $this->filter = $filter ?? InputFilter::getInstance();
+
+        // Load frontend language file for user-facing messages
+        $language = Factory::getApplication()->getLanguage();
+        $language->load('com_nxpeasyforms', JPATH_SITE);
     }
 
     /**

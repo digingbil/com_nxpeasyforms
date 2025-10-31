@@ -39,6 +39,10 @@ final class LoginController extends BaseController
         }
 
         parent::__construct($config, $actualApp, $input);
+
+        // Load frontend language file for user-facing messages
+        $language = Factory::getApplication()->getLanguage();
+        $language->load('com_nxpeasyforms', JPATH_SITE);
     }
 
     /**

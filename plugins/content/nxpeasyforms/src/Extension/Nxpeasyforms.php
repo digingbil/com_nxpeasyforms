@@ -66,6 +66,10 @@ class Nxpeasyforms extends CMSPlugin
             return;
         }
 
+        // Load frontend language file for user-facing messages
+        $language = $app->getLanguage();
+        $language->load('com_nxpeasyforms', JPATH_SITE);
+
         $text = null;
         $articleIsObject = is_object($article);
 

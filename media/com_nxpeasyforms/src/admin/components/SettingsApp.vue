@@ -28,7 +28,7 @@
             <div class="nxp-setting">
                 <span>{{ __("Delivery method") }}</span>
                 <select v-model="form.delivery.provider">
-                    <option value="joomla">{{ __("Joomla default (Factory::getMailer())") }}</option>
+                    <option value="joomla">{{ __("Joomla default") }}</option>
                     <option value="sendgrid">{{ __("SendGrid API") }}</option>
                     <option value="mailgun">{{ __("Mailgun API") }}</option>
                     <option value="postmark">{{ __("Postmark API") }}</option>

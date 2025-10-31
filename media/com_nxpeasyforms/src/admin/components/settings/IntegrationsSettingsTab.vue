@@ -121,7 +121,7 @@
                                             <p class="nxp-integration-description">
                                                 {{
                                                     __(
-                                                        "Send channel notifications using Slack Incoming Webhooks.",
+                                                        "Send channel notifications using Slack Incoming Webhooks (legacy custom integration).",
                                                         "nxp-easy-forms",
                                                     )
                                                 }}

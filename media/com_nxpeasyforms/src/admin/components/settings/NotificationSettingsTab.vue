@@ -86,7 +86,7 @@
                 <span>{{ __("Delivery method", "nxp-easy-forms") }}</span>
                 <select v-model="local.email_delivery.provider">
                     <option value="joomla">
-                        {{ __("Joomla default (Factory::getMailer())", "nxp-easy-forms") }}
+                        {{ __("Joomla default", "nxp-easy-forms") }}
                     </option>
                     <option value="sendgrid">
                         {{ __("SendGrid API", "nxp-easy-forms") }}
@@ -132,10 +132,15 @@
             </small>
 
             <small v-else-if="local.use_global_email_delivery" class="nxp-setting__hint">
-                {{ __("This form will use the plugin's global email delivery provider and credentials (configured under Settings).") }}
+                {{
+                    __("This form will use the components's global email delivery provider and credentials (configured under ")
+                }}
+                <a href="/administrator/index.php?option=com_config&view=component&component=com_nxpeasyforms">{{
+                        __("Component Settings")
+                    }}</a>{{ __(").") }}
             </small>
 
-            <div
+            <divd
                 v-if="!local.use_global_email_delivery && local.email_delivery.provider === 'sendgrid'"
                 class="nxp-setting nxp-setting--stacked"
             >
@@ -145,7 +150,7 @@
                     v-model="local.email_delivery.sendgrid.api_key"
                     autocomplete="off"
                 />
-            </div>
+            </divd>
 
             <div
                 v-if="!local.use_global_email_delivery && local.email_delivery.provider === 'mailgun'"

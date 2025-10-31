@@ -53,6 +53,10 @@ final class SubmissionController extends ApiController
     ) {
         parent::__construct($config, $factory, $app, $input);
 
+        // Load frontend language file for user-facing messages
+        $language = Factory::getApplication()->getLanguage();
+        $language->load('com_nxpeasyforms', JPATH_SITE);
+
         $container = Factory::getContainer();
 
         if (!$container->has(SubmissionService::class)) {
