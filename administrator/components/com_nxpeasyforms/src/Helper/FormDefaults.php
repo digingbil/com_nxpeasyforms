@@ -165,6 +165,8 @@ final class FormDefaults
                     'mailchimp' => [
                         'enabled' => false,
                         'api_key' => '',
+                        'api_key_set' => false,
+                        'remove_api_key' => false,
                         'list_id' => '',
                         'double_opt_in' => false,
                         'email_field' => '',

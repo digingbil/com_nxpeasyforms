@@ -109,3 +109,7 @@
 .nxp-easy-form__required {
     color: var(--template-danger-text, #d32f2f);
 }
+
+.nxp-easy-form__form .cf-turnstile {
+    padding: 1rem 0;
+}

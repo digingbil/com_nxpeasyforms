@@ -12,6 +12,7 @@ require_once __DIR__ . '/Stubs/Factory.php';
 require_once __DIR__ . '/Stubs/Mailer.php';
 require_once __DIR__ . '/Stubs/Registry.php';
 require_once __DIR__ . '/Stubs/InputFilter.php';
+require_once __DIR__ . '/Stubs/MVC/Controller/BaseController.php';
 
 if (!defined('JPATH_ROOT')) {
     define('JPATH_ROOT', sys_get_temp_dir());

@@ -1,7 +1,7 @@
-import { ref } from "vue";
-import { safeTrim } from "@/admin/utils/strings";
-import { apiFetch } from "@/admin/utils/http";
-import { __ } from "@/utils/translate";
+import { ref } from 'vue';
+import { safeTrim } from '@/admin/utils/strings';
+import { apiFetch } from '@/admin/utils/http';
+import { __ } from '@/utils/translate';
 
 /**
  * Composable for form settings operations
@@ -40,32 +40,44 @@ export function useFormSettings() {
         mailchimpAudiencesLoading.value = true;
 
         try {
-            const response = await apiFetch('integrations/mailchimp/lists', {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
+            const response = await apiFetch(
+                'integrations/mailchimp/lists',
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        apiKey: safeTrim(apiKey) || undefined,
+                        formId: formId,
+                    }),
                 },
-                body: JSON.stringify({
-                    apiKey: safeTrim(apiKey) || undefined,
-                    formId: formId,
-                }),
-            }, { nonce, base: restUrl });
+                { nonce, base: restUrl }
+            );
 
             const data = await response.json();
 
             if (!response.ok) {
                 throw new Error(
                     data?.message ||
-                        __("Unable to fetch Mailchimp audiences.", "nxp-easy-forms")
+                        __(
+                            'Unable to fetch Mailchimp audiences.',
+                            'nxp-easy-forms'
+                        )
                 );
             }
 
-            mailchimpAudiences.value = Array.isArray(data?.lists) ? data.lists : [];
+            const payload =
+                data?.data && typeof data.data === 'object' ? data.data : data;
+
+            mailchimpAudiences.value = Array.isArray(payload?.lists)
+                ? payload.lists
+                : [];
             mailchimpAudiencesFetched.value = true;
         } catch (error) {
             mailchimpAudiencesError.value =
                 error?.message ||
-                __("Unexpected Mailchimp API error.", "nxp-easy-forms");
+                __('Unexpected Mailchimp API error.', 'nxp-easy-forms');
         } finally {
             mailchimpAudiencesLoading.value = false;
         }

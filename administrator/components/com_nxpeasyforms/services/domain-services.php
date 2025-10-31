@@ -10,6 +10,7 @@ use Joomla\Component\Nxpeasyforms\Administrator\Service\Integrations\Integration
 use Joomla\Component\Nxpeasyforms\Administrator\Service\Integrations\IntegrationQueue;
 use Joomla\Component\Nxpeasyforms\Administrator\Service\Integrations\JoomlaArticleDispatcher;
 use Joomla\Component\Nxpeasyforms\Administrator\Service\Integrations\MailchimpDispatcher;
+use Joomla\Component\Nxpeasyforms\Administrator\Service\Integrations\MailchimpListsService;
 use Joomla\Component\Nxpeasyforms\Administrator\Service\Integrations\SalesforceDispatcher;
 use Joomla\Component\Nxpeasyforms\Administrator\Service\Integrations\SlackDispatcher;
 use Joomla\Component\Nxpeasyforms\Administrator\Service\Integrations\TeamsDispatcher;
@@ -101,6 +102,13 @@ return static function (Container $container): void {
         HttpClient::class,
         static function (): HttpClient {
             return new HttpClient();
+        }
+    );
+
+    $container->share(
+        MailchimpListsService::class,
+        static function (Container $container): MailchimpListsService {
+            return new MailchimpListsService($container->get(HttpClient::class));
         }
     );
 

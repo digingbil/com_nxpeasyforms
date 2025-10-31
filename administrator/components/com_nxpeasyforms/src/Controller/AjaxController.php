@@ -13,11 +13,15 @@ use Joomla\CMS\Table\Table;
 use Joomla\Component\Nxpeasyforms\Administrator\Helper\FormDefaults;
 use Joomla\Component\Nxpeasyforms\Administrator\Model\FormModel as AdminFormModel;
 use Joomla\Component\Nxpeasyforms\Administrator\Service\Email\EmailService;
+use Joomla\Component\Nxpeasyforms\Administrator\Service\Integrations\MailchimpListsService;
 use Joomla\Component\Nxpeasyforms\Administrator\Service\Repository\FormRepository;
 use Joomla\Component\Nxpeasyforms\Administrator\Support\CaptchaOptions;
+use Joomla\Component\Nxpeasyforms\Administrator\Support\Sanitizer;
+use Joomla\Component\Nxpeasyforms\Administrator\Support\Secrets;
 use Joomla\Registry\Registry;
 use Joomla\Database\DatabaseInterface;
 use Joomla\DI\ServiceProviderInterface;
+use InvalidArgumentException;
 
 
 use function array_key_exists;
@@ -29,6 +33,7 @@ use function is_file;
 use function rawurldecode;
 use function strtolower;
 use function trim;
+use function preg_match;
 use Throwable;
 
 // phpcs:disable PSR1.Files.SideEffects
@@ -125,6 +130,7 @@ final class AjaxController extends BaseController
             'forms' => $this->handleForms($segments[1] ?? '', $method),
             'emails' => $this->handleEmails($segments[1] ?? '', $method),
             'settings' => $this->handleSettings($segments, $method),
+            'integrations' => $this->handleIntegrations($segments, $method),
             default => throw new \RuntimeException(Text::_('JERROR_PAGE_NOT_FOUND'), 404),
         };
     }
@@ -267,6 +273,48 @@ final class AjaxController extends BaseController
     }
 
     /**
+     * Handle integrations resource routing.
+     *
+     * @param array<int,string> $segments Path segments under integrations/{integration}/{action}.
+     * @param string $method The HTTP method used for the request.
+     *
+     * @return JsonResponse
+     *
+     * @since 1.0.0
+     */
+    private function handleIntegrations(array $segments, string $method): JsonResponse
+    {
+        $integration = $segments[1] ?? '';
+
+        return match ($integration) {
+            'mailchimp' => $this->handleMailchimpIntegration($segments, $method),
+            default => throw new \RuntimeException(Text::_('JERROR_PAGE_NOT_FOUND'), 404),
+        };
+    }
+
+    /**
+     * Handle Mailchimp-specific integration requests.
+     *
+     * @param array<int,string> $segments Path segments under integrations/mailchimp.
+     * @param string $method The HTTP method used for the request.
+     *
+     * @return JsonResponse
+     *
+     * @since 1.0.0
+     */
+    private function handleMailchimpIntegration(array $segments, string $method): JsonResponse
+    {
+        $action = $segments[2] ?? '';
+
+        return match ($action) {
+            'lists' => $method === 'POST'
+                ? $this->fetchMailchimpLists()
+                : throw new \RuntimeException(Text::_('JERROR_PAGE_NOT_FOUND'), 404),
+            default => throw new \RuntimeException(Text::_('JERROR_PAGE_NOT_FOUND'), 404),
+        };
+    }
+
+    /**
      * Handle the email settings subsection.
      *
      * @param array<int,string> $segments Path segments under settings/email.
@@ -313,6 +361,131 @@ final class AjaxController extends BaseController
                 : throw new \RuntimeException(Text::_('JERROR_PAGE_NOT_FOUND'), 404),
             default => throw new \RuntimeException(Text::_('JERROR_PAGE_NOT_FOUND'), 404),
         };
+    }
+
+    /**
+     * Fetch Mailchimp audiences for the builder integrations modal.
+     *
+     * @return JsonResponse
+     *
+     * @throws \RuntimeException When the request is invalid or Mailchimp responds with an error.
+     * @since 1.0.0
+     */
+    private function fetchMailchimpLists(): JsonResponse
+    {
+        Session::checkToken('post');
+
+        $payload = $this->input->json->getArray();
+
+        if (!is_array($payload)) {
+            $payload = [];
+        }
+
+        $providedKey = isset($payload['apiKey']) ? trim((string) $payload['apiKey']) : '';
+        $formId = isset($payload['formId']) ? (int) $payload['formId'] : 0;
+
+        $this->assertAuthorised($formId > 0 ? 'core.edit' : 'core.create');
+
+        $apiKey = $this->resolveMailchimpApiKey($providedKey, $formId);
+
+        if ($apiKey === '') {
+            throw new \RuntimeException(Text::_('COM_NXPEASYFORMS_MAILCHIMP_API_KEY_REQUIRED'), 400);
+        }
+
+        $container = Factory::getContainer();
+
+        /** @var MailchimpListsService $fetcher */
+        $fetcher = $container->get(MailchimpListsService::class);
+
+        try {
+            $lists = $fetcher->fetchLists($apiKey);
+        } catch (InvalidArgumentException $exception) {
+            throw new \RuntimeException(Text::_('COM_NXPEASYFORMS_MAILCHIMP_INVALID_API_KEY'), 400, $exception);
+        } catch (\RuntimeException $exception) {
+            $code = $exception->getCode();
+
+            if ($code === 413) {
+                throw new \RuntimeException(Text::_('COM_NXPEASYFORMS_MAILCHIMP_RESPONSE_TOO_LARGE'), 413, $exception);
+            }
+
+            if ($code >= 400 && $code < 600) {
+                throw new \RuntimeException(Text::sprintf('COM_NXPEASYFORMS_MAILCHIMP_HTTP_ERROR', $code), $code, $exception);
+            }
+
+            throw new \RuntimeException(Text::_('COM_NXPEASYFORMS_MAILCHIMP_REQUEST_FAILED'), 502, $exception);
+        } catch (\Throwable $exception) {
+            throw new \RuntimeException(Text::_('COM_NXPEASYFORMS_MAILCHIMP_REQUEST_FAILED'), 500, $exception);
+        }
+
+        return new JsonResponse([
+            'lists' => $lists,
+        ]);
+    }
+
+    /**
+     * Resolve the effective Mailchimp API key from the request or stored form configuration.
+     *
+     * @param string $apiKey API key supplied by the request (may be empty).
+     * @param int $formId Current form identifier for fallback lookup.
+     *
+     * @return string Decrypted API key or empty string when unavailable.
+     *
+     * @since 1.0.0
+     */
+    private function resolveMailchimpApiKey(string $apiKey, int $formId): string
+    {
+        $apiKey = trim($apiKey);
+
+        if ($apiKey !== '') {
+            return $apiKey;
+        }
+
+        if ($formId <= 0) {
+            return '';
+        }
+
+        try {
+            $container = Factory::getContainer();
+            /** @var FormRepository $repository */
+            $repository = $container->get(FormRepository::class);
+            $form = $repository->find($formId);
+
+            if (!is_array($form)) {
+                return '';
+            }
+
+            $integrations = $form['config']['options']['integrations'] ?? [];
+
+            if (!is_array($integrations)) {
+                return '';
+            }
+
+            $mailchimp = $integrations['mailchimp'] ?? [];
+
+            if (!is_array($mailchimp)) {
+                return '';
+            }
+
+            $storedKey = isset($mailchimp['api_key']) ? trim((string) $mailchimp['api_key']) : '';
+
+            if ($storedKey === '') {
+                return '';
+            }
+
+            $decrypted = Secrets::decrypt($storedKey);
+
+            if ($decrypted !== '') {
+                return $decrypted;
+            }
+
+            if ($this->isMailchimpApiKey($storedKey)) {
+                return $storedKey;
+            }
+
+            return '';
+        } catch (\Throwable $exception) {
+            return '';
+        }
     }
 
     /**
@@ -978,7 +1151,10 @@ final class AjaxController extends BaseController
         );
 
         $integrations = is_array($options['integrations'] ?? null) ? $options['integrations'] : [];
-        $integrations = $this->normalizeIntegrations($integrations);
+        $existingIntegrations = is_array($existingOptions['integrations'] ?? null)
+            ? $existingOptions['integrations']
+            : [];
+        $integrations = $this->normalizeIntegrations($integrations, $existingIntegrations);
         $options['integrations'] = $integrations;
 
         return $options;
@@ -996,6 +1172,11 @@ final class AjaxController extends BaseController
     {
         $normalized = $this->normalizeOptionsForStorage($options, $options);
         $normalized['captcha'] = CaptchaOptions::normalizeForClient($normalized['captcha'] ?? []);
+
+        if (isset($normalized['integrations']['mailchimp']) && is_array($normalized['integrations']['mailchimp'])) {
+            $normalized['integrations']['mailchimp']['api_key'] = '';
+            $normalized['integrations']['mailchimp']['remove_api_key'] = false;
+        }
 
         return $normalized;
     }
@@ -1098,15 +1279,111 @@ final class AjaxController extends BaseController
      * @return array<string,mixed> Normalized integrations array.
      * @since 1.0.0
      */
-    private function normalizeIntegrations(array $integrations): array
+    private function normalizeIntegrations(array $integrations, array $existing = []): array
     {
         if (isset($integrations['joomla_article']) && is_array($integrations['joomla_article'])) {
             $integrations['joomla_article'] = $this->normalizeArticleIntegration($integrations['joomla_article']);
         }
 
+        if (isset($integrations['mailchimp']) && is_array($integrations['mailchimp'])) {
+            $existingMailchimp = is_array($existing['mailchimp'] ?? null) ? $existing['mailchimp'] : [];
+            $integrations['mailchimp'] = $this->normalizeMailchimpIntegration($integrations['mailchimp'], $existingMailchimp);
+        }
+
         unset($integrations['woocommerce']);
 
         return $integrations;
+    }
+
+    /**
+     * Normalize Mailchimp integration settings, ensuring secrets are encrypted and masked appropriately.
+     *
+     * @param array<string,mixed> $settings Incoming settings from the client payload.
+     * @param array<string,mixed> $existing Previously stored settings to preserve secrets when not updated.
+     *
+     * @return array<string,mixed> Normalized Mailchimp settings ready for storage.
+     *
+     * @throws \RuntimeException When encryption fails.
+     * @since 1.0.0
+     */
+    private function normalizeMailchimpIntegration(array $settings, array $existing): array
+    {
+        $normalized = [
+            'enabled' => !empty($settings['enabled']),
+            'list_id' => trim((string) ($settings['list_id'] ?? '')),
+            'double_opt_in' => !empty($settings['double_opt_in']),
+            'email_field' => trim((string) ($settings['email_field'] ?? '')),
+            'first_name_field' => trim((string) ($settings['first_name_field'] ?? '')),
+            'last_name_field' => trim((string) ($settings['last_name_field'] ?? '')),
+            'tags' => [],
+            'api_key' => '',
+            'api_key_set' => false,
+            'remove_api_key' => false,
+        ];
+
+        $tags = $settings['tags'] ?? [];
+
+        if (is_array($tags)) {
+            foreach ($tags as $tag) {
+                if (!is_string($tag)) {
+                    continue;
+                }
+
+                $clean = Sanitizer::cleanText($tag);
+
+                if ($clean !== '') {
+                    $normalized['tags'][] = $clean;
+                }
+            }
+        }
+
+        $removeKey = !empty($settings['remove_api_key']);
+        $providedKey = trim((string) ($settings['api_key'] ?? ''));
+
+        if ($removeKey) {
+            return $normalized;
+        }
+
+        if ($providedKey !== '') {
+            $encrypted = Secrets::encrypt($providedKey);
+
+            if ($encrypted === '') {
+                throw new \RuntimeException(Text::_('COM_NXPEASYFORMS_MAILCHIMP_ENCRYPTION_FAILED'), 500);
+            }
+
+            $normalized['api_key'] = $encrypted;
+            $normalized['api_key_set'] = true;
+
+            return $normalized;
+        }
+
+        $existingKey = trim((string) ($existing['api_key'] ?? ''));
+
+        if ($existingKey === '') {
+            return $normalized;
+        }
+
+        $decrypted = Secrets::decrypt($existingKey);
+
+        if ($decrypted !== '') {
+            $normalized['api_key'] = $existingKey;
+            $normalized['api_key_set'] = true;
+
+            return $normalized;
+        }
+
+        if ($this->isMailchimpApiKey($existingKey)) {
+            $encrypted = Secrets::encrypt($existingKey);
+
+            if ($encrypted === '') {
+                throw new \RuntimeException(Text::_('COM_NXPEASYFORMS_MAILCHIMP_ENCRYPTION_FAILED'), 500);
+            }
+
+            $normalized['api_key'] = $encrypted;
+            $normalized['api_key_set'] = true;
+        }
+
+        return $normalized;
     }
 
     /**
@@ -1216,5 +1493,18 @@ final class AjaxController extends BaseController
         }
 
         return '';
+    }
+
+    /**
+     * Determine whether the supplied string resembles a Mailchimp API key.
+     *
+     * @param string $value Candidate value to inspect.
+     *
+     * @return bool True when the value matches the expected pattern.
+     * @since 1.0.0
+     */
+    private function isMailchimpApiKey(string $value): bool
+    {
+        return preg_match('/^[A-Za-z0-9]{10,}-[a-z0-9]+$/', $value) === 1;
     }
 }
