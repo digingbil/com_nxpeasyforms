@@ -77,8 +77,8 @@ final class SubmissionService
 
     private IntegrationQueue $integrationQueue;
 
-    private UserRegistrationHandler $userRegistrationHandler;
-    private UserLoginHandler $userLoginHandler;
+    private ?UserRegistrationHandler $userRegistrationHandler;
+    private ?UserLoginHandler $userLoginHandler;
 
     public function __construct(
         ?FormRepository $forms = null,
@@ -108,8 +108,12 @@ final class SubmissionService
         $this->emailService = $emailService ?? $container->get(EmailService::class);
         $this->integrationManager = $integrationManager ?? $container->get(IntegrationManager::class);
         $this->integrationQueue = $integrationQueue ?? $container->get(IntegrationQueue::class);
-    $this->userRegistrationHandler = $userRegistrationHandler ?? $container->get(UserRegistrationHandler::class);
-    $this->userLoginHandler = $userLoginHandler ?? $container->get(UserLoginHandler::class);
+
+        $registrationHandler = $userRegistrationHandler ?? $container->get(UserRegistrationHandler::class);
+        $this->userRegistrationHandler = $registrationHandler instanceof UserRegistrationHandler ? $registrationHandler : null;
+
+        $loginHandler = $userLoginHandler ?? $container->get(UserLoginHandler::class);
+        $this->userLoginHandler = $loginHandler instanceof UserLoginHandler ? $loginHandler : null;
     }
 
 	/**
@@ -275,7 +279,9 @@ final class SubmissionService
             ? $options['integrations']
             : [];
 
-        if (!empty($integrations['user_registration']['enabled'])) {
+        if (!empty($integrations['user_registration']['enabled'])
+            && $this->userRegistrationHandler instanceof UserRegistrationHandler
+        ) {
             $registrationConfig = is_array($integrations['user_registration'])
                 ? $integrations['user_registration']
                 : [];
@@ -298,7 +304,9 @@ final class SubmissionService
         $loginResult = null;
         $loginRedirect = null;
         $loginShouldReload = false;
-        if (!empty($integrations['user_login']['enabled'])) {
+        if (!empty($integrations['user_login']['enabled'])
+            && $this->userLoginHandler instanceof UserLoginHandler
+        ) {
             $loginConfig = is_array($integrations['user_login']) ? $integrations['user_login'] : [];
             $loginResult = $this->userLoginHandler->login($sanitised, $loginConfig);
 

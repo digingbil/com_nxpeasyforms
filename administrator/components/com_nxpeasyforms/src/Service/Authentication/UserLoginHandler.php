@@ -21,12 +21,13 @@ use Joomla\Database\DatabaseDriver;
 final class UserLoginHandler
 {
     private CMSApplicationInterface $app;
-    private DatabaseDriver $db;
+    private ?DatabaseDriver $db;
 
     public function __construct(?CMSApplicationInterface $app = null, ?DatabaseDriver $db = null)
     {
         $this->app = $app ?? Factory::getApplication();
-        $this->db = $db ?? Factory::getContainer()->get(DatabaseDriver::class);
+        $resolvedDb = $db ?? Factory::getContainer()->get(DatabaseDriver::class);
+        $this->db = $resolvedDb instanceof DatabaseDriver ? $resolvedDb : null;
     }
 
     /**
@@ -204,7 +205,7 @@ final class UserLoginHandler
 
     private function canQueryDb(): bool
     {
-        return $this->db && \is_object($this->db) && \method_exists($this->db, 'getQuery');
+    return $this->db instanceof DatabaseDriver && \method_exists($this->db, 'getQuery');
     }
 
     /**
@@ -212,6 +213,10 @@ final class UserLoginHandler
      */
     private function loadUserRowByUsername(string $username): ?array
     {
+        if (!$this->db instanceof DatabaseDriver) {
+            return null;
+        }
+
         try {
             $db = $this->db;
             $query = $db->getQuery(true)
@@ -235,6 +240,10 @@ final class UserLoginHandler
      */
     private function getUsernameByEmail(string $email): ?string
     {
+        if (!$this->db instanceof DatabaseDriver) {
+            return null;
+        }
+
         try {
             $db = $this->db;
             $query = $db->getQuery(true)
@@ -255,6 +264,10 @@ final class UserLoginHandler
      */
     private function userHasTwoFactor(int $userId): bool
     {
+        if (!$this->db instanceof DatabaseDriver) {
+            return false;
+        }
+
         try {
             $db = $this->db;
             $query = $db->getQuery(true)

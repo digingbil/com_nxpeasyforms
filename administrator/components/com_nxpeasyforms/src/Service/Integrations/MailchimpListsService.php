@@ -14,6 +14,7 @@ use function is_array;
 use function is_string;
 use function json_decode;
 use function preg_replace;
+use function preg_match;
 use function sprintf;
 use function strlen;
 use function strtolower;
@@ -149,6 +150,14 @@ final class MailchimpListsService
         $candidate = strtolower(trim((string) end($parts)));
         $clean = preg_replace('/[^a-z0-9]/', '', $candidate);
 
-        return is_string($clean) ? $clean : '';
+        if (!is_string($clean) || $clean === '') {
+            return '';
+        }
+
+        if (!preg_match('/[a-z]/', $clean) || !preg_match('/[0-9]/', $clean)) {
+            return '';
+        }
+
+        return $clean;
     }
 }

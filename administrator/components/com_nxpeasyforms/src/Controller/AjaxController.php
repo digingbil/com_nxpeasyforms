@@ -9,7 +9,13 @@ use Joomla\Component\Nxpeasyforms\Administrator\Ajax\AjaxRequestContext;
 use Joomla\Component\Nxpeasyforms\Administrator\Ajax\AjaxRouter;
 use Joomla\Component\Nxpeasyforms\Administrator\Service\Email\EmailService;
 use Joomla\Component\Nxpeasyforms\Administrator\Service\Repository\FormRepository;
+use Joomla\Component\Nxpeasyforms\Administrator\Support\Secrets;
 use Throwable;
+use function array_filter;
+use function array_map;
+use function array_values;
+use function is_array;
+use function is_string;
 use function http_response_code;
 use function is_object;
 use function dirname;
@@ -138,5 +144,75 @@ final class AjaxController extends BaseController
         $this->router = $container->get(AjaxRouter::class);
 
         return $this->router;
+    }
+
+    /**
+     * Normalise Mailchimp integration settings prior to persistence.
+     *
+     * Ensures API keys are safely encrypted, legacy plain-text keys are upgraded,
+     * removal requests blank stored secrets, and tag lists are sanitised.
+     *
+     * @param array<string,mixed> $incoming Submitted settings payload.
+     * @param array<string,mixed> $existing Previously stored integration settings.
+     *
+     * @return array<string,mixed> Normalised configuration ready for storage.
+     */
+    private function normalizeMailchimpIntegration(array $incoming, array $existing): array
+    {
+        $normalized = $existing;
+
+        $normalized['enabled'] = (bool) ($incoming['enabled'] ?? ($existing['enabled'] ?? false));
+        $normalized['remove_api_key'] = false;
+
+        $removeKey = !empty($incoming['remove_api_key']);
+
+        if ($removeKey) {
+            $normalized['api_key'] = '';
+            $normalized['api_key_set'] = false;
+        } else {
+            $providedKey = isset($incoming['api_key']) ? trim((string) $incoming['api_key']) : '';
+
+            if ($providedKey !== '') {
+                $encrypted = Secrets::encrypt($providedKey);
+                $normalized['api_key'] = $encrypted;
+                $normalized['api_key_set'] = $encrypted !== '';
+            } else {
+                $currentKey = isset($existing['api_key']) ? (string) $existing['api_key'] : '';
+
+                if ($currentKey !== '') {
+                    $decrypted = Secrets::decrypt($currentKey);
+
+                    if ($decrypted === '') {
+                        $encrypted = Secrets::encrypt($currentKey);
+                        $normalized['api_key'] = $encrypted;
+                        $normalized['api_key_set'] = $encrypted !== '';
+                    } else {
+                        $normalized['api_key'] = $currentKey;
+                        $normalized['api_key_set'] = true;
+                    }
+                } else {
+                    $normalized['api_key'] = '';
+                    $normalized['api_key_set'] = false;
+                }
+            }
+        }
+
+        $tagsSource = $incoming['tags'] ?? ($existing['tags'] ?? []);
+
+        if (!is_array($tagsSource)) {
+            $tagsSource = is_string($tagsSource) ? [$tagsSource] : [];
+        }
+
+        $normalized['tags'] = array_values(
+            array_filter(
+                array_map(
+                    static fn ($tag): string => is_string($tag) ? trim($tag) : '',
+                    $tagsSource
+                ),
+                static fn (string $tag): bool => $tag !== ''
+            )
+        );
+
+        return $normalized;
     }
 }

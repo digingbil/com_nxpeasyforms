@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Joomla\CMS\Mail;
 
+use Joomla\Registry\Registry;
+
 interface MailerInterface
 {
     public function clearAllRecipients();
@@ -52,5 +54,22 @@ final class MailerStub implements MailerInterface
     public function send(): bool
     {
         return true;
+    }
+}
+
+interface MailerFactoryInterface
+{
+    public function createMailer(Registry $config): MailerInterface;
+}
+
+final class MailerFactory implements MailerFactoryInterface
+{
+    public function __construct($config)
+    {
+    }
+
+    public function createMailer(Registry $config): MailerInterface
+    {
+        return new MailerStub();
     }
 }

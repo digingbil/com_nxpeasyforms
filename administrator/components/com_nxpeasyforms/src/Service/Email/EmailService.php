@@ -74,6 +74,8 @@ final class EmailService
     ) {
         $container = Factory::getContainer();
 
+        $app = Factory::getApplication();
+
         if ($mailer instanceof MailerInterface) {
             $this->mailer = $mailer;
         } elseif ($container->has(MailerInterface::class)) {
@@ -91,29 +93,37 @@ final class EmailService
             $resolvedFactory = $container->get(MailerFactoryInterface::class);
             $this->mailerFactory = $resolvedFactory;
         } else {
-            $configuration = method_exists(Factory::getApplication(), 'getConfig')
-                ? Factory::getApplication()->getConfig()
-                : Factory::getConfig();
+            $configuration = method_exists($app, 'getConfig')
+                ? $app->getConfig()
+                : new Registry();
             $this->mailerFactory = new MailerFactory($configuration);
         }
 
-        $this->componentParams = $componentParams ?? ComponentHelper::getParams('com_nxpeasyforms');
+        $resolvedParams = $componentParams;
 
-        if ($this->componentParams->exists('params')) {
-            $nested = $this->componentParams->get('params');
+        if ($resolvedParams instanceof Registry) {
+            $resolvedParams = clone $resolvedParams;
+        } elseif ($resolvedParams === null) {
+            $resolvedParams = ComponentHelper::getParams('com_nxpeasyforms');
+        } else {
+            $resolvedParams = new Registry((array) $resolvedParams);
+        }
 
-            if ($nested instanceof Registry) {
-                $this->componentParams = clone $nested;
-            } elseif (\is_array($nested)) {
-                $this->componentParams = new Registry($nested);
-            } elseif (is_string($nested)) {
-                $decoded = json_decode($nested, true);
+        $nested = $resolvedParams instanceof Registry ? $resolvedParams->get('params') : null;
 
-                if (\is_array($decoded)) {
-                    $this->componentParams = new Registry($decoded);
-                }
+        if ($nested instanceof Registry) {
+            $resolvedParams = clone $nested;
+        } elseif (\is_array($nested)) {
+            $resolvedParams = new Registry($nested);
+        } elseif (is_string($nested) && $nested !== '') {
+            $decoded = json_decode($nested, true);
+
+            if (\is_array($decoded)) {
+                $resolvedParams = new Registry($decoded);
             }
         }
+
+        $this->componentParams = $resolvedParams;
 
         $this->httpClient = $httpClient ?? new HttpClient();
     }
@@ -193,17 +203,9 @@ final class EmailService
     {
         $app = Factory::getApplication();
 
-        $componentParamsData = $this->componentParams instanceof Registry
-            ? $this->componentParams->toArray()
-            : (array) $this->componentParams;
-
-        if (isset($componentParamsData['params']) && is_array($componentParamsData['params'])) {
-            $componentParams = new Registry($componentParamsData['params']);
-        } else {
-            $componentParams = new Registry($componentParamsData);
-        }
-
-        $this->componentParams = $componentParams;
+        $componentParams = $this->componentParams instanceof Registry
+            ? $this->componentParams
+            : new Registry((array) $this->componentParams);
 
         $useGlobalDelivery = $this->shouldUseGlobalConfig($options, 'use_global_email_delivery', true);
         $useGlobalRecipient = $this->shouldUseGlobalConfig($options, 'use_global_recipient', true);
