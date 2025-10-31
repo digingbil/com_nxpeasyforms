@@ -226,6 +226,33 @@ const getInputType = (fieldType) => {
     font-weight: 600;
 }
 
+.nxp-preview-modal__header .nxp-modal__close {
+    appearance: none;
+    border: none;
+    background: rgba(0, 0, 0, 0.05);
+    color: inherit;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.2s ease, color 0.2s ease;
+}
+
+.nxp-preview-modal__header .nxp-modal__close:hover,
+.nxp-preview-modal__header .nxp-modal__close:focus-visible {
+    background: rgba(0, 0, 0, 0.12);
+    color: var(--bs-primary, #0d6efd);
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(13, 110, 253, 0.25);
+}
+
+.nxp-preview-modal__header .nxp-modal__close .fa-solid {
+    font-size: 1rem;
+}
+
 .nxp-preview-modal__body {
     flex: 1;
     overflow-y: auto;
