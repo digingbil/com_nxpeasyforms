@@ -35,14 +35,20 @@ export const formDefaults = {
         recaptcha_v3: {
             site_key: '',
             secret_key: '',
+            secret_key_set: false,
+            remove_secret: false,
         },
         turnstile: {
             site_key: '',
             secret_key: '',
+            secret_key_set: false,
+            remove_secret: false,
         },
         friendlycaptcha: {
             site_key: '',
             secret_key: '',
+            secret_key_set: false,
+            remove_secret: false,
         },
     },
     email_delivery: {

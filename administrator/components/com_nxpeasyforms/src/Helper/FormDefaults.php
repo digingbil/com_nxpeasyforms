@@ -5,6 +5,7 @@ namespace Joomla\Component\Nxpeasyforms\Administrator\Helper;
 
 use Joomla\CMS\Factory;
 use Joomla\CMS\Language\Text;
+use Joomla\Component\Nxpeasyforms\Administrator\Support\CaptchaOptions;
 
 
 // phpcs:disable PSR1.Files.SideEffects
@@ -46,11 +47,7 @@ final class FormDefaults
                 'success_message' => Text::_('COM_NXPEASYFORMS_MESSAGE_SUBMISSION_SUCCESS'),
                 'error_message' => Text::_('COM_NXPEASYFORMS_ERROR_VALIDATION'),
                 'ip_storage' => 'anonymous',
-                'captcha' => [
-                    'provider' => 'none',
-                    'site_key' => '',
-                    'secret_key' => '',
-                ],
+                'captcha' => CaptchaOptions::defaults(),
                 'email_delivery' => [
                     'provider' => 'joomla',
                     'sendgrid' => [

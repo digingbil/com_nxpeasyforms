@@ -38,7 +38,7 @@ function baseIntegrations() {
             enabled: false,
             category_id: 0,
             status: 'unpublished',
-            author_mode: 'none',
+            author_mode: 'current_user',
             fixed_author_id: 0,
             language: '*',
             access: 1,
@@ -48,6 +48,9 @@ function baseIntegrations() {
                 fulltext: '',
                 tags: '',
                 alias: '',
+                featured_image: '',
+                featured_image_alt: '',
+                featured_image_caption: '',
             },
         },
         user_registration: {
@@ -79,11 +82,13 @@ function baseIntegrations() {
             enabled: false,
             api_key: '',
             api_key_set: false,
+            remove_api_key: false,
             list_id: '',
             double_opt_in: false,
             email_field: '',
             first_name_field: '',
             last_name_field: '',
+            tags_input: '',
             tags: [],
         },
         salesforce: {
@@ -98,6 +103,7 @@ function baseIntegrations() {
             enabled: false,
             access_token: '',
             access_token_set: false,
+            remove_access_token: false,
             portal_id: '',
             form_guid: '',
             email_field: '',
@@ -281,14 +287,20 @@ function baseOptions() {
             recaptcha_v3: {
                 site_key: '',
                 secret_key: '',
+                secret_key_set: false,
+                remove_secret: false,
             },
             turnstile: {
                 site_key: '',
                 secret_key: '',
+                secret_key_set: false,
+                remove_secret: false,
             },
             friendlycaptcha: {
                 site_key: '',
                 secret_key: '',
+                secret_key_set: false,
+                remove_secret: false,
             },
         },
         email_delivery: {
@@ -396,6 +408,23 @@ function mergeOptions(options = {}) {
                         {}),
                 },
             };
+
+            ['recaptcha_v3', 'turnstile', 'friendlycaptcha'].forEach((name) => {
+                const config = result[name];
+                if (!config) {
+                    return;
+                }
+
+                if (typeof config.site_key !== 'string') {
+                    config.site_key = '';
+                }
+                if (typeof config.secret_key !== 'string') {
+                    config.secret_key = '';
+                }
+
+                config.secret_key_set = config.secret_key_set === true;
+                config.remove_secret = config.remove_secret === true;
+            });
 
             // Remove legacy keys from the final object
             delete result.site_key;

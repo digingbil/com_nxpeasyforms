@@ -6,6 +6,7 @@ This repository contains the Joomla 5 port of the NXP Easy Forms WordPress plugi
 
 ### Bug Fixes
 
+-   **Encrypted CAPTCHA secrets**: Added the `Support/CaptchaOptions` helper so CAPTCHA credentials are stored encrypted-at-rest, redacted when delivered back to the builder, and only re-encrypted when the user supplies a new secret. Updated `FormRepository`, `AjaxController`, `SubmissionService`, `formStore.js`, and the Vue security settings modal to preserve existing secrets, honour remove-secret toggles, and keep form saves idempotent.
 -   **Login submission reload fallback**: User Login integration responses now explicitly request a page reload when no redirect URL is configured, ensuring successful login submissions refresh the current page instead of leaving the user on a stale form view. PHPUnit coverage verifies the behaviour in `UserLoginHandlerTest`.
 -   **Fixed modal form selector for menu items**: Implemented proper modal field support for "Single Form" menu item type, allowing users to select forms via a modal popup (like core Joomla components) instead of manual ID entry. Fixed by:
     -   Adding `BootableExtensionInterface` and `boot()` method to both administrator and site component extension classes to register the Modal field path via `Form::addFieldPath()`.

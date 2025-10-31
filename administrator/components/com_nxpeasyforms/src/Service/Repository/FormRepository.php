@@ -5,6 +5,7 @@ namespace Joomla\Component\Nxpeasyforms\Administrator\Service\Repository;
 
 use Joomla\CMS\Factory;
 use Joomla\CMS\Language\Text;
+use Joomla\Component\Nxpeasyforms\Administrator\Support\CaptchaOptions;
 use Joomla\Database\DatabaseDriver;
 use Joomla\Database\ParameterType;
 use Joomla\Event\Event;
@@ -68,6 +69,7 @@ class FormRepository
 
         $fields = $this->decodeJson($row['fields'] ?? '[]', []);
         $settings = $this->decodeJson($row['settings'] ?? '{}', []);
+        $settings = $this->normaliseConfigOptions(is_array($settings) ? $settings : []);
 
         return [
             'id' => (int) $row['id'],
@@ -77,7 +79,7 @@ class FormRepository
             'date' => $row['created_at'] ?? null,
             'config' => [
                 'fields' => is_array($fields) ? $fields : [],
-                'options' => is_array($settings) ? $settings : [],
+                'options' => $settings,
             ],
         ];
     }
@@ -197,6 +199,21 @@ class FormRepository
         } catch (\JsonException $exception) {
             return $default;
         }
+    }
+
+    /**
+     * Ensure stored configuration arrays include expected option structure.
+     *
+     * @param array<string, mixed> $options
+     *
+     * @return array<string, mixed>
+     */
+    private function normaliseConfigOptions(array $options): array
+    {
+        $captcha = is_array($options['captcha'] ?? null) ? $options['captcha'] : [];
+        $options['captcha'] = CaptchaOptions::normalizeForStorage($captcha, $captcha);
+
+        return $options;
     }
 
     /**

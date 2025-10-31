@@ -133,15 +133,31 @@ if (!ctx) {
 
 const { local } = ctx;
 
-// Ensure nested provider objects exist when provider changes
-// Initialize all provider objects if they don't exist
-if (!local.captcha.recaptcha_v3) {
-    local.captcha.recaptcha_v3 = reactive({ site_key: '', secret_key: '' });
-}
-if (!local.captcha.turnstile) {
-    local.captcha.turnstile = reactive({ site_key: '', secret_key: '' });
-}
-if (!local.captcha.friendlycaptcha) {
-    local.captcha.friendlycaptcha = reactive({ site_key: '', secret_key: '' });
-}
+const ensureProviderShape = (value) => {
+    if (!value) {
+        return reactive({
+            site_key: '',
+            secret_key: '',
+            secret_key_set: false,
+            remove_secret: false,
+        });
+    }
+
+    if (typeof value.site_key !== "string") {
+        value.site_key = "";
+    }
+    if (typeof value.secret_key !== "string") {
+        value.secret_key = "";
+    }
+    value.secret_key_set = value.secret_key_set === true;
+    value.remove_secret = value.remove_secret === true;
+
+    return value;
+};
+
+local.captcha.recaptcha_v3 = ensureProviderShape(local.captcha.recaptcha_v3);
+local.captcha.turnstile = ensureProviderShape(local.captcha.turnstile);
+local.captcha.friendlycaptcha = ensureProviderShape(
+    local.captcha.friendlycaptcha
+);
 </script>

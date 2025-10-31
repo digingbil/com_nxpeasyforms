@@ -21,6 +21,7 @@ use Joomla\Component\Nxpeasyforms\Administrator\Service\Security\IpHandler;
 use Joomla\Component\Nxpeasyforms\Administrator\Service\Security\RateLimiter;
 use Joomla\Component\Nxpeasyforms\Administrator\Service\Validation\FieldValidator;
 use Joomla\Component\Nxpeasyforms\Administrator\Service\Validation\ValidationResult;
+use Joomla\Component\Nxpeasyforms\Administrator\Support\CaptchaOptions;
 use Joomla\Event\DispatcherInterface;
 use Joomla\Event\Event;
 
@@ -169,12 +170,16 @@ final class SubmissionService
                 ? $captchaConfig[$captchaProvider]
                 : [];
 
+            $secretKey = is_string($providerConfig['secret_key'] ?? null)
+                ? CaptchaOptions::decryptSecret((string) $providerConfig['secret_key'])
+                : '';
+
             $this->captchaService->verify(
                 $captchaProvider,
                 $captchaToken,
                 [
                     'site_key' => $providerConfig['site_key'] ?? '',
-                    'secret_key' => $providerConfig['secret_key'] ?? '',
+                    'secret_key' => $secretKey,
                     'ip' => $context['ip_address'],
                     'form_id' => $formId,
                 ]

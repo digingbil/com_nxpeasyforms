@@ -107,6 +107,52 @@ import { apiFetch } from "@/admin/utils/http";
 
 const ICON_CLOSE = getMediaAssetUrl("assets/icons/hexagon-letter-x.svg");
 
+const SECRET_PLACEHOLDER = "********";
+
+const mapCaptchaState = (source = {}) => {
+    const secretSet = source?.secret_key_set === true;
+
+    return {
+        site_key: safeTrim(source?.site_key || ""),
+        secret_key: secretSet ? SECRET_PLACEHOLDER : safeTrim(source?.secret_key || ""),
+        secret_key_set: secretSet,
+        remove_secret: false,
+    };
+};
+
+const serializeCaptchaState = (entry = {}) => {
+    const siteKey = safeTrim(entry?.site_key || "");
+    const raw = safeTrim(entry?.secret_key || "");
+    const hasExisting = entry?.secret_key_set === true;
+    let secretKey = "";
+    let secretKeySet = false;
+    let removeSecret = entry?.remove_secret === true;
+
+    if (hasExisting && raw === SECRET_PLACEHOLDER && !removeSecret) {
+        secretKeySet = true;
+    } else if (raw === "") {
+        secretKeySet = false;
+        removeSecret = removeSecret || hasExisting;
+    } else {
+        secretKey = raw;
+        secretKeySet = true;
+        removeSecret = false;
+    }
+
+    if (removeSecret) {
+        entry.secret_key_set = false;
+    } else if (secretKeySet) {
+        entry.secret_key_set = true;
+    }
+
+    return {
+        site_key: siteKey,
+        secret_key: secretKey,
+        secret_key_set: secretKeySet,
+        remove_secret: removeSecret,
+    };
+};
+
 const tabs = [
     { id: "general", label: __("General", "nxp-easy-forms") },
     { id: "notifications", label: __("Email Settings", "nxp-easy-forms") },
@@ -302,10 +348,13 @@ const mapOptionsToLocal = (value) => {
         per_seconds: Number(value.throttle?.per_seconds ?? 10) || 1,
     };
 
+    const captchaSource = isObject(value.captcha) ? value.captcha : {};
+
     local.captcha = {
-        provider: value.captcha?.provider || "none",
-        site_key: value.captcha?.site_key || "",
-        secret_key: value.captcha?.secret_key || "",
+        provider: captchaSource.provider || "none",
+        recaptcha_v3: mapCaptchaState(captchaSource.recaptcha_v3 || {}),
+        turnstile: mapCaptchaState(captchaSource.turnstile || {}),
+        friendlycaptcha: mapCaptchaState(captchaSource.friendlycaptcha || {}),
     };
 
     local.email_delivery.provider =
@@ -806,8 +855,9 @@ const buildOptionsPayload = () => {
         error_message: local.error_message,
         captcha: {
             provider: local.captcha.provider || "none",
-            site_key: safeTrim(local.captcha.site_key),
-            secret_key: safeTrim(local.captcha.secret_key),
+            recaptcha_v3: serializeCaptchaState(local.captcha.recaptcha_v3 || {}),
+            turnstile: serializeCaptchaState(local.captcha.turnstile || {}),
+            friendlycaptcha: serializeCaptchaState(local.captcha.friendlycaptcha || {}),
         },
         email_delivery: {
             provider: local.email_delivery.provider || "joomla",

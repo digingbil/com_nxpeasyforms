@@ -14,6 +14,7 @@ use Joomla\Component\Nxpeasyforms\Administrator\Helper\FormDefaults;
 use Joomla\Component\Nxpeasyforms\Administrator\Model\FormModel as AdminFormModel;
 use Joomla\Component\Nxpeasyforms\Administrator\Service\Email\EmailService;
 use Joomla\Component\Nxpeasyforms\Administrator\Service\Repository\FormRepository;
+use Joomla\Component\Nxpeasyforms\Administrator\Support\CaptchaOptions;
 use Joomla\Registry\Registry;
 use Joomla\Database\DatabaseInterface;
 use Joomla\DI\ServiceProviderInterface;
@@ -28,6 +29,7 @@ use function is_file;
 use function rawurldecode;
 use function strtolower;
 use function trim;
+use Throwable;
 
 // phpcs:disable PSR1.Files.SideEffects
 \defined('_JEXEC') or die;
@@ -885,7 +887,22 @@ final class AjaxController extends BaseController
         $fields = is_array($config['fields'] ?? null) ? $config['fields'] : [];
         $options = is_array($config['options'] ?? null) ? $config['options'] : [];
 
-        $options = $this->normalizeOptionsForStorage($options);
+        $existingOptions = [];
+
+        if ($id !== null) {
+            try {
+                $repository = Factory::getContainer()->get(FormRepository::class);
+                $existingForm = $repository->find($id);
+
+                if (is_array($existingForm['config']['options'] ?? null)) {
+                    $existingOptions = $existingForm['config']['options'];
+                }
+            } catch (\Throwable $exception) {
+                $existingOptions = [];
+            }
+        }
+
+        $options = $this->normalizeOptionsForStorage($options, $existingOptions);
 
         $data = [
             'title' => is_string($payload['title'] ?? null) ? trim($payload['title']) : '',
@@ -947,10 +964,17 @@ final class AjaxController extends BaseController
      * @return array<string,mixed> Normalized options suitable for storage.
      * @since 1.0.0
      */
-    private function normalizeOptionsForStorage(array $options): array
+    private function normalizeOptionsForStorage(array $options, array $existingOptions = []): array
     {
         $options['email_delivery'] = $this->normalizeEmailDelivery(
             is_array($options['email_delivery'] ?? null) ? $options['email_delivery'] : []
+        );
+
+        $existingCaptcha = is_array($existingOptions['captcha'] ?? null) ? $existingOptions['captcha'] : [];
+
+        $options['captcha'] = CaptchaOptions::normalizeForStorage(
+            is_array($options['captcha'] ?? null) ? $options['captcha'] : [],
+            $existingCaptcha
         );
 
         $integrations = is_array($options['integrations'] ?? null) ? $options['integrations'] : [];
@@ -970,7 +994,10 @@ final class AjaxController extends BaseController
      */
     private function normalizeOptionsForClient(array $options): array
     {
-        return $this->normalizeOptionsForStorage($options);
+        $normalized = $this->normalizeOptionsForStorage($options, $options);
+        $normalized['captcha'] = CaptchaOptions::normalizeForClient($normalized['captcha'] ?? []);
+
+        return $normalized;
     }
 
     /**
