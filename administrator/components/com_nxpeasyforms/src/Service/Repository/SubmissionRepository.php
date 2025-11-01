@@ -7,9 +7,11 @@ use Joomla\CMS\Date\Date;
 use Joomla\CMS\Factory;
 use Joomla\Database\DatabaseDriver;
 use Joomla\Database\ParameterType;
-
-
+use function array_filter;
 use function array_map;
+use function array_unique;
+use function array_values;
+use function implode;
 use function is_array;
 use function json_decode;
 use function json_encode;
@@ -159,6 +161,47 @@ class SubmissionRepository
         }, $rows);
     }
 
+    /**
+     * Delete submissions by their identifiers.
+     *
+     * @param   array<int>  $ids  Submission identifiers to remove.
+     *
+     * @return void
+     *
+     * @throws \Throwable When the delete query fails to execute.
+     * @since 1.0.0
+     */
+    public function deleteByIds(array $ids): void
+    {
+        $ids = array_values(array_unique(
+            array_filter(
+                array_map('intval', $ids),
+                static fn (int $id): bool => $id > 0
+            )
+        ));
+
+        if ($ids === []) {
+            return;
+        }
+
+        $query = $this->db->getQuery(true)
+            ->delete($this->db->quoteName('#__nxpeasyforms_submissions'));
+
+        $placeholders = [];
+
+        foreach ($ids as $index => $id) {
+            $placeholder = ':id' . $index;
+            $placeholders[] = $placeholder;
+            $query->bind($placeholder, $id, ParameterType::INTEGER);
+        }
+
+        $query->where(
+            $this->db->quoteName('id') . ' IN (' . implode(',', $placeholders) . ')'
+        );
+
+        $this->db->setQuery($query)->execute();
+    }
+
 	/**
 	 * Deletes all submissions associated with a specific form ID.
 	 *
@@ -177,6 +220,79 @@ class SubmissionRepository
         $this->db->setQuery($query)->execute();
 
         return (int) $this->db->getAffectedRows();
+    }
+
+	/**
+	 * Find submissions by their unique identifiers.
+	 *
+	 * @param   array<int>  $ids  Submission identifiers to load.
+	 *
+	 * @return array<int, array<string, mixed>>
+	 * @since 1.0.0
+	 */
+    public function findByIds(array $ids): array
+    {
+        $ids = array_values(array_unique(
+            array_filter(
+                array_map('intval', $ids),
+                static fn (int $id): bool => $id > 0
+            )
+        ));
+
+        if ($ids === []) {
+            return [];
+        }
+
+        $idList = implode(',', $ids);
+
+        $query = $this->db->getQuery(true)
+            ->select([
+                $this->db->quoteName('a.id'),
+                $this->db->quoteName('a.form_id'),
+                $this->db->quoteName('a.submission_uuid'),
+                $this->db->quoteName('a.status'),
+                $this->db->quoteName('a.ip_address'),
+                $this->db->quoteName('a.user_agent'),
+                $this->db->quoteName('a.data'),
+                $this->db->quoteName('a.created_at'),
+                $this->db->quoteName('f.title', 'form_title'),
+            ])
+            ->from($this->db->quoteName('#__nxpeasyforms_submissions', 'a'))
+            ->join(
+                'LEFT',
+                $this->db->quoteName('#__nxpeasyforms_forms', 'f'),
+                $this->db->quoteName('f.id') . ' = ' . $this->db->quoteName('a.form_id')
+            )
+            ->where($this->db->quoteName('a.id') . ' IN (' . $idList . ')')
+            ->order($this->db->quoteName('a.created_at') . ' DESC');
+
+        $rows = $this->db->setQuery($query)->loadAssocList() ?: [];
+
+        return array_map(static function (array $row): array {
+            $payload = [];
+
+            try {
+                $decoded = json_decode($row['data'] ?? '[]', true, 512, JSON_THROW_ON_ERROR);
+
+                if (is_array($decoded)) {
+                    $payload = $decoded;
+                }
+            } catch (\JsonException $exception) {
+                $payload = [];
+            }
+
+            return [
+                'id' => (int) ($row['id'] ?? 0),
+                'form_id' => (int) ($row['form_id'] ?? 0),
+                'form_title' => $row['form_title'] ?? null,
+                'submission_uuid' => (string) ($row['submission_uuid'] ?? ''),
+                'status' => (string) ($row['status'] ?? 'new'),
+                'ip_address' => $row['ip_address'] ?? null,
+                'user_agent' => $row['user_agent'] ?? null,
+                'created_at' => $row['created_at'] ?? null,
+                'payload' => $payload,
+            ];
+        }, $rows);
     }
 
 	/**

@@ -157,7 +157,16 @@
                 </div>
             </div>
 
-            <p v-if="message" :class="{'notice': true, 'notice-success': messageType==='success', 'notice-error': messageType==='error'}" style="margin-top:12px; padding:.5rem .75rem;">
+            <p
+                v-if="message"
+                :class="{
+                    alert: true,
+                    'alert-success': messageType === 'success',
+                    'alert-danger': messageType === 'error',
+                    'alert-info': !['success', 'error'].includes(messageType),
+                }"
+                class="mt-2"
+            >
                 {{ message }}
             </p>
         </div>
@@ -168,27 +177,27 @@
                 <button type="button" class="button" @click="loadDiagnostics">{{ __("View diagnostics") }}</button>
             </div>
             <div v-if="diag.loaded" style="margin-top: 12px;">
-                <div v-if="diag.warningAt" class="notice notice-warning" style="padding:.5rem .75rem;">
+                <div v-if="diag.warningAt" class="alert alert-warning" role="alert">
                     {{ __("A recent email attempt reported a problem.") }}
-                    <small style="display:block; color:#6c757d;">{{ __("Recorded at:") }} {{ new Date(diag.warningAt*1000).toLocaleString() }}</small>
+                    <small class="text-muted d-block">{{ __("Recorded at:") }} {{ new Date(diag.warningAt*1000).toLocaleString() }}</small>
                 </div>
 
                 <div class="nxp-diagnostic-block">
                     <h3 style="margin-top: 10px;">{{ __("Joomla mail") }}</h3>
-                    <div v-if="diag.mailer.lastError" class="notice notice-error" style="padding:.5rem .75rem;">
+                    <div v-if="diag.mailer.lastError" class="alert alert-danger" role="alert">
                         <strong>{{ __("Last error:") }}</strong>
                         <div>{{ diag.mailer.lastError.message }}</div>
-                        <small v-if="diag.mailer.lastError.recorded_at" style="display:block; color:#6c757d;">{{ __("Recorded at:") }} {{ new Date(diag.mailer.lastError.recorded_at*1000).toLocaleString() }}</small>
+                        <small v-if="diag.mailer.lastError.recorded_at" class="text-muted d-block">{{ __("Recorded at:") }} {{ new Date(diag.mailer.lastError.recorded_at*1000).toLocaleString() }}</small>
                         <details v-if="diag.mailer.lastError.details" style="margin-top:6px;">
                             <summary>{{ __("Details") }}</summary>
                             <pre style="white-space: pre-wrap;">{{ JSON.stringify(diag.mailer.lastError.details, null, 2) }}</pre>
                         </details>
                     </div>
-                    <div v-else class="notice notice-success" style="padding:.5rem .75rem;">
+                    <div v-else class="alert alert-success" role="alert">
                         {{ __("No mailer errors recorded recently.") }}
                     </div>
 
-                    <div v-if="diag.mailer.lastSuccess" class="notice" style="padding:.5rem .75rem;">
+                    <div v-if="diag.mailer.lastSuccess" class="alert alert-info" role="alert">
                         <strong>{{ __("Last success:") }}</strong>
                         <div>
                             <small>{{ __("To:") }} {{ diag.mailer.lastSuccess.to }}</small>

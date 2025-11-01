@@ -31,6 +31,7 @@ use Joomla\Component\Nxpeasyforms\Administrator\Service\Integrations\SlackDispat
 use Joomla\Component\Nxpeasyforms\Administrator\Service\Integrations\TeamsDispatcher;
 use Joomla\Component\Nxpeasyforms\Administrator\Service\Integrations\WebhookDispatcher;
 use Joomla\Component\Nxpeasyforms\Administrator\Service\Registration\UserRegistrationHandler;
+use Joomla\Component\Nxpeasyforms\Administrator\Service\Export\SubmissionExporter;
 use Joomla\Component\Nxpeasyforms\Administrator\Service\Repository\FormRepository;
 use Joomla\Component\Nxpeasyforms\Administrator\Service\Repository\SubmissionRepository;
 use Joomla\Component\Nxpeasyforms\Administrator\Service\Rendering\MessageFormatter;
@@ -113,6 +114,13 @@ return static function ($container): void {
         SubmissionRepository::class,
         static function ($container): SubmissionRepository {
             return new SubmissionRepository($container->get('Joomla\\Database\\DatabaseDriver'));
+        }
+    );
+
+    $container->share(
+        SubmissionExporter::class,
+        static function ($container): SubmissionExporter {
+            return new SubmissionExporter($container->get(SubmissionRepository::class));
         }
     );
 

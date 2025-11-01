@@ -5,7 +5,9 @@ namespace Joomla\Component\Nxpeasyforms\Administrator\Model;
 
 use Joomla\CMS\Factory;
 use Joomla\CMS\MVC\Model\ListModel;
+use Joomla\Component\Nxpeasyforms\Administrator\Service\Repository\SubmissionRepository;
 use Joomla\Database\QueryInterface;
+use Throwable;
 
 
 // phpcs:disable PSR1.Files.SideEffects
@@ -132,5 +134,57 @@ final class SubmissionsModel extends ListModel
         $query->order($db->quoteName($columnMap[$orderCol]) . ' ' . $orderDir);
 
         return $query;
+    }
+
+    /**
+     * Delete submissions by their identifiers.
+     *
+     * @param   array<int>|null  $pks  Selected primary keys (passed by reference).
+     *
+     * @return bool True when the operation succeeds or there is nothing to delete.
+     *
+     * @since 1.0.0
+     */
+    public function delete(&$pks): bool
+    {
+        $ids = array_values(
+            array_filter(
+                array_map('intval', (array) $pks),
+                static fn (int $id): bool => $id > 0
+            )
+        );
+
+        if ($ids === []) {
+            $pks = [];
+
+            return true;
+        }
+
+        try {
+            $repository = $this->resolveSubmissionRepository();
+            $repository->deleteByIds($ids);
+        } catch (Throwable $exception) {
+            $this->setError($exception->getMessage());
+
+            return false;
+        }
+
+        $pks = $ids;
+
+        return true;
+    }
+
+    /**
+     * Resolve the submission repository via the DI container with a fallback for cold boots.
+     */
+    private function resolveSubmissionRepository(): SubmissionRepository
+    {
+        $container = Factory::getContainer();
+
+        if (method_exists($container, 'has') && $container->has(SubmissionRepository::class)) {
+            return $container->get(SubmissionRepository::class);
+        }
+
+        return new SubmissionRepository();
     }
 }
