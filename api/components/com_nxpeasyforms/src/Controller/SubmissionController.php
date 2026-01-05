@@ -113,11 +113,14 @@ final class SubmissionController extends ApiController
 
             return;
         } catch (\Throwable $throwable) {
-            Factory::getApplication()->getLogger()->error('NXP Easy Forms submission failed: ' . $throwable->getMessage());
+            Factory::getApplication()->getLogger()->error(
+                'NXP Easy Forms submission failed: ' . $throwable->getMessage()
+                . ' in ' . $throwable->getFile() . ':' . $throwable->getLine()
+            );
 
             $this->respond([
                 'success' => false,
-                'message' => Text::_('COM_NXPEASYFORMS_ERROR_VALIDATION'),
+                'message' => $throwable->getMessage() ?: Text::_('COM_NXPEASYFORMS_ERROR_VALIDATION'),
             ], 500, true);
 
             return;

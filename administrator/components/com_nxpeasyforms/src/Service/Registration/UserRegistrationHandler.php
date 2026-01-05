@@ -178,29 +178,13 @@ final class UserRegistrationHandler
         // Create the user using Joomla's User model
         try {
             $user = new User();
-
-            if (!$user->bind($userData)) {
-                return [
-                    'success' => false,
-                    'message' => $user->getError(),
-                    'user_id' => null,
-                ];
-            }
-
-            if (!$user->save()) {
-                return [
-                    'success' => false,
-                    'message' => $user->getError(),
-                    'user_id' => null,
-                ];
-            }
-
+            $user->bind($userData);
+            $user->save();
             $userId = (int) $user->id;
-
-        } catch (\Exception $exception) {
+        } catch (\Throwable $exception) {
             return [
                 'success' => false,
-                'message' => $exception->getMessage(),
+                'message' => $exception->getMessage() ?: Text::_('COM_NXPEASYFORMS_ERROR_REGISTRATION_FAILED'),
                 'user_id' => null,
             ];
         }
@@ -374,7 +358,8 @@ final class UserRegistrationHandler
             $sitename,
             $activationUrl,
             $user->username,
-            $passwordGenerated ? $password : '********'
+            $passwordGenerated ? $password : '********',
+            $sitename
         );
 
         $mailer = Factory::getMailer();
@@ -417,7 +402,8 @@ final class UserRegistrationHandler
             $sitename,
             $loginUrl,
             $user->username,
-            $passwordGenerated ? $password : '********'
+            $passwordGenerated ? $password : '********',
+            $sitename
         );
 
         $mailer = Factory::getMailer();
