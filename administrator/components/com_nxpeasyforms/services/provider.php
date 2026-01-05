@@ -51,10 +51,12 @@ return new class () implements ServiceProviderInterface {
                     );
                 }
 
-                if (!class_exists('Joomla\\Component\\Nxpeasyforms\\Api\\Extension\\NxpeasyformsComponent')) {
+                // Only register API namespace if API files are installed
+                $apiPath = \JPATH_ROOT . '/api/components/com_nxpeasyforms/src';
+                if (!class_exists('Joomla\\Component\\Nxpeasyforms\\Api\\Extension\\NxpeasyformsComponent') && is_dir($apiPath)) {
                     \JLoader::registerNamespace(
                         'Joomla\\Component\\Nxpeasyforms\\Api',
-                        \JPATH_ROOT . '/api/components/com_nxpeasyforms/src'
+                        $apiPath
                     );
                 }
 

@@ -9,6 +9,8 @@
     <version>1.0.2</version>
     <description>COM_NXPEASYFORMS_XML_DESCRIPTION</description>
 
+    <namespace path="src">Joomla\Component\Nxpeasyforms</namespace>
+
     <install>
         <sql>
             <file driver="mysql" charset="utf8">sql/install.mysql.utf8.sql</file>
@@ -21,50 +23,19 @@
         </sql>
     </uninstall>
 
-    <administration>
-        <menu link="index.php?option=com_nxpeasyforms&amp;view=forms">COM_NXPEASYFORMS_MENU</menu>
-        <submenu>
-            <menu view="forms">COM_NXPEASYFORMS_SUBMENU_FORMS</menu>
-            <menu view="submissions">COM_NXPEASYFORMS_SUBMENU_SUBMISSIONS</menu>
-        </submenu>
+    <!-- Site files (frontend) -->
+    <files folder="site">
+        <folder>services</folder>
+        <folder>src</folder>
+        <folder>tmpl</folder>
+        <filename>index.html</filename>
+    </files>
 
-        <namespace path="src">Joomla\Component\Nxpeasyforms\Administrator</namespace>
+    <languages folder="language">
+        <language tag="en-GB">en-GB/com_nxpeasyforms.ini</language>
+    </languages>
 
-        <files>
-            <folder>services</folder>
-            <folder>sql</folder>
-            <folder>src</folder>
-            <folder>tmpl</folder>
-            <folder>models</folder>
-            <filename>access.xml</filename>
-            <filename>config.xml</filename>
-            <filename>index.html</filename>
-        </files>
-
-        <config>config.xml</config>
-
-        <languages>
-            <language tag="en-GB">language/en-GB/com_nxpeasyforms.ini</language>
-            <language tag="en-GB">language/en-GB/com_nxpeasyforms.sys.ini</language>
-        </languages>
-    </administration>
-
-    <site>
-        <namespace path="src">Joomla\Component\Nxpeasyforms\Site</namespace>
-
-        <files>
-            <folder>services</folder>
-            <folder>src</folder>
-            <folder>tmpl</folder>
-            <filename>index.html</filename>
-        </files>
-
-        <languages folder="language">
-            <language tag="en-GB">en-GB/com_nxpeasyforms.ini</language>
-        </languages>
-    </site>
-
-    <media destination="com_nxpeasyforms" folder="media/com_nxpeasyforms">
+    <media destination="com_nxpeasyforms" folder="media">
         <folder>assets</folder>
         <folder>css</folder>
         <folder>js</folder>
@@ -72,11 +43,29 @@
         <filename>manifest.json</filename>
     </media>
 
-    <fileset>
-        <files target="api" folder="api">
-            <folder>components/com_nxpeasyforms</folder>
+    <administration>
+        <menu link="index.php?option=com_nxpeasyforms&amp;view=forms">COM_NXPEASYFORMS_MENU</menu>
+        <submenu>
+            <menu view="forms">COM_NXPEASYFORMS_SUBMENU_FORMS</menu>
+            <menu view="submissions">COM_NXPEASYFORMS_SUBMENU_SUBMISSIONS</menu>
+        </submenu>
+
+        <files folder="admin">
+            <folder>services</folder>
+            <folder>sql</folder>
+            <folder>src</folder>
+            <folder>tmpl</folder>
+            <folder>models</folder>
+            <folder>forms</folder>
+            <folder>language</folder>
+            <filename>access.xml</filename>
+            <filename>config.xml</filename>
+            <filename>index.html</filename>
         </files>
-    </fileset>
+
+        <config>config.xml</config>
+    </administration>
+
     <updateservers>
         <server type="extension" priority="1" name="NXP Easy Forms updates">https://updates.nexusplugins.com/joomla/components/com_nxpeasyforms/updates.xml</server>
     </updateservers>
