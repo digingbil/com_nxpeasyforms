@@ -44,6 +44,15 @@
         <filename>manifest.json</filename>
     </media>
 
+    <!-- API files for REST endpoints -->
+    <api>
+        <files folder="api">
+            <folder>services</folder>
+            <folder>src</folder>
+            <filename>index.html</filename>
+        </files>
+    </api>
+
     <administration>
         <menu link="index.php?option=com_nxpeasyforms&amp;view=forms">COM_NXPEASYFORMS_MENU</menu>
         <submenu>
