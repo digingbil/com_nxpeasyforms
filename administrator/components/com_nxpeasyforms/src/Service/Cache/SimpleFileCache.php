@@ -40,8 +40,8 @@ namespace Joomla\Component\Nxpeasyforms\Administrator\Service\Cache;
 
 use DateInterval;
 use DateTimeImmutable;
-use Joomla\CMS\Filesystem\File;
-use Joomla\CMS\Filesystem\Folder;
+use Joomla\Filesystem\File;
+use Joomla\Filesystem\Folder;
 use Psr\SimpleCache\CacheInterface;
 use Psr\SimpleCache\InvalidArgumentException;
 
