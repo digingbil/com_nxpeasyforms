@@ -1,8 +1,15 @@
 <?php
+/**
+ * @package     NXP Easy Forms
+ * @subpackage  com_nxpeasyforms
+ * @copyright   Copyright (C) 2024-2025 nexusplugins.com. All rights reserved.
+ * @license     GNU General Public License version 2 or later; see LICENSE.txt
+ */
 declare(strict_types=1);
 
 namespace Joomla\Component\Nxpeasyforms\Administrator\Service\Integrations;
 
+use Joomla\CMS\Factory;
 
 use function trim;
 
@@ -65,7 +72,14 @@ final class GenericWebhookDispatcher implements IntegrationDispatcherInterface
         try {
             $this->client->post($endpoint, $body, ['Content-Type' => 'application/json'], 10);
         } catch (\Throwable $exception) {
-            // TODO: integrate logging service
+            try {
+                Factory::getApplication()->getLogger()->warning(
+                    'NXP Easy Forms webhook dispatch failed: ' . $exception->getMessage(),
+                    ['endpoint' => $endpoint, 'form_id' => $form['id'] ?? null]
+                );
+            } catch (\Throwable $e) {
+                // Ignore logging errors
+            }
         }
     }
 }

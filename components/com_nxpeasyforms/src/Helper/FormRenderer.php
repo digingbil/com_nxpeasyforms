@@ -1,4 +1,10 @@
 <?php
+/**
+ * @package     NXP Easy Forms
+ * @subpackage  com_nxpeasyforms
+ * @copyright   Copyright (C) 2024-2025 nexusplugins.com. All rights reserved.
+ * @license     GNU General Public License version 2 or later; see LICENSE.txt
+ */
 declare(strict_types=1);
 
 namespace Joomla\Component\Nxpeasyforms\Site\Helper;
@@ -153,6 +159,12 @@ final class FormRenderer
                 case 'hidden':
                     $output[] = $this->renderHidden($field);
                     break;
+                case 'country':
+                    $output[] = $this->renderCountry($field);
+                    break;
+                case 'state':
+                    $output[] = $this->renderState($field);
+                    break;
                 default:
                     $output[] = $this->renderInput($field);
                     break;
@@ -258,6 +270,80 @@ final class FormRenderer
             $multipleAttr,
             $optionMarkup,
             $this->escapeAttr($name)
+        );
+    }
+
+    /**
+     * Render a country select field.
+     * The options are populated client-side via JavaScript from the REST API.
+     *
+     * @param array<string, mixed> $field Field configuration.
+     *
+     * @return string Rendered HTML.
+     * @since 1.0.6
+     */
+    private function renderCountry(array $field): string
+    {
+        $id = $this->escapeAttr($field['id'] ?? $field['name'] ?? uniqid('nxp', true));
+        $name = $this->escapeAttr($field['name'] ?? $id);
+        $label = $this->escape($field['label'] ?? '');
+        $placeholder = $this->escape($field['placeholder'] ?? Text::_('COM_NXPEASYFORMS_SELECT_COUNTRY'));
+        $required = !empty($field['required']);
+        $countryFilter = $this->escapeAttr($field['country_filter'] ?? 'all');
+
+        return sprintf(
+            '<div class="nxp-easy-form__group">'
+            . '<label class="nxp-easy-form__label" for="%1$s">%2$s%5$s</label>'
+            . '<select class="nxp-easy-form__select nxp-easy-form__country" id="%1$s" name="%3$s" data-country-filter="%6$s"%7$s>'
+            . '<option value="">%4$s</option>'
+            . '</select>'
+            . '<p class="nxp-easy-form__error" data-error-for="%3$s" role="alert"></p>'
+            . '</div>',
+            $id,
+            $label,
+            $name,
+            $placeholder,
+            $required ? '<span class="nxp-easy-form__required">*</span>' : '',
+            $countryFilter,
+            $required ? ' required' : ''
+        );
+    }
+
+    /**
+     * Render a state/region select field.
+     * The options are populated client-side via JavaScript based on selected country.
+     *
+     * @param array<string, mixed> $field Field configuration.
+     *
+     * @return string Rendered HTML.
+     * @since 1.0.6
+     */
+    private function renderState(array $field): string
+    {
+        $id = $this->escapeAttr($field['id'] ?? $field['name'] ?? uniqid('nxp', true));
+        $name = $this->escapeAttr($field['name'] ?? $id);
+        $label = $this->escape($field['label'] ?? '');
+        $placeholder = $this->escape($field['placeholder'] ?? Text::_('COM_NXPEASYFORMS_SELECT_STATE'));
+        $required = !empty($field['required']);
+        $countryField = $this->escapeAttr($field['country_field'] ?? '');
+        $allowText = !empty($field['allow_text_input']) ? '1' : '0';
+
+        return sprintf(
+            '<div class="nxp-easy-form__group">'
+            . '<label class="nxp-easy-form__label" for="%1$s">%2$s%5$s</label>'
+            . '<select class="nxp-easy-form__select nxp-easy-form__state" id="%1$s" name="%3$s" data-country-field="%6$s" data-allow-text="%7$s"%8$s>'
+            . '<option value="">%4$s</option>'
+            . '</select>'
+            . '<p class="nxp-easy-form__error" data-error-for="%3$s" role="alert"></p>'
+            . '</div>',
+            $id,
+            $label,
+            $name,
+            $placeholder,
+            $required ? '<span class="nxp-easy-form__required">*</span>' : '',
+            $countryField,
+            $allowText,
+            $required ? ' required' : ''
         );
     }
 
@@ -416,13 +502,51 @@ final class FormRenderer
             return '';
         }
 
-        try {
-            $encoded = json_encode($css, JSON_THROW_ON_ERROR);
-        } catch (\JsonException $exception) {
+        // Sanitize CSS to prevent injection attacks
+        $css = $this->sanitizeCss($css);
+
+        if ($css === '') {
             return '';
         }
 
-        return sprintf('<style id="nxp-easy-form-style-%d">%s</style>', $formId, json_decode($encoded, true));
+        return sprintf('<style id="nxp-easy-form-style-%d">%s</style>', $formId, $css);
+    }
+
+    /**
+     * Sanitize CSS content to prevent XSS and injection attacks.
+     *
+     * @param string $css Raw CSS content.
+     *
+     * @return string Sanitized CSS content.
+     * @since 1.0.6
+     */
+    private function sanitizeCss(string $css): string
+    {
+        // Remove any attempts to break out of style tag
+        $css = str_ireplace(['</style', '<style', '<script', '<?php', '<?=', '<%'], '', $css);
+
+        // Remove CSS expressions (IE) and javascript: URLs
+        $css = preg_replace('/expression\s*\(/i', '', $css);
+        $css = preg_replace('/javascript\s*:/i', '', $css);
+        $css = preg_replace('/vbscript\s*:/i', '', $css);
+        $css = preg_replace('/behavior\s*:/i', '', $css);
+        $css = preg_replace('/-moz-binding\s*:/i', '', $css);
+        $css = preg_replace('/-webkit-binding\s*:/i', '', $css);
+
+        // Remove url() with data: or javascript: schemes
+        $css = preg_replace(
+            '/url\s*\(\s*["\']?\s*(data|javascript|vbscript):/i',
+            'url(blocked:',
+            $css
+        );
+
+        // Remove @import statements that could load external malicious CSS
+        $css = preg_replace('/@import\s+/i', '', $css);
+
+        // Remove @charset which could be used for encoding attacks
+        $css = preg_replace('/@charset\s+/i', '', $css);
+
+        return $css;
     }
 
     private function renderLoggedInState(int $formId, string $customCss): string

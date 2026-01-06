@@ -18,6 +18,202 @@
 
     const restUrl = settings && settings.restUrl ? settings.restUrl : '';
 
+    // =============================================
+    // Country/State Handler
+    // =============================================
+    class CountryStateHandler {
+        constructor(restUrl) {
+            this.restUrl = restUrl;
+            this.cache = { countries: {}, states: {} };
+            this.init();
+        }
+
+        init() {
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', () => this.initFields());
+            } else {
+                this.initFields();
+            }
+        }
+
+        initFields() {
+            document.querySelectorAll('.nxp-easy-form__country').forEach((select) => this.initCountryField(select));
+            document.querySelectorAll('.nxp-easy-form__state').forEach((select) => this.initStateField(select));
+        }
+
+        async initCountryField(select) {
+            const mode = select.dataset.countryFilter || 'all';
+            const placeholder = select.querySelector('option[value=""]')?.textContent || 'Select a country';
+
+            try {
+                const countries = await this.fetchCountries(mode);
+                this.populateSelect(select, countries, placeholder);
+                select.addEventListener('change', () => this.handleCountryChange(select));
+            } catch (error) {
+                console.warn('[Country] Failed to load countries:', error);
+            }
+        }
+
+        async initStateField(select) {
+            let countryFieldName = select.dataset.countryField;
+            const form = select.closest('form');
+            if (!form) return;
+
+            // Auto-detect country field if not specified
+            if (!countryFieldName) {
+                const countriesInForm = form.querySelectorAll('.nxp-easy-form__country');
+                if (countriesInForm.length === 1) {
+                    countryFieldName = countriesInForm[0].getAttribute('name') || '';
+                    if (countryFieldName) select.dataset.countryField = countryFieldName;
+                }
+            }
+
+            if (!countryFieldName) return;
+
+            const countryField = form.querySelector(`[name="${countryFieldName}"]`);
+            if (!countryField) return;
+
+            if (countryField.value) {
+                await this.loadStatesForCountry(select, countryField.value);
+            }
+        }
+
+        async handleCountryChange(countrySelect) {
+            const countryCode = countrySelect.value;
+            const form = countrySelect.closest('form');
+            if (!form) return;
+
+            const countryFieldName = countrySelect.getAttribute('name');
+            const linkedStateFields = form.querySelectorAll(`.nxp-easy-form__state[data-country-field="${countryFieldName}"]`);
+
+            linkedStateFields.forEach(async (stateEl) => {
+                if (countryCode) {
+                    await this.loadStatesForCountry(stateEl, countryCode);
+                } else {
+                    this.clearSelect(stateEl);
+                }
+            });
+        }
+
+        async loadStatesForCountry(stateSelect, countryCode) {
+            const placeholder = stateSelect.querySelector('option[value=""]')?.textContent || 'Select a state';
+            const allowText = stateSelect.dataset.allowText === '1';
+
+            try {
+                const states = await this.fetchStates(countryCode);
+
+                if (Object.keys(states).length > 0) {
+                    this.populateSelect(stateSelect, states, placeholder);
+                    stateSelect.disabled = false;
+                } else if (allowText) {
+                    this.convertToTextInput(stateSelect);
+                } else {
+                    this.clearSelect(stateSelect);
+                    stateSelect.disabled = true;
+                }
+            } catch (error) {
+                console.warn('[State] Failed to load states:', error);
+            }
+        }
+
+        async fetchCountries(mode = 'all') {
+            const cacheKey = mode;
+            if (this.cache.countries[cacheKey]) return this.cache.countries[cacheKey];
+
+            const response = await fetch(`${this.restUrl}/utility/countries?mode=${mode}`);
+            const data = await response.json();
+
+            if (data.data?.success && data.data?.countries) {
+                this.cache.countries[cacheKey] = data.data.countries;
+                return data.data.countries;
+            }
+            if (data.success && data.countries) {
+                this.cache.countries[cacheKey] = data.countries;
+                return data.countries;
+            }
+
+            return {};
+        }
+
+        async fetchStates(countryCode) {
+            const code = String(countryCode || '').toUpperCase();
+            if (!code || code.length !== 2) return {};
+
+            if (this.cache.states[code]) return this.cache.states[code];
+
+            const response = await fetch(`${this.restUrl}/utility/states/${code}`, {
+                headers: { Accept: 'application/json' },
+                credentials: 'same-origin',
+            });
+
+            if (!response.ok) return {};
+
+            const data = await response.json().catch(() => ({}));
+
+            if (data.data?.success && data.data?.states) {
+                this.cache.states[code] = data.data.states;
+                return data.data.states;
+            }
+            if (data.success && data.states && typeof data.states === 'object') {
+                this.cache.states[code] = data.states;
+                return data.states;
+            }
+
+            return {};
+        }
+
+        populateSelect(select, options, placeholder) {
+            while (select.firstChild) select.removeChild(select.firstChild);
+
+            const placeholderOption = document.createElement('option');
+            placeholderOption.value = '';
+            placeholderOption.textContent = placeholder;
+            select.appendChild(placeholderOption);
+
+            Object.entries(options).forEach(([code, name]) => {
+                const option = document.createElement('option');
+                option.value = code;
+                option.textContent = name;
+                select.appendChild(option);
+            });
+
+            select.disabled = false;
+        }
+
+        clearSelect(select) {
+            if (!select) return;
+            const placeholder = select.querySelector('option[value=""]')?.textContent || 'Select';
+            while (select.firstChild) select.removeChild(select.firstChild);
+
+            const placeholderOption = document.createElement('option');
+            placeholderOption.value = '';
+            placeholderOption.textContent = placeholder;
+            select.appendChild(placeholderOption);
+            select.value = '';
+        }
+
+        convertToTextInput(select) {
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.name = select.name;
+            input.id = select.id;
+            input.className = select.className.replace('nxp-easy-form__state', 'nxp-easy-form__input');
+            input.placeholder = select.querySelector('option[value=""]')?.textContent || '';
+            input.required = select.hasAttribute('required');
+
+            if (select.dataset.countryField) input.dataset.countryField = select.dataset.countryField;
+            if (select.dataset.allowText) input.dataset.allowText = select.dataset.allowText;
+            input.dataset.originalSelectHtml = select.outerHTML;
+
+            select.parentNode.replaceChild(input, select);
+        }
+    }
+
+    // Initialize country/state handler if restUrl is available
+    if (restUrl) {
+        new CountryStateHandler(restUrl);
+    }
+
     function showMissingConfigMessage() {
         const forms = document.querySelectorAll('.nxp-easy-form');
         forms.forEach((wrapper) => {

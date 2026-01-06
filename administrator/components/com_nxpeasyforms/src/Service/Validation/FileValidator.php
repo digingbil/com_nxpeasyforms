@@ -1,4 +1,10 @@
 <?php
+/**
+ * @package     NXP Easy Forms
+ * @subpackage  com_nxpeasyforms
+ * @copyright   Copyright (C) 2024-2025 nexusplugins.com. All rights reserved.
+ * @license     GNU General Public License version 2 or later; see LICENSE.txt
+ */
 declare(strict_types=1);
 
 namespace Joomla\Component\Nxpeasyforms\Administrator\Service\Validation;
@@ -39,6 +45,43 @@ use function trim;
  */
 final class FileValidator
 {
+    /**
+     * List of dangerous file extensions that should never be allowed.
+     * These extensions can lead to code execution if uploaded.
+     *
+     * @var array<int, string>
+     * @since 1.0.6
+     */
+    private const DANGEROUS_EXTENSIONS = [
+        'php', 'php3', 'php4', 'php5', 'php7', 'php8',
+        'phtml', 'phar', 'pht', 'phps',
+        'exe', 'com', 'bat', 'cmd', 'sh', 'bash', 'zsh',
+        'pl', 'py', 'rb', 'cgi',
+        'asp', 'aspx', 'jsp', 'jspx',
+        'htaccess', 'htpasswd',
+        'shtml', 'shtm',
+        'svg',  // Can contain JavaScript
+    ];
+
+    /**
+     * List of MIME types that should never be allowed even if plugins try to add them.
+     *
+     * @var array<int, string>
+     * @since 1.0.6
+     */
+    private const FORBIDDEN_MIME_TYPES = [
+        'application/x-php',
+        'application/x-httpd-php',
+        'application/x-executable',
+        'application/x-msdownload',
+        'application/x-msdos-program',
+        'text/x-php',
+        'text/x-python',
+        'text/x-perl',
+        'text/x-shellscript',
+        'image/svg+xml',  // Can contain JavaScript
+    ];
+
     private const ALLOWED_FILE_TYPES = [
         'image/jpeg',
         'image/png',
@@ -146,6 +189,22 @@ final class FileValidator
         if (!is_array($allowedTypes) || empty($allowedTypes)) {
             $allowedTypes = self::ALLOWED_FILE_TYPES;
         }
+
+        // Log warning if plugins tried to add dangerous types (check BEFORE removing)
+        $dangerousAttempts = array_intersect($allowedTypes, self::FORBIDDEN_MIME_TYPES);
+        if (!empty($dangerousAttempts)) {
+            try {
+                Factory::getApplication()->getLogger()->warning(
+                    'NXP Easy Forms: Plugin attempted to allow dangerous MIME types: '
+                    . implode(', ', $dangerousAttempts)
+                );
+            } catch (\Throwable $e) {
+                // Ignore logging errors
+            }
+        }
+
+        // Remove any dangerous MIME types that plugins might have tried to add
+        $allowedTypes = array_diff($allowedTypes, self::FORBIDDEN_MIME_TYPES);
 
         $fieldAccept = isset($field['accept']) && is_string($field['accept']) ? $field['accept'] : '';
         $fieldAllowedTypes = $this->filterAcceptTypes($fieldAccept, $allowedTypes);
@@ -342,6 +401,7 @@ final class FileValidator
 
 	/**
 	 * Determines whether the file extension of a given filename is allowed based on its MIME type.
+	 * Includes comprehensive checks for dangerous extensions and double-extension attacks.
 	 *
 	 * @param   string  $originalName  The original name of the file.
 	 * @param   string  $mime          The MIME type of the file.
@@ -351,20 +411,47 @@ final class FileValidator
 	 */
     private function isExtensionAllowed(string $originalName, string $mime): bool
     {
+        // Reject empty filenames
         if ($originalName === '') {
-            return true;
+            return false;
         }
 
         $extension = strtolower((string) pathinfo($originalName, PATHINFO_EXTENSION));
 
-        if ($extension === '' || strpos($extension, 'php') !== false) {
+        // Reject files without extension
+        if ($extension === '') {
             return false;
         }
 
+        // Check against dangerous extensions list
+        foreach (self::DANGEROUS_EXTENSIONS as $dangerous) {
+            if ($extension === $dangerous || str_contains($extension, $dangerous)) {
+                return false;
+            }
+        }
+
+        // Check for double extensions (e.g., file.php.txt, file.exe.jpg)
+        $allExtensions = [];
+        $filename = $originalName;
+        while (($ext = pathinfo($filename, PATHINFO_EXTENSION)) !== '') {
+            $allExtensions[] = strtolower($ext);
+            $filename = pathinfo($filename, PATHINFO_FILENAME);
+        }
+
+        foreach ($allExtensions as $ext) {
+            foreach (self::DANGEROUS_EXTENSIONS as $dangerous) {
+                if ($ext === $dangerous) {
+                    return false;
+                }
+            }
+        }
+
+        // MIME type must be in our allowed list
         $allowed = self::MIME_EXTENSION_MAP[$mime] ?? null;
 
         if ($allowed === null) {
-            return true;
+            // Unknown MIME type - reject by default for security
+            return false;
         }
 
         return in_array($extension, $allowed, true);

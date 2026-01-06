@@ -1,4 +1,10 @@
 <?php
+/**
+ * @package     NXP Easy Forms
+ * @subpackage  com_nxpeasyforms
+ * @copyright   Copyright (C) 2024-2025 nexusplugins.com. All rights reserved.
+ * @license     GNU General Public License version 2 or later; see LICENSE.txt
+ */
 declare(strict_types=1);
 
 namespace Joomla\Component\Nxpeasyforms\Administrator\Model;
@@ -6,6 +12,7 @@ namespace Joomla\Component\Nxpeasyforms\Administrator\Model;
 use Joomla\CMS\Factory;
 use Joomla\CMS\MVC\Model\ListModel;
 use Joomla\Component\Nxpeasyforms\Administrator\Service\Repository\SubmissionRepository;
+use Joomla\Database\ParameterType;
 use Joomla\Database\QueryInterface;
 use Throwable;
 
@@ -93,23 +100,27 @@ final class SubmissionsModel extends ListModel
 
         $search = $this->getState('filter.search');
         if ($search !== '') {
-            $searchTerm = '%' . str_replace(' ', '%', $search) . '%';
+            $searchTerm = '%' . str_replace(' ', '%', $db->escape($search, true)) . '%';
             $query->where(
                 '('
-                . $db->quoteName('a.submission_uuid') . ' LIKE ' . $db->quote($searchTerm)
-                . ' OR ' . $db->quoteName('f.title') . ' LIKE ' . $db->quote($searchTerm)
+                . $db->quoteName('a.submission_uuid') . ' LIKE :search1'
+                . ' OR ' . $db->quoteName('f.title') . ' LIKE :search2'
                 . ')'
-            );
+            )
+            ->bind(':search1', $searchTerm)
+            ->bind(':search2', $searchTerm);
         }
 
         $status = $this->getState('filter.status', 'all');
         if ($status !== 'all' && $status !== '') {
-            $query->where($db->quoteName('a.status') . ' = ' . $db->quote($status));
+            $query->where($db->quoteName('a.status') . ' = :status')
+                  ->bind(':status', $status);
         }
 
         $formId = (int) $this->getState('filter.form_id', 0);
         if ($formId > 0) {
-            $query->where($db->quoteName('a.form_id') . ' = ' . $db->quote($formId));
+            $query->where($db->quoteName('a.form_id') . ' = :formId')
+                  ->bind(':formId', $formId, ParameterType::INTEGER);
         }
 
         $orderCol = $this->state->get('list.ordering', 'created_at');

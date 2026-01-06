@@ -282,27 +282,43 @@ export class CountryStateHandler {
     }
 
     populateCountrySelect(select, countries, placeholder) {
-        // Clear existing options except placeholder
-        select.innerHTML = `<option value="">${placeholder}</option>`;
+        // Clear existing options safely using DOM API
+        while (select.firstChild) {
+            select.removeChild(select.firstChild);
+        }
+
+        // Add placeholder option safely
+        const placeholderOption = document.createElement('option');
+        placeholderOption.value = '';
+        placeholderOption.textContent = placeholder; // Safe - uses textContent
+        select.appendChild(placeholderOption);
 
         // Add countries
         Object.entries(countries).forEach(([code, name]) => {
             const option = document.createElement('option');
             option.value = code;
-            option.textContent = name;
+            option.textContent = name; // Safe - uses textContent
             select.appendChild(option);
         });
     }
 
     populateStateSelect(select, states, placeholder) {
-        // Clear existing options
-        select.innerHTML = `<option value="">${placeholder}</option>`;
+        // Clear existing options safely using DOM API
+        while (select.firstChild) {
+            select.removeChild(select.firstChild);
+        }
+
+        // Add placeholder option safely
+        const placeholderOption = document.createElement('option');
+        placeholderOption.value = '';
+        placeholderOption.textContent = placeholder; // Safe - uses textContent
+        select.appendChild(placeholderOption);
 
         // Add states
         Object.entries(states).forEach(([code, name]) => {
             const option = document.createElement('option');
             option.value = code;
-            option.textContent = name;
+            option.textContent = name; // Safe - uses textContent
             select.appendChild(option);
         });
 
@@ -319,7 +335,18 @@ export class CountryStateHandler {
         const placeholder =
             select.querySelector('option[value=""]')?.textContent ||
             'Select a state';
-        select.innerHTML = `<option value="">${placeholder}</option>`;
+
+        // Clear existing options safely using DOM API
+        while (select.firstChild) {
+            select.removeChild(select.firstChild);
+        }
+
+        // Add placeholder option safely
+        const placeholderOption = document.createElement('option');
+        placeholderOption.value = '';
+        placeholderOption.textContent = placeholder; // Safe - uses textContent
+        select.appendChild(placeholderOption);
+
         select.value = '';
     }
 
@@ -354,11 +381,28 @@ export class CountryStateHandler {
     ensureSelectMode(element) {
         // If element is currently a text input (from previous country change), convert back to select
         if (element.tagName === 'INPUT' && element.dataset.originalSelectHtml) {
-            const wrapper = document.createElement('div');
-            wrapper.innerHTML = element.dataset.originalSelectHtml;
-            const select = wrapper.firstElementChild || wrapper.firstChild;
-            element.parentNode.replaceChild(select, element);
-            return select;
+            // Parse safely using DOMParser to prevent XSS
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(
+                element.dataset.originalSelectHtml,
+                'text/html'
+            );
+            const parsedSelect = doc.body.firstElementChild;
+
+            if (parsedSelect && parsedSelect.tagName === 'SELECT') {
+                // Clone to avoid XSS from any script elements
+                const safeSelect = parsedSelect.cloneNode(true);
+                // Remove any script elements that might have been injected
+                safeSelect
+                    .querySelectorAll('script')
+                    .forEach((s) => s.remove());
+                // Remove any event handlers that might have been injected
+                safeSelect.removeAttribute('onload');
+                safeSelect.removeAttribute('onerror');
+                safeSelect.removeAttribute('onclick');
+                element.parentNode.replaceChild(safeSelect, element);
+                return safeSelect;
+            }
         }
         return element;
     }

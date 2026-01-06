@@ -1,4 +1,10 @@
 <?php
+/**
+ * @package     NXP Easy Forms
+ * @subpackage  com_nxpeasyforms
+ * @copyright   Copyright (C) 2024-2025 nexusplugins.com. All rights reserved.
+ * @license     GNU General Public License version 2 or later; see LICENSE.txt
+ */
 declare(strict_types=1);
 
 namespace Joomla\Component\Nxpeasyforms\Administrator\Model;
@@ -80,10 +86,9 @@ final class FormsModel extends ListModel
 
         $search = $this->getState('filter.search');
         if ($search !== '') {
-            $searchTerm = '%' . str_replace(' ', '%', $search) . '%';
-            $query->where(
-                $db->quoteName('a.title') . ' LIKE ' . $db->quote($searchTerm)
-            );
+            $searchTerm = '%' . str_replace(' ', '%', $db->escape($search, true)) . '%';
+            $query->where($db->quoteName('a.title') . ' LIKE :search')
+                  ->bind(':search', $searchTerm);
         }
 
         $status = $this->getState('filter.status', 'all');

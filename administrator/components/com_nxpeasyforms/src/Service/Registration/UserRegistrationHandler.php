@@ -1,4 +1,10 @@
 <?php
+/**
+ * @package     NXP Easy Forms
+ * @subpackage  com_nxpeasyforms
+ * @copyright   Copyright (C) 2024-2025 nexusplugins.com. All rights reserved.
+ * @license     GNU General Public License version 2 or later; see LICENSE.txt
+ */
 declare(strict_types=1);
 
 namespace Joomla\Component\Nxpeasyforms\Administrator\Service\Registration;
@@ -202,10 +208,10 @@ final class UserRegistrationHandler
             $this->sendAdminApprovalEmail($user);
         }
 
-        // Auto-login if configured and user is not blocked
-        if (!empty($registrationConfig['auto_login']) && $userData['block'] === 0) {
-            $this->autoLogin($user);
-        }
+        // Note: Auto-login has been disabled for security reasons.
+        // Users should log in through the standard authentication flow.
+        // The auto_login configuration option is preserved for backwards compatibility
+        // but the feature is intentionally disabled to prevent security bypasses.
 
         // Dispatch Joomla event
         $app->triggerEvent('onNxpEasyFormsUserRegistered', [$userId, $data]);
@@ -421,27 +427,23 @@ final class UserRegistrationHandler
     }
 
     /**
-     * Automatically log in the user after registration.
+     * Auto-login functionality has been disabled for security reasons.
+     *
+     * This method previously attempted to log in users with a null password,
+     * which bypasses proper authentication checks. Users should now log in
+     * through the standard Joomla authentication flow after registration.
      *
      * @param User $user User object.
      *
      * @return void
+     * @since 1.0.0
+     * @deprecated 1.0.6 Auto-login disabled for security. Users must log in manually.
      */
     private function autoLogin(User $user): void
     {
-        $app = Factory::getApplication();
-
-        try {
-            $app->login([
-                'username' => $user->username,
-                'password' => null,
-            ], [
-                'remember' => false,
-                'silent' => true,
-            ]);
-        } catch (\Exception $exception) {
-            // Silent failure - user can log in manually
-        }
+        // Intentionally disabled - do not re-enable without proper authentication
+        // Users should log in through the standard authentication flow
+        return;
     }
 
     /**
@@ -449,6 +451,7 @@ final class UserRegistrationHandler
      *
      * @param User $user Newly created user awaiting approval.
      * @return void
+     * @since 1.0.0
      */
     private function sendAdminApprovalEmail(User $user): void
     {
@@ -457,9 +460,8 @@ final class UserRegistrationHandler
         $mailfrom = $app->get('mailfrom');
         $fromname = $app->get('fromname');
 
-        // Get Super Users (group id 8) including child groups
-        $superUserIds = Access::getUsersByGroup(8, true) ?: [];
-        $superUserIds = array_map('intval', $superUserIds);
+        // Find Super Users dynamically by core.admin permission instead of hardcoded group ID
+        $superUserIds = $this->getSuperUserIds();
 
         if (empty($superUserIds)) {
             return;
@@ -469,14 +471,21 @@ final class UserRegistrationHandler
         try {
             $db = $this->db;
             $query = $db->getQuery(true)
-                ->select($db->quoteName(['email']))
+                ->select($db->quoteName('email'))
                 ->from($db->quoteName('#__users'))
-                ->where($db->quoteName('id') . ' IN (' . implode(',', array_fill(0, count($superUserIds), '?')) . ')')
                 ->where($db->quoteName('block') . ' = 0')
                 ->where($db->quoteName('sendEmail') . ' = 1');
 
-            $db->setQuery($query, 0, 0);
-            $db->bindArray($superUserIds);
+            // Use parameterized binding for IN clause
+            $placeholders = [];
+            foreach ($superUserIds as $index => $id) {
+                $paramName = ':uid' . $index;
+                $placeholders[] = $paramName;
+                $query->bind($paramName, $superUserIds[$index], \Joomla\Database\ParameterType::INTEGER);
+            }
+            $query->where($db->quoteName('id') . ' IN (' . implode(',', $placeholders) . ')');
+
+            $db->setQuery($query);
             $emails = array_column($db->loadAssocList() ?: [], 'email');
         } catch (\Throwable $e) {
             return; // do not fail registration due to admin email lookup
@@ -509,6 +518,56 @@ final class UserRegistrationHandler
             $mailer->Send();
         } catch (\Exception $exception) {
             // Swallow errors; approval email is best-effort
+        }
+    }
+
+    /**
+     * Get user IDs of all Super Users (users with core.admin permission).
+     *
+     * This method dynamically finds Super Users by checking which groups have
+     * the core.admin permission, rather than hardcoding a group ID.
+     *
+     * @return array<int> Array of user IDs who are Super Users.
+     * @since 1.0.6
+     */
+    private function getSuperUserIds(): array
+    {
+        try {
+            // Get all user groups
+            $db = $this->db;
+            $query = $db->getQuery(true)
+                ->select($db->quoteName('id'))
+                ->from($db->quoteName('#__usergroups'));
+
+            $db->setQuery($query);
+            $groupIds = $db->loadColumn();
+
+            if (empty($groupIds)) {
+                return [];
+            }
+
+            // Find groups that have core.admin permission
+            $superUserGroupIds = [];
+            foreach ($groupIds as $groupId) {
+                if (Access::checkGroup((int) $groupId, 'core.admin')) {
+                    $superUserGroupIds[] = (int) $groupId;
+                }
+            }
+
+            if (empty($superUserGroupIds)) {
+                return [];
+            }
+
+            // Get all users in those groups (including child groups)
+            $superUserIds = [];
+            foreach ($superUserGroupIds as $groupId) {
+                $usersInGroup = Access::getUsersByGroup($groupId, true) ?: [];
+                $superUserIds = array_merge($superUserIds, array_map('intval', $usersInGroup));
+            }
+
+            return array_values(array_unique($superUserIds));
+        } catch (\Throwable $e) {
+            return [];
         }
     }
 }

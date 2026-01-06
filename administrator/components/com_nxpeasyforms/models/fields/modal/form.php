@@ -1,8 +1,12 @@
 <?php
+
 /**
- * @package     Joomla.Administrator
+ * @package     NXP Easy Forms
  * @subpackage  com_nxpeasyforms
+ * @copyright   Copyright (C) 2024-2025 nexusplugins.com. All rights reserved.
+ * @license     GNU General Public License version 2 or later; see LICENSE.txt
  */
+
 
 declare(strict_types=1);
 

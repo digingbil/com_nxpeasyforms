@@ -4,6 +4,38 @@ This repository contains the Joomla 5 port of the NXP Easy Forms WordPress plugi
 
 ## Recent Changes
 
+### Version 1.0.6 - Security & Stability Release
+
+#### Security Fixes
+
+-   **Hardened encryption key handling**: The `Secrets` helper now throws a `RuntimeException` if Joomla's application secret is not configured, preventing fallback to weak default keys that could compromise encrypted data (CAPTCHA secrets, API credentials).
+-   **CSS injection prevention**: Added `sanitizeCustomCss()` method to `FormRenderer` that strips dangerous patterns (`javascript:`, `expression()`, `url()`, `@import`, `behavior:`, `binding:`, `-moz-binding`) from user-provided custom CSS to prevent XSS attacks.
+-   **Upload directory protection**: `FileUploader` now automatically creates `.htaccess` (Apache), `web.config` (IIS), and `index.html` files in upload directories to prevent direct script execution and directory listing.
+-   **SQL injection protection**: Fixed potential SQL injection in `SubmissionRepository::findByIds()` by using parameterized binding with `ParameterType::INTEGER` for all ID values in the IN clause.
+-   **API CSRF protection**: Added origin/referer validation in `SubmissionController` to prevent cross-site request forgery attacks on browser-initiated API submissions. API clients (identified by JSON Accept/Content-Type headers) bypass origin checks.
+-   **Disabled insecure auto-login**: Removed the auto-login feature from `UserRegistrationHandler` that could authenticate users with null passwords, which posed a security risk if password fields were misconfigured.
+-   **Enhanced file extension validation**: `FileValidator` now checks for dangerous double extensions (e.g., `file.php.jpg`) and maintains a blocklist of dangerous extensions and MIME types that are never allowed regardless of form configuration.
+-   **IP header spoofing protection**: `SubmissionController::detectIp()` now only trusts `X-Forwarded-For`, `X-Real-IP`, and `Client-IP` headers when the request comes from a configured trusted proxy (component parameter `trusted_proxies`). Direct connections always use `REMOTE_ADDR`.
+-   **Dynamic Super User detection**: Replaced hardcoded Super Users group ID (8) with dynamic detection using `Access::checkGroup()` with `core.admin` permission, ensuring compatibility across Joomla installations with custom group configurations.
+-   **API error response hardening**: `SubmissionController` now returns a generic error message (`COM_NXPEASYFORMS_ERROR_SUBMISSION_FAILED`) instead of raw exception messages, preventing internal details (file paths, database errors, stack traces) from leaking to API clients. Full error details are still logged server-side for debugging.
+
+#### Functionality Fixes
+
+-   **Country/State field rendering**: Added proper rendering support for `country` and `state` field types in `FormRenderer`, including new `renderCountry()` and `renderState()` methods that generate accessible select elements with proper ARIA attributes.
+-   **Country/State API endpoint**: Created `UtilityController` with endpoints for fetching country lists (`/v1/nxpeasyforms/utility/countries`) and state/region lists (`/v1/nxpeasyforms/utility/states/:country`) from bundled JSON data files.
+-   **Frontend country/state handler**: Added `CountryStateHandler` class to `frontend.joomla.js` that automatically populates country dropdowns on page load and dynamically fetches states when a country is selected, with client-side caching for performance.
+-   **API token validation bypass**: Fixed "Call to undefined method Joomla\CMS\Router\ApiRouter::build()" error by always skipping CSRF token validation in API context. The API runs in a separate Joomla application with its own session, so site-generated tokens are invalid. CSRF protection is handled by origin/referer validation instead.
+-   **Webhook dispatcher logging**: Added proper error logging to `GenericWebhookDispatcher`, `SlackDispatcher`, and `TeamsDispatcher`. Failed webhook deliveries now log warnings with the error message, endpoint (where applicable), and form ID instead of silently swallowing exceptions.
+-   **Fixed MIME type security logging**: Corrected logic order in `FileValidator` that prevented the dangerous MIME type warning from ever firing. The check for forbidden types now runs before they are removed from the allowed list, so plugin attempts to enable dangerous types are properly logged.
+
+#### Language & Localisation Fixes
+
+-   **Runtime translation of stored constants**: Fixed untranslated language constants (`COM_NXPEASYFORMS_ERROR_VALIDATION`, `COM_NXPEASYFORMS_MESSAGE_SUBMISSION_SUCCESS`) appearing in API responses. The issue occurred because `FormDefaults` called `Text::_()` at form creation time before language files were loaded, storing raw constants in the database.
+    -   Changed `FormDefaults::builderConfig()` to use empty strings for `success_message` and `error_message` defaults.
+    -   Updated `SubmissionService` to detect stored language constants (values starting with `COM_NXPEASYFORMS_`) and translate them at runtime.
+    -   Added language file loading to `domain-services.php` and `SubmissionController` constructor to ensure translations are available in API context.
+-   **Consolidated language constants**: Aligned language constant names between root language file (`/language/en-GB/`) and component language file (`/components/com_nxpeasyforms/language/en-GB/`) to prevent translation mismatches.
+
 ### Administrator AJAX Refactor
 
 -   Replaced the monolithic administrator `AjaxController` with a lightweight delegator that bootstraps domain services on demand, wraps the request in `AjaxRequestContext`, and forwards execution to a dedicated `AjaxRouter`. The controller now emits JSON manually so both Joomla runtime and test environments get consistent payloads and status codes even when `JsonResponse` is unavailable.

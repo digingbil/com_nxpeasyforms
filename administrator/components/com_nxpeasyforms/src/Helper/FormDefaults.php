@@ -1,4 +1,10 @@
 <?php
+/**
+ * @package     NXP Easy Forms
+ * @subpackage  com_nxpeasyforms
+ * @copyright   Copyright (C) 2024-2025 nexusplugins.com. All rights reserved.
+ * @license     GNU General Public License version 2 or later; see LICENSE.txt
+ */
 declare(strict_types=1);
 
 namespace Joomla\Component\Nxpeasyforms\Administrator\Helper;
@@ -44,8 +50,8 @@ final class FormDefaults
                     'max_requests' => 3,
                     'per_seconds' => 10,
                 ],
-                'success_message' => Text::_('COM_NXPEASYFORMS_MESSAGE_SUBMISSION_SUCCESS'),
-                'error_message' => Text::_('COM_NXPEASYFORMS_ERROR_VALIDATION'),
+                'success_message' => '',
+                'error_message' => '',
                 'ip_storage' => 'anonymous',
                 'captcha' => CaptchaOptions::defaults(),
                 'email_delivery' => [

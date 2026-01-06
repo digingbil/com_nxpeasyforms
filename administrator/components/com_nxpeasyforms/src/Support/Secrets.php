@@ -1,4 +1,10 @@
 <?php
+/**
+ * @package     NXP Easy Forms
+ * @subpackage  com_nxpeasyforms
+ * @copyright   Copyright (C) 2024-2025 nexusplugins.com. All rights reserved.
+ * @license     GNU General Public License version 2 or later; see LICENSE.txt
+ */
 declare(strict_types=1);
 
 namespace Joomla\Component\Nxpeasyforms\Administrator\Support;
@@ -92,6 +98,7 @@ final class Secrets
      *
      * @return string The SHA-256 hash of the application secret used as encryption key.
      * @since 1.0.0
+     * @throws \RuntimeException|\Exception If the application secret is not configured.
      */
     private static function key(): string
     {
@@ -99,7 +106,10 @@ final class Secrets
         $secret = (string) $app->get('secret');
 
         if ($secret === '') {
-            $secret = 'nxp_easy_forms';
+            throw new \RuntimeException(
+                'Joomla application secret must be configured. '
+                . 'Please set a secret key in Global Configuration.'
+            );
         }
 
         return hash('sha256', $secret, true);

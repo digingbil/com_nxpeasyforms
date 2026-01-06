@@ -1,11 +1,17 @@
 <?php
+/**
+ * @package     NXP Easy Forms
+ * @subpackage  com_nxpeasyforms
+ * @copyright   Copyright (C) 2024-2025 nexusplugins.com. All rights reserved.
+ * @license     GNU General Public License version 2 or later; see LICENSE.txt
+ */
 declare(strict_types=1);
 
 namespace Joomla\Component\Nxpeasyforms\Administrator\Service\Integrations;
 
+use Joomla\CMS\Factory;
 use Joomla\Component\Nxpeasyforms\Administrator\Service\Rendering\MessageFormatter;
 use Joomla\Component\Nxpeasyforms\Administrator\Service\Rendering\TemplateRenderer;
-
 
 use function is_string;
 use function trim;
@@ -100,7 +106,14 @@ final class TeamsDispatcher implements IntegrationDispatcherInterface
         try {
             $this->client->sendJson($endpoint, $body, 'POST', [], 10);
         } catch (\Throwable $exception) {
-            // TODO logging
+            try {
+                Factory::getApplication()->getLogger()->warning(
+                    'NXP Easy Forms Teams dispatch failed: ' . $exception->getMessage(),
+                    ['form_id' => $form['id'] ?? null]
+                );
+            } catch (\Throwable $e) {
+                // Ignore logging errors
+            }
         }
     }
 }

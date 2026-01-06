@@ -1,4 +1,10 @@
 <?php
+/**
+ * @package     NXP Easy Forms
+ * @subpackage  com_nxpeasyforms
+ * @copyright   Copyright (C) 2024-2025 nexusplugins.com. All rights reserved.
+ * @license     GNU General Public License version 2 or later; see LICENSE.txt
+ */
 declare(strict_types=1);
 
 use Joomla\CMS\Factory;
@@ -48,6 +54,14 @@ use Joomla\Component\Nxpeasyforms\Administrator\Service\Validation\FileValidator
 // phpcs:enable PSR1.Files.SideEffects
 
 return static function ($container): void {
+    // Ensure language files are loaded for Text::_() calls in services
+    try {
+        $language = Factory::getApplication()->getLanguage();
+        $language->load('com_nxpeasyforms', JPATH_SITE);
+    } catch (\Throwable $e) {
+        // Ignore errors during language loading
+    }
+
     $container->share(
         PermissionGuard::class,
         static function (): PermissionGuard {

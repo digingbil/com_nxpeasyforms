@@ -1,4 +1,10 @@
 <?php
+/**
+ * @package     NXP Easy Forms
+ * @subpackage  com_nxpeasyforms
+ * @copyright   Copyright (C) 2024-2025 nexusplugins.com. All rights reserved.
+ * @license     GNU General Public License version 2 or later; see LICENSE.txt
+ */
 declare(strict_types=1);
 
 namespace Joomla\Component\Nxpeasyforms\Administrator\Service;
@@ -232,8 +238,15 @@ final class SubmissionService
         $sanitised = $this->filterSanitisedSubmission($sanitised, $formId, $form, $requestData, $context);
 
         if (!empty($errors)) {
+            // Use custom error message if set, otherwise use translated default
+            $errorMsg = trim($options['error_message'] ?? '');
+            if ($errorMsg === '' || str_starts_with($errorMsg, 'COM_NXPEASYFORMS_')) {
+                // Empty or looks like an untranslated language constant - translate it
+                $errorMsg = Text::_('COM_NXPEASYFORMS_ERROR_VALIDATION');
+            }
+
             throw new SubmissionException(
-                $options['error_message'] ?? Text::_('COM_NXPEASYFORMS_ERROR_VALIDATION'),
+                $errorMsg,
                 422,
                 [
                     'fields' => $errors,
@@ -333,9 +346,15 @@ final class SubmissionService
     $this->dispatchIntegrations($options, $form, $sanitisedForNotify, $context, $fieldMetaForNotify);
 
         // Use registration success message if user was registered
-        $successMessage = $registrationResult !== null && $registrationResult['success']
-            ? $registrationResult['message']
-            : ($options['success_message'] ?? Text::_('COM_NXPEASYFORMS_MESSAGE_SUBMISSION_SUCCESS'));
+        if ($registrationResult !== null && $registrationResult['success']) {
+            $successMessage = $registrationResult['message'];
+        } else {
+            $successMessage = trim($options['success_message'] ?? '');
+            if ($successMessage === '' || str_starts_with($successMessage, 'COM_NXPEASYFORMS_')) {
+                // Empty or looks like an untranslated language constant - translate it
+                $successMessage = Text::_('COM_NXPEASYFORMS_MESSAGE_SUBMISSION_SUCCESS');
+            }
+        }
 
         $result = [
             'success' => true,

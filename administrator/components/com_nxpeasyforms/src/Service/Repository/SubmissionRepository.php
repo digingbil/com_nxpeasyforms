@@ -1,4 +1,10 @@
 <?php
+/**
+ * @package     NXP Easy Forms
+ * @subpackage  com_nxpeasyforms
+ * @copyright   Copyright (C) 2024-2025 nexusplugins.com. All rights reserved.
+ * @license     GNU General Public License version 2 or later; see LICENSE.txt
+ */
 declare(strict_types=1);
 
 namespace Joomla\Component\Nxpeasyforms\Administrator\Service\Repository;
@@ -243,8 +249,6 @@ class SubmissionRepository
             return [];
         }
 
-        $idList = implode(',', $ids);
-
         $query = $this->db->getQuery(true)
             ->select([
                 $this->db->quoteName('a.id'),
@@ -263,8 +267,16 @@ class SubmissionRepository
                 $this->db->quoteName('#__nxpeasyforms_forms', 'f'),
                 $this->db->quoteName('f.id') . ' = ' . $this->db->quoteName('a.form_id')
             )
-            ->where($this->db->quoteName('a.id') . ' IN (' . $idList . ')')
             ->order($this->db->quoteName('a.created_at') . ' DESC');
+
+        // Use parameterized binding for IN clause
+        $placeholders = [];
+        foreach ($ids as $index => $id) {
+            $paramName = ':id' . $index;
+            $placeholders[] = $paramName;
+            $query->bind($paramName, $ids[$index], ParameterType::INTEGER);
+        }
+        $query->where($this->db->quoteName('a.id') . ' IN (' . implode(',', $placeholders) . ')');
 
         $rows = $this->db->setQuery($query)->loadAssocList() ?: [];
 
