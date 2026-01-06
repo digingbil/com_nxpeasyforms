@@ -89,7 +89,7 @@ final class UtilityController extends ApiController
      */
     private function loadCountries(): array
     {
-        $path = JPATH_ROOT . '/media/com_nxpeasyforms/src/admin/data/countries.json';
+        $path = JPATH_ROOT . '/media/com_nxpeasyforms/assets/data/countries.json';
 
         if (!file_exists($path)) {
             return [];
@@ -110,7 +110,7 @@ final class UtilityController extends ApiController
      */
     private function loadStatesForCountry(string $countryCode): array
     {
-        $path = JPATH_ROOT . '/media/com_nxpeasyforms/src/admin/data/states.json';
+        $path = JPATH_ROOT . '/media/com_nxpeasyforms/assets/data/states.json';
 
         if (!file_exists($path)) {
             return [];
