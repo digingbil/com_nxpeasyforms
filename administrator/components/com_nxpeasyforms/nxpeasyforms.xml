@@ -6,7 +6,7 @@
     <author>nexusplugins.com</author>
     <authorUrl>https://nexusplugins.com</authorUrl>
     <license>GNU General Public License version 2 or later; see LICENSE.txt</license>
-    <version>1.0.7</version>
+    <version>1.0.8</version>
     <description>COM_NXPEASYFORMS_XML_DESCRIPTION</description>
 
     <namespace path="src">Joomla\Component\Nxpeasyforms</namespace>
