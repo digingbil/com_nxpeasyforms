@@ -1,10 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <extension type="component" method="upgrade" version="5.0">
     <name>COM_NXPEASYFORMS</name>
-    <title>NXP Easy Forms</title>
     <creationDate>2025-09-22</creationDate>
     <author>nexusplugins.com</author>
+    <authorEmail>support@nexusplugins.com</authorEmail>
     <authorUrl>https://nexusplugins.com</authorUrl>
+    <copyright>Copyright (C) 2024-2025 nexusplugins.com. All rights reserved.</copyright>
     <license>GNU General Public License version 2 or later; see LICENSE.txt</license>
     <version>1.0.8</version>
     <description>COM_NXPEASYFORMS_XML_DESCRIPTION</description>

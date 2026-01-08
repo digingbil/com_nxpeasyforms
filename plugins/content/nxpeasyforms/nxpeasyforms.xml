@@ -2,6 +2,10 @@
 <extension type="plugin" group="content" method="upgrade" version="5.0">
     <name>plg_content_nxpeasyforms</name>
     <author>nexusplugins.com</author>
+    <authorEmail>support@nexusplugins.com</authorEmail>
+    <authorUrl>https://nexusplugins.com</authorUrl>
+    <copyright>Copyright (C) 2024-2025 nexusplugins.com. All rights reserved.</copyright>
+    <license>GNU General Public License version 2 or later; see LICENSE.txt</license>
     <creationDate>2025-10-24</creationDate>
     <version>1.0.2</version>
     <description>PLG_CONTENT_NXPEASYFORMS_DESC</description>

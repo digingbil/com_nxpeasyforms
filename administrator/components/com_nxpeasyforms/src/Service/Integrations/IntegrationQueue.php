@@ -7,36 +7,11 @@
  */
 declare(strict_types=1);
 
-namespace Psr\SimpleCache;
-
-if (!interface_exists(CacheInterface::class)) {
-    interface CacheInterface
-    {
-        public function get($key, $default = null);
-
-        public function set($key, $value, $ttl = null): bool;
-
-        public function delete($key): bool;
-
-        public function clear(): bool;
-
-        public function getMultiple($keys, $default = null): iterable;
-
-        public function setMultiple($values, $ttl = null): bool;
-
-        public function deleteMultiple($keys): bool;
-
-        public function has($key): bool;
-    }
-}
-
-if (!interface_exists(InvalidArgumentException::class)) {
-    interface InvalidArgumentException extends \Throwable
-    {
-    }
-}
-
 namespace Joomla\Component\Nxpeasyforms\Administrator\Service\Integrations;
+
+// phpcs:disable PSR1.Files.SideEffects
+\defined('_JEXEC') or die;
+// phpcs:enable PSR1.Files.SideEffects
 
 use Joomla\Component\Nxpeasyforms\Administrator\Service\Cache\SimpleFileCache;
 use Psr\SimpleCache\CacheInterface;
@@ -48,10 +23,6 @@ use function array_values;
 use function defined;
 use function in_array;
 use function sys_get_temp_dir;
-
-// phpcs:disable PSR1.Files.SideEffects
-\defined('_JEXEC') or die;
-// phpcs:enable PSR1.Files.SideEffects
 
 
 final class IntegrationQueue

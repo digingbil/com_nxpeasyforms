@@ -9,6 +9,10 @@ declare(strict_types=1);
 
 namespace Joomla\Component\Nxpeasyforms\Administrator\Model;
 
+// phpcs:disable PSR1.Files.SideEffects
+\defined('_JEXEC') or die;
+// phpcs:enable PSR1.Files.SideEffects
+
 use Joomla\CMS\MVC\Model\AdminModel;
 use Joomla\CMS\Table\Table;
 use Joomla\Component\Nxpeasyforms\Administrator\Table\FormTable;

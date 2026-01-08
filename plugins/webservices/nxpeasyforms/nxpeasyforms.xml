@@ -2,6 +2,10 @@
 <extension type="plugin" group="webservices" method="upgrade" version="5.0">
     <name>plg_webservices_nxpeasyforms</name>
     <author>nexusplugins.com</author>
+    <authorEmail>support@nexusplugins.com</authorEmail>
+    <authorUrl>https://nexusplugins.com</authorUrl>
+    <copyright>Copyright (C) 2024-2025 nexusplugins.com. All rights reserved.</copyright>
+    <license>GNU General Public License version 2 or later; see LICENSE.txt</license>
     <creationDate>2025-10-26</creationDate>
     <version>1.0.0</version>
     <description>PLG_WEBSERVICES_NXPEASYFORMS_DESC</description>

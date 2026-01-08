@@ -7,42 +7,11 @@
  */
 declare(strict_types=1);
 
-namespace Psr\SimpleCache;
-
-if (!interface_exists(CacheInterface::class)) {
-    /**
-     * Minimal PSR-16 CacheInterface definition used when the psr/simple-cache package is unavailable.
-     */
-    interface CacheInterface
-    {
-        public function get($key, $default = null);
-
-        public function set($key, $value, $ttl = null): bool;
-
-        public function delete($key): bool;
-
-        public function clear(): bool;
-
-        public function getMultiple($keys, $default = null): iterable;
-
-        public function setMultiple($values, $ttl = null): bool;
-
-        public function deleteMultiple($keys): bool;
-
-        public function has($key): bool;
-    }
-}
-
-if (!interface_exists(InvalidArgumentException::class)) {
-    /**
-     * Minimal PSR-16 InvalidArgumentException definition used when psr/simple-cache is unavailable.
-     */
-    interface InvalidArgumentException extends \Throwable
-    {
-    }
-}
-
 namespace Joomla\Component\Nxpeasyforms\Administrator\Service\Security;
+
+// phpcs:disable PSR1.Files.SideEffects
+\defined('_JEXEC') or die;
+// phpcs:enable PSR1.Files.SideEffects
 
 use Joomla\CMS\Language\Text;
 use Joomla\Component\Nxpeasyforms\Administrator\Service\Cache\SimpleFileCache;
@@ -58,10 +27,6 @@ use function is_array;
 use function md5;
 use function sys_get_temp_dir;
 use function time;
-
-// phpcs:disable PSR1.Files.SideEffects
-\defined('_JEXEC') or die;
-// phpcs:enable PSR1.Files.SideEffects
 
 /**
  * PSR-16 backed rate limiter implementation for throttling form submissions.

@@ -8,10 +8,10 @@
       "css/admin.css"
     ]
   },
-  "src/frontend/form-client.js": {
-    "file": "js/frontend.js",
+  "src/frontend/form-client.joomla.js": {
+    "file": "js/frontend.joomla.js",
     "name": "frontend",
-    "src": "src/frontend/form-client.js",
+    "src": "src/frontend/form-client.joomla.js",
     "isEntry": true
   }
 }

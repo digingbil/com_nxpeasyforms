@@ -9,6 +9,10 @@ declare(strict_types=1);
 
 namespace Joomla\Component\Nxpeasyforms\Administrator\Support;
 
+// phpcs:disable PSR1.Files.SideEffects
+\defined('_JEXEC') or die;
+// phpcs:enable PSR1.Files.SideEffects
+
 use function array_key_exists;
 use function base64_decode;
 use function in_array;

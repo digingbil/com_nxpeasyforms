@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace Joomla\Component\Nxpeasyforms\Administrator\Service\Integrations;
 
+use Joomla\CMS\Factory;
 use Joomla\CMS\Uri\Uri;
 use Joomla\Component\Nxpeasyforms\Administrator\Service\Rendering\TemplateRenderer;
 use Joomla\Component\Nxpeasyforms\Administrator\Support\Sanitizer;
@@ -130,8 +131,9 @@ final class HubspotDispatcher implements IntegrationDispatcherInterface
             'pageName' => isset($form['title']) ? (string) $form['title'] : '',
         ];
 
-        if (isset($_COOKIE['hubspotutk'])) {
-            $hubspotContext['hutk'] = Sanitizer::cleanText((string) $_COOKIE['hubspotutk']);
+        $hubspotUtk = Factory::getApplication()->getInput()->cookie->get('hubspotutk', '', 'string');
+        if ($hubspotUtk !== '') {
+            $hubspotContext['hutk'] = Sanitizer::cleanText($hubspotUtk);
         }
 
         $body = [

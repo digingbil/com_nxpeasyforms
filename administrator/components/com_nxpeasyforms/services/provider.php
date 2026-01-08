@@ -11,6 +11,14 @@ declare(strict_types=1);
 \defined('_JEXEC') or die;
 // phpcs:enable PSR1.Files.SideEffects
 
+/*
+ * PSR-16 SimpleCache polyfill - register namespace for autoloading if psr/simple-cache is not installed.
+ * This allows the interfaces to be autoloaded when first referenced.
+ */
+if (!interface_exists('Psr\SimpleCache\CacheInterface', false)) {
+    \JLoader::registerNamespace('Psr\SimpleCache', dirname(__DIR__) . '/src/Polyfill/PsrSimpleCache', false, false, 'psr4');
+}
+
 use Joomla\CMS\Component\Router\RouterFactoryInterface;
 use Joomla\CMS\Dispatcher\ComponentDispatcherFactoryInterface;
 use Joomla\DI\Container;
@@ -68,7 +76,7 @@ return new class () implements ServiceProviderInterface {
 
                 // Pick the correct component based on current application client
                 $app = JFactoryAlias::getApplication();
-                $isSite = method_exists($app, 'isClient') ? $app->isClient('site') : ($app->isSite() ?? false);
+                $isSite = $app->isClient('site');
 
                 $component = $isSite
                     ? new SiteComponent($container->get(ComponentDispatcherFactoryInterface::class))

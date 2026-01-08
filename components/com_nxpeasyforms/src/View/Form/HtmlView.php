@@ -76,65 +76,58 @@ final class HtmlView extends BaseHtmlView
     private function prepareAssets(): void
     {
         $document = $this->document ?? Factory::getDocument();
+        $assetsLoaded = false;
 
         // Try WebAssetManager first (Joomla 4+)
         if (method_exists($document, 'getWebAssetManager')) {
             $webAssetManager = $document->getWebAssetManager();
 
             if ($webAssetManager !== null) {
-                $registry = method_exists($webAssetManager, 'getRegistry') ? $webAssetManager->getRegistry() : null;
-
-                if ($registry !== null && method_exists($registry, 'addExtensionRegistryFile')) {
-                    $registry->addExtensionRegistryFile('com_nxpeasyforms');
-                }
-
                 try {
-                    $webAssetManager->useStyle('com_nxpeasyforms.frontend.styles');
-                } catch (\InvalidArgumentException $exception) {
-                    if (method_exists($webAssetManager, 'registerAndUseStyle')) {
-                        $webAssetManager->registerAndUseStyle(
-                            'com_nxpeasyforms.frontend.styles',
-                            'media/com_nxpeasyforms/css/frontend.css',
-                            ['version' => '1.0.0']
-                        );
-                    }
-                }
-
-                try {
-                    $webAssetManager->useScript('com_nxpeasyforms.frontend.scripts');
-                } catch (\InvalidArgumentException $exception) {
-                    if (method_exists($webAssetManager, 'registerAndUseScript')) {
-                        $webAssetManager->registerAndUseScript(
-                            'com_nxpeasyforms.frontend.scripts',
-                            'media/com_nxpeasyforms/js/frontend.joomla.js',
-                            ['version' => '1.0.0'],
-                            ['defer' => true]
-                        );
-                    }
+                    // registerAndUseStyle/Script are magic methods via __call()
+                    // Use same format as nxpeasycart: 'media/...' with 'relative' => true
+                    $webAssetManager->registerAndUseStyle(
+                        'com_nxpeasyforms.frontend.styles',
+                        'media/com_nxpeasyforms/css/frontend.css',
+                        ['version' => 'auto', 'relative' => true]
+                    );
+                    $webAssetManager->registerAndUseScript(
+                        'com_nxpeasyforms.frontend.scripts',
+                        'media/com_nxpeasyforms/js/frontend.joomla.js',
+                        ['version' => 'auto', 'relative' => true],
+                        ['defer' => true],
+                        ['core']
+                    );
+                    $assetsLoaded = true;
+                } catch (\Throwable $exception) {
+                    // WAM failed, will fall back
                 }
             }
         }
 
-        // Fallback to direct document methods
-        $mediaRoot = rtrim(Uri::root(), '/') . '/media/com_nxpeasyforms/';
-        $cssUri = $mediaRoot . 'css/frontend.css';
-        $jsUri = $mediaRoot . 'js/frontend.joomla.js';
+        // Fallback to direct document methods only if WebAssetManager failed
+        if (!$assetsLoaded) {
+            $mediaRoot = rtrim(Uri::root(), '/') . '/media/com_nxpeasyforms/';
+            $cssUri = $mediaRoot . 'css/frontend.css';
+            $jsUri = $mediaRoot . 'js/frontend.joomla.js';
 
-        $cssPath = JPATH_ROOT . '/media/com_nxpeasyforms/css/frontend.css';
-        $jsPath = JPATH_ROOT . '/media/com_nxpeasyforms/js/frontend.joomla.js';
+            $cssPath = JPATH_ROOT . '/media/com_nxpeasyforms/css/frontend.css';
+            $jsPath = JPATH_ROOT . '/media/com_nxpeasyforms/js/frontend.joomla.js';
 
-        if (method_exists($document, 'addStyleSheet')) {
-            $cssVersion = is_file($cssPath) ? (string) filemtime($cssPath) : null;
-            $href = $cssUri . ($cssVersion ? ('?v=' . $cssVersion) : '');
-            $document->addStyleSheet($href);
+            if (method_exists($document, 'addStyleSheet')) {
+                $cssVersion = is_file($cssPath) ? (string) filemtime($cssPath) : null;
+                $href = $cssUri . ($cssVersion ? ('?v=' . $cssVersion) : '');
+                $document->addStyleSheet($href);
+            }
+
+            if (method_exists($document, 'addScript')) {
+                $jsVersion = is_file($jsPath) ? (string) filemtime($jsPath) : null;
+                $src = $jsUri . ($jsVersion ? ('?v=' . $jsVersion) : '');
+                $document->addScript($src, [], ['defer' => true]);
+            }
         }
 
-        if (method_exists($document, 'addScript')) {
-            $jsVersion = is_file($jsPath) ? (string) filemtime($jsPath) : null;
-            $src = $jsUri . ($jsVersion ? ('?v=' . $jsVersion) : '');
-            $document->addScript($src, [], ['defer' => true]);
-        }
-
+        // Script options are always needed regardless of loading method
         if (method_exists($document, 'addScriptOptions')) {
             $document->addScriptOptions('com_nxpeasyforms.frontend', [
                 'restUrl' => Uri::root(true) . '/api/index.php/v1/nxpeasyforms',
