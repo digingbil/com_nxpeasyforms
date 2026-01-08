@@ -85,7 +85,7 @@ final class CategoryProvider
 
             $formatted[] = [
                 'id' => $id,
-                'title' => $prefix . (string) ($row['title'] ?? Text::_('JGLOBAL_CATEGORY_UNKNOWN')),
+                'title' => $prefix . (string) ($row['title'] ?? Text::_('COM_NXPEASYFORMS_CATEGORY_UNKNOWN')),
             ];
         }
 

@@ -92,7 +92,7 @@ final class EmailSettingsAjaxHandler
         $payload = $context->getInput()->json->getArray();
 
         if (!is_array($payload)) {
-            throw new RuntimeException(Text::_('JERROR_INPUT_DATA_INVALID'), 400);
+            throw new RuntimeException(Text::_('COM_NXPEASYFORMS_ERROR_INPUT_DATA_INVALID'), 400);
         }
 
         $this->repository->saveSettings($payload);

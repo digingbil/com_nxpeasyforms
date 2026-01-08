@@ -26,6 +26,7 @@
 
     <!-- Site files (frontend) -->
     <files folder="site">
+        <folder>language</folder>
         <folder>services</folder>
         <folder>src</folder>
         <folder>tmpl</folder>
@@ -73,9 +74,9 @@
             <filename>config.xml</filename>
             <filename>index.html</filename>
         </files>
-
-        <config>config.xml</config>
     </administration>
+
+    <config>config.xml</config>
 
     <updateservers>
         <server type="extension" priority="1" name="NXP Easy Forms updates">https://updates.nexusplugins.com/joomla/components/com_nxpeasyforms/updates.xml</server>
