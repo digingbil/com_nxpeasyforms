@@ -26,7 +26,6 @@
 
     <!-- Site files (frontend) -->
     <files folder="site">
-        <folder>language</folder>
         <folder>services</folder>
         <folder>src</folder>
         <folder>tmpl</folder>
