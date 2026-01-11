@@ -1051,7 +1051,7 @@ provide("formSettingsContext", {
 </script>
 
 <style>
-.nxp-modal { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; z-index: 1000; }
+.nxp-modal { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; z-index: 3000; }
 .nxp-modal--visible { display: flex; align-items: center; justify-content: center; padding: 24px 20px; overflow-y: auto; }
 .nxp-modal__overlay { position: absolute; inset: 0; background: rgba(0, 0, 0, 0.35); }
 .nxp-modal__content { position: relative; background: var(--nxp-panel-bg); border-radius: 12px; width: 760px; max-width: calc(100vw - 20px); max-height: calc(100vh - 48px); display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 24px 48px var(--nxp-drawer-shadow); }
