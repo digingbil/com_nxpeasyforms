@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- New Joomla site module `mod_nxpeasyforms` for rendering a selected active NXP Easy Form in any module position, built with the service-based module architecture (`services/provider.php`) and no legacy `mod_nxpeasyforms.php` entry file.
+- Release packaging now includes `mod_nxpeasyforms` in `pkg_nxpeasyforms` ZIP builds.
+
+### Fixed
+
+- Form builder toolbar now shows `Close` while editing an existing form and keeps `Cancel` only for unsaved new forms.
+- Registered plugin language files in manifests for `plg_content_nxpeasyforms` and `plg_webservices_nxpeasyforms` so description constants load reliably during installation and extension management.
+
 ## [1.0.9] - 2025-01-09
 
 ### Security

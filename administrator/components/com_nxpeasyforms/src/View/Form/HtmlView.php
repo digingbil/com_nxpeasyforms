@@ -188,6 +188,12 @@ final class HtmlView extends BaseHtmlView
             'pencil-2'
         );
 
-        ToolbarHelper::cancel('form.cancel');
+        if ($this->item && isset($this->item->id) && (int) $this->item->id > 0) {
+            ToolbarHelper::cancel('form.cancel', 'JTOOLBAR_CLOSE');
+
+            return;
+        }
+
+        ToolbarHelper::cancel('form.cancel', 'JTOOLBAR_CANCEL');
     }
 }

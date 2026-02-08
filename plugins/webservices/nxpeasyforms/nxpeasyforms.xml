@@ -15,6 +15,10 @@
         <folder>src</folder>
         <filename>index.html</filename>
     </files>
+    <languages>
+        <language tag="en-GB">language/en-GB/en-GB.plg_webservices_nxpeasyforms.ini</language>
+        <language tag="en-GB">language/en-GB/en-GB.plg_webservices_nxpeasyforms.sys.ini</language>
+    </languages>
     <config>
         <fields name="params"/>
     </config>

@@ -15,4 +15,8 @@
         <folder>src</folder>
         <filename>index.html</filename>
     </files>
+    <languages>
+        <language tag="en-GB">language/en-GB/en-GB.plg_content_nxpeasyforms.ini</language>
+        <language tag="en-GB">language/en-GB/en-GB.plg_content_nxpeasyforms.sys.ini</language>
+    </languages>
 </extension>
