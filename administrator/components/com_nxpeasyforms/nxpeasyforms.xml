@@ -76,8 +76,4 @@
     </administration>
 
     <config>config.xml</config>
-
-    <updateservers>
-        <server type="extension" priority="1" name="NXP Easy Forms updates">https://updates.nexusplugins.com/joomla/components/com_nxpeasyforms/updates.xml</server>
-    </updateservers>
 </extension>
