@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Form builder toolbar now shows `Close` while editing an existing form and keeps `Cancel` only for unsaved new forms.
 - Registered plugin language files in manifests for `plg_content_nxpeasyforms` and `plg_webservices_nxpeasyforms` so description constants load reliably during installation and extension management.
+- Microsoft Teams is now fully disabled in form integrations: the builder no longer exposes Teams settings, backend integration dispatch no longer registers a Teams handler, and legacy `integrations.teams` payload keys are removed during options normalisation.
 
 ## [1.0.9] - 2025-01-09
 

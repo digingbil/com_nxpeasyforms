@@ -34,7 +34,6 @@ use Joomla\Component\Nxpeasyforms\Administrator\Service\Integrations\MailchimpDi
 use Joomla\Component\Nxpeasyforms\Administrator\Service\Integrations\MailchimpListsService;
 use Joomla\Component\Nxpeasyforms\Administrator\Service\Integrations\SalesforceDispatcher;
 use Joomla\Component\Nxpeasyforms\Administrator\Service\Integrations\SlackDispatcher;
-use Joomla\Component\Nxpeasyforms\Administrator\Service\Integrations\TeamsDispatcher;
 use Joomla\Component\Nxpeasyforms\Administrator\Service\Integrations\WebhookDispatcher;
 use Joomla\Component\Nxpeasyforms\Administrator\Service\Registration\UserRegistrationHandler;
 use Joomla\Component\Nxpeasyforms\Administrator\Service\Export\SubmissionExporter;
@@ -276,17 +275,6 @@ return static function ($container): void {
     );
 
     $container->share(
-        TeamsDispatcher::class,
-    static function ($container): TeamsDispatcher {
-            return new TeamsDispatcher(
-                $container->get(HttpClient::class),
-                $container->get(MessageFormatter::class),
-                $container->get(TemplateRenderer::class)
-            );
-        }
-    );
-
-    $container->share(
         SalesforceDispatcher::class,
     static function ($container): SalesforceDispatcher {
             return new SalesforceDispatcher(
@@ -327,7 +315,6 @@ return static function ($container): void {
             $manager->register('zapier', $container->get(GenericWebhookDispatcher::class));
             $manager->register('make', $container->get(GenericWebhookDispatcher::class));
             $manager->register('slack', $container->get(SlackDispatcher::class));
-            $manager->register('teams', $container->get(TeamsDispatcher::class));
             $manager->register('mailchimp', $container->get(MailchimpDispatcher::class));
             $manager->register('hubspot', $container->get(HubspotDispatcher::class));
             $manager->register('salesforce', $container->get(SalesforceDispatcher::class));

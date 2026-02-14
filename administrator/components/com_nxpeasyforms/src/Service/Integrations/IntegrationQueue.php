@@ -38,7 +38,6 @@ final class IntegrationQueue
         'zapier',
         'make',
         'slack',
-        'teams',
         'webhook',
         'mailchimp',
         'hubspot',

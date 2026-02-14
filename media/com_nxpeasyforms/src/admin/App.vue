@@ -199,7 +199,6 @@ const integrationTagDefinitions = [
     { key: "zapier", label: __("Zapier", "nxp-easy-forms") },
     { key: "make", label: __("Make", "nxp-easy-forms") },
     { key: "slack", label: __("Slack", "nxp-easy-forms") },
-    { key: "teams", label: __("Microsoft Teams", "nxp-easy-forms") },
     { key: "joomla_article", label: __("Joomla Article", "nxp-easy-forms") },
     { key: "user_registration", label: __("User Registration", "nxp-easy-forms") },
     { key: "user_login", label: __("User Login", "nxp-easy-forms") },

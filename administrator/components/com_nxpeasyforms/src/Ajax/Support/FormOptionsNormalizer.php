@@ -188,7 +188,7 @@ final class FormOptionsNormalizer
             $integrations['mailchimp'] = $this->normalizeMailchimpIntegration($integrations['mailchimp'], $existingMailchimp);
         }
 
-        unset($integrations['woocommerce']);
+        unset($integrations['teams'], $integrations['woocommerce']);
 
         return $integrations;
     }

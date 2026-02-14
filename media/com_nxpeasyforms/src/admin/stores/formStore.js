@@ -28,12 +28,6 @@ function baseIntegrations() {
             webhook_url: '',
             message_template: '',
         },
-        teams: {
-            enabled: false,
-            webhook_url: '',
-            card_title: '',
-            message_template: '',
-        },
         joomla_article: {
             enabled: false,
             category_id: 0,

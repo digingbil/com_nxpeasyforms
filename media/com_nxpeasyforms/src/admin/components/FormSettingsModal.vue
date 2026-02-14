@@ -234,14 +234,6 @@ const slackTemplateHint = __(
     "Use placeholders such as {{form_title}} or {{field:email}}. Leave blank to send the default summary.",
     "nxp-easy-forms"
 );
-const teamsTemplatePlaceholder = __(
-    "**Form**: {{form_title}}\n**Message**: {{field:message}}",
-    "nxp-easy-forms"
-);
-const teamsTemplateHint = __(
-    "Supports basic Markdown. Placeholders such as {{form_title}} and {{field:message}} are replaced automatically.",
-    "nxp-easy-forms"
-);
 
 const fieldOptions = computed(() =>
     (props.fields || [])
@@ -526,14 +518,6 @@ const mapOptionsToLocal = (value) => {
         message_template: integrations?.slack?.message_template || "",
     };
 
-    local.integrations.teams = {
-        ...defaults.teams,
-        enabled: integrations?.teams?.enabled === true,
-        webhook_url: integrations?.teams?.webhook_url || "",
-        card_title: integrations?.teams?.card_title || "",
-        message_template: integrations?.teams?.message_template || "",
-    };
-
     const salesforceMappings = Array.isArray(integrations?.salesforce?.mappings)
         ? integrations.salesforce.mappings
               .filter(isObject)
@@ -701,12 +685,6 @@ const buildIntegrationPayload = () => ({
         enabled: !!local.integrations.slack.enabled,
         webhook_url: safeTrim(local.integrations.slack.webhook_url),
         message_template: local.integrations.slack.message_template,
-    },
-    teams: {
-        enabled: !!local.integrations.teams.enabled,
-        webhook_url: safeTrim(local.integrations.teams.webhook_url),
-        card_title: safeTrim(local.integrations.teams.card_title),
-        message_template: local.integrations.teams.message_template,
     },
     joomla_article: {
         enabled: !!local.integrations.joomla_article.enabled,
@@ -1033,8 +1011,6 @@ provide("formSettingsContext", {
     builderSettings,
     slackTemplatePlaceholder,
     slackTemplateHint,
-    teamsTemplatePlaceholder,
-    teamsTemplateHint,
     mailchimpAudiences,
     mailchimpAudiencesLoading,
     mailchimpAudiencesError,

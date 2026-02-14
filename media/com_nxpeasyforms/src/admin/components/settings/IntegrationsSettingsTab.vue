@@ -177,90 +177,6 @@
 
                                 <div class="nxp-integration-card">
                                     <div class="nxp-integration-header">
-                                        <span class="nxp-integration-icon"><img :src="integrationIcons.teams" alt="" /></span>
-                                        <div>
-                                            <h3>
-                                                {{
-                                                    __(
-                                                        "Microsoft Teams",
-                                                        "nxp-easy-forms",
-                                                    )
-                                                }}
-                                            </h3>
-                                            <p class="nxp-integration-description">
-                                                {{
-                                                    __(
-                                                        "Post adaptive cards to Microsoft Teams channels via Incoming Webhooks.",
-                                                        "nxp-easy-forms",
-                                                    )
-                                                }}
-                                            </p>
-                                        </div>
-                                    </div>
-                                    <label class="nxp-setting nxp-setting--switch">
-                                        <span>{{
-                                            __(
-                                                "Enable Microsoft Teams",
-                                                "nxp-easy-forms",
-                                            )
-                                        }}</span>
-                                        <input
-                                            type="checkbox"
-                                            v-model="local.integrations.teams.enabled"
-                                        />
-                                    </label>
-                                    <div
-                                        v-if="local.integrations.teams.enabled"
-                                        class="nxp-setting-group"
-                                    >
-                                        <label class="nxp-setting">
-                                            <span>{{
-                                                __("Teams webhook URL", "nxp-easy-forms")
-                                            }}</span>
-                                            <input
-                                                type="url"
-                                                v-model="
-                                                    local.integrations.teams.webhook_url
-                                                "
-                                                placeholder="https://<tenant>.webhook.office.com/webhookb2/..."
-                                            />
-                                        </label>
-                                        <label class="nxp-setting">
-                                            <span>{{
-                                                __("Card title", "nxp-easy-forms")
-                                            }}</span>
-                                            <input
-                                                type="text"
-                                                v-model="
-                                                    local.integrations.teams.card_title
-                                                "
-                                                placeholder="New form submission"
-                                            />
-                                        </label>
-                                        <label class="nxp-setting">
-                                            <span>{{
-                                                __(
-                                                    "Message body (optional)",
-                                                    "nxp-easy-forms",
-                                                )
-                                            }}</span>
-                                            <textarea
-                                                rows="4"
-                                                v-model="
-                                                    local.integrations.teams
-                                                        .message_template
-                                                "
-                                                :placeholder="teamsTemplatePlaceholder"
-                                            ></textarea>
-                                            <small class="nxp-setting__hint">
-                                                {{ teamsTemplateHint }}
-                                            </small>
-                                        </label>
-                                    </div>
-                                </div>
-
-                                <div class="nxp-integration-card">
-                                    <div class="nxp-integration-header">
                                         <span class="nxp-integration-icon"><img :src="integrationIcons.mailchimp" alt="" /></span>
                                         <div>
                                             <h3>{{ __("Mailchimp", "nxp-easy-forms") }}</h3>
@@ -982,7 +898,6 @@ import ICON_REMOVE from "../../../../assets/icons/square-letter-x.svg";
 import ICON_ZAPIER from "../../../../assets/icons/bolt.svg";
 import ICON_MAKE from "../../../../assets/icons/cloud-data-connection.svg";
 import ICON_SLACK from "../../../../assets/icons/brand-slack.svg";
-import ICON_TEAMS from "../../../../assets/icons/brand-teams.svg";
 import ICON_MAILCHIMP from "../../../../assets/icons/mail-heart.svg";
 import ICON_SALESFORCE from "../../../../assets/icons/rosette-discount.svg";
 import ICON_HUBSPOT from "../../../../assets/icons/cube-plus.svg";
@@ -1001,8 +916,6 @@ const {
     emailFieldOptions,
     slackTemplatePlaceholder,
     slackTemplateHint,
-    teamsTemplatePlaceholder,
-    teamsTemplateHint,
     mailchimpAudiences,
     mailchimpAudiencesLoading,
     mailchimpAudiencesError,
@@ -1017,7 +930,6 @@ const integrationIcons = {
     zapier: ICON_ZAPIER,
     make: ICON_MAKE,
     slack: ICON_SLACK,
-    teams: ICON_TEAMS,
     mailchimp: ICON_MAILCHIMP,
     salesforce: ICON_SALESFORCE,
     hubspot: ICON_HUBSPOT,

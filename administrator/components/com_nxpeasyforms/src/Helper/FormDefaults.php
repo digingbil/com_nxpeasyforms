@@ -162,12 +162,6 @@ final class FormDefaults
                         'webhook_url' => '',
                         'message_template' => '',
                     ],
-                    'teams' => [
-                        'enabled' => false,
-                        'webhook_url' => '',
-                        'card_title' => '',
-                        'message_template' => '',
-                    ],
                     'mailchimp' => [
                         'enabled' => false,
                         'api_key' => '',
