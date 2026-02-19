@@ -27,18 +27,6 @@
                 <option value="1">JYES</option>
                 <option value="0">JNO</option>
             </field>
-
-            <field
-                name="default_submission_status"
-                type="list"
-                label="COM_NXPEASYFORMS_CONFIG_DEFAULT_SUBMISSION_STATUS"
-                description="COM_NXPEASYFORMS_CONFIG_DEFAULT_SUBMISSION_STATUS_DESC"
-                default="new"
-            >
-                <option value="new">COM_NXPEASYFORMS_SUBMISSION_STATUS_NEW</option>
-                <option value="read">COM_NXPEASYFORMS_SUBMISSION_STATUS_READ</option>
-                <option value="archived">COM_NXPEASYFORMS_SUBMISSION_STATUS_ARCHIVED</option>
-            </field>
         </fieldset>
 
         <fieldset name="email" label="COM_NXPEASYFORMS_CONFIG_FIELDSET_EMAIL">

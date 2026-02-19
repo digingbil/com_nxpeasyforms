@@ -34,7 +34,6 @@ final class SubmissionsModel extends ListModel
     protected $filterFields = [
         'id',
         'form_id',
-        'status',
         'created_at',
         'submission_uuid',
     ];
@@ -42,7 +41,7 @@ final class SubmissionsModel extends ListModel
     /**
      * Populate the model state with filtering and sorting parameters.
      *
-     * Reads user state from the application (search, status, form filter)
+     * Reads user state from the application (search, form filter)
      * and initializes pagination with the provided ordering defaults.
      *
      * @param string $ordering  The default ordering column.
@@ -59,13 +58,25 @@ final class SubmissionsModel extends ListModel
         $search = $app->getUserStateFromRequest($context . '.filter.search', 'filter_search', '', 'string');
         $this->setState('filter.search', trim($search));
 
-        $status = $app->getUserStateFromRequest($context . '.filter.status', 'filter_status', 'all', 'string');
-        $this->setState('filter.status', $status ?: 'all');
-
-        $formId = $app->getUserStateFromRequest($context . '.filter.form_id', 'filter_form_id', 0, 'int');
-        $this->setState('filter.form_id', $formId > 0 ? $formId : 0);
+        $formId = $app->getUserStateFromRequest($context . '.filter.form_id', 'filter_form_id', '', 'string');
+        $this->setState('filter.form_id', $formId);
 
         parent::populateState($ordering, $direction);
+    }
+
+    /**
+     * Build a cache key that includes custom submissions filters.
+     *
+     * @param string $id Base cache key.
+     *
+     * @return string
+     * @since 1.0.10
+     */
+    protected function getStoreId($id = '')
+    {
+        $id .= ':' . (string) $this->getState('filter.form_id', '');
+
+        return parent::getStoreId($id);
     }
 
     /**
@@ -86,7 +97,6 @@ final class SubmissionsModel extends ListModel
                 $db->quoteName('a.id'),
                 $db->quoteName('a.form_id'),
                 $db->quoteName('a.submission_uuid'),
-                $db->quoteName('a.status'),
                 $db->quoteName('a.ip_address'),
                 $db->quoteName('a.created_at'),
                 $db->quoteName('f.title', 'form_title'),
@@ -111,14 +121,11 @@ final class SubmissionsModel extends ListModel
             ->bind(':search2', $searchTerm);
         }
 
-        $status = $this->getState('filter.status', 'all');
-        if ($status !== 'all' && $status !== '') {
-            $query->where($db->quoteName('a.status') . ' = :status')
-                  ->bind(':status', $status);
-        }
-
-        $formId = (int) $this->getState('filter.form_id', 0);
-        if ($formId > 0) {
+        $formFilter = $this->getState('filter.form_id', '');
+        if ($formFilter === 'orphaned') {
+            $query->where($db->quoteName('f.id') . ' IS NULL');
+        } elseif ((int) $formFilter > 0) {
+            $formId = (int) $formFilter;
             $query->where($db->quoteName('a.form_id') . ' = :formId')
                   ->bind(':formId', $formId, ParameterType::INTEGER);
         }
@@ -137,7 +144,6 @@ final class SubmissionsModel extends ListModel
         $columnMap = [
             'id' => 'a.id',
             'form_id' => 'a.form_id',
-            'status' => 'a.status',
             'created_at' => 'a.created_at',
             'submission_uuid' => 'a.submission_uuid',
         ];

@@ -29,15 +29,15 @@ use Joomla\CMS\Toolbar\ToolbarHelper;
  */
 final class HtmlView extends BaseHtmlView
 {
-    protected $items = [];
+    public $items = [];
 
-    protected $pagination;
+    public $pagination;
 
-    protected $state;
+    public $state;
 
-    protected $filterForm;
+    public $filterForm;
 
-    protected $activeFilters;
+    public $activeFilters;
 
 	/**
 	 * Render the view.

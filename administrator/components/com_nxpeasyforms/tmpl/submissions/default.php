@@ -23,9 +23,12 @@ $listDirn = $this->escape($this->state->get('list.direction', 'DESC'));
 ?>
 <form action="<?php echo Route::_('index.php?option=com_nxpeasyforms&view=submissions'); ?>" method="post" name="adminForm" id="adminForm">
     <div class="row">
-        <div class="col-12 col-lg-6">
+        <div class="col-12">
             <?php if (!empty($this->filterForm)) : ?>
-                <?php echo LayoutHelper::render('joomla.searchtools.default', ['view' => $this]); ?>
+                <?php echo LayoutHelper::render('joomla.searchtools.default', [
+                    'view' => $this,
+                    'options' => ['filtersHidden' => false],
+                ]); ?>
             <?php endif; ?>
         </div>
     </div>
@@ -43,9 +46,6 @@ $listDirn = $this->escape($this->state->get('list.direction', 'DESC'));
                 <th scope="col">
                     <?php echo Text::_('COM_NXPEASYFORMS_COLUMN_FORM_TITLE'); ?>
                 </th>
-                <th scope="col" class="w-10 text-center">
-                    <?php echo HTMLHelper::_('searchtools.sort', Text::_('COM_NXPEASYFORMS_COLUMN_STATUS'), 'status', $listDirn, $listOrder); ?>
-                </th>
                 <th scope="col" class="w-15">
                     <?php echo HTMLHelper::_('searchtools.sort', Text::_('COM_NXPEASYFORMS_COLUMN_CREATED'), 'created_at', $listDirn, $listOrder); ?>
                 </th>
@@ -57,7 +57,7 @@ $listDirn = $this->escape($this->state->get('list.direction', 'DESC'));
             <tbody>
             <?php if (empty($this->items)) : ?>
                 <tr>
-                    <td colspan="6" class="text-center">
+                    <td colspan="5" class="text-center">
                         <?php echo Text::_('COM_NXPEASYFORMS_SUBMISSIONS_LIST_EMPTY'); ?>
                     </td>
                 </tr>
@@ -72,11 +72,6 @@ $listDirn = $this->escape($this->state->get('list.direction', 'DESC'));
                         </td>
                         <td>
                             <?php echo $this->escape($item->form_title ?? Text::_('COM_NXPEASYFORMS_UNKNOWN_FORM')); ?>
-                        </td>
-                        <td class="text-center">
-                            <span class="badge bg-info">
-                                <?php echo $this->escape(strtoupper($item->status)); ?>
-                            </span>
                         </td>
                         <td>
                             <?php echo $item->created_at
@@ -101,3 +96,11 @@ $listDirn = $this->escape($this->state->get('list.direction', 'DESC'));
     <input type="hidden" name="filter_order_Dir" value="<?php echo $listDirn; ?>">
     <?php echo HTMLHelper::_('form.token'); ?>
 </form>
+<script>
+document.getElementById('adminForm').addEventListener('submit', function(e) {
+    var task = this.task.value;
+    if (task === 'submissions.export') {
+        setTimeout(function() { e.target.task.value = ''; }, 50);
+    }
+});
+</script>

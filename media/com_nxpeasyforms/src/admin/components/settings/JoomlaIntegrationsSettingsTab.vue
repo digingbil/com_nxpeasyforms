@@ -584,7 +584,7 @@ const fetchCategories = async () => {
     categoriesError.value = "";
 
     try {
-        const response = await apiFetch("joomla/categories");
+        const response = await apiFetch("settings/joomla/categories");
         const payload = await response.json().catch(() => ({}));
 
         if (!response.ok) {

@@ -18,6 +18,8 @@ This repository contains the Joomla 5 port of the NXP Easy Forms WordPress plugi
 -   **IP header spoofing protection**: `SubmissionController::detectIp()` now only trusts `X-Forwarded-For`, `X-Real-IP`, and `Client-IP` headers when the request comes from a configured trusted proxy (component parameter `trusted_proxies`). Direct connections always use `REMOTE_ADDR`.
 -   **Dynamic Super User detection**: Replaced hardcoded Super Users group ID (8) with dynamic detection using `Access::checkGroup()` with `core.admin` permission, ensuring compatibility across Joomla installations with custom group configurations.
 -   **API error response hardening**: `SubmissionController` now returns a generic error message (`COM_NXPEASYFORMS_ERROR_SUBMISSION_FAILED`) instead of raw exception messages, preventing internal details (file paths, database errors, stack traces) from leaking to API clients. Full error details are still logged server-side for debugging.
+-   **SSRF fail-open on unresolvable hosts**: `EndpointValidator::validate()` now rejects webhook endpoints whose hostname cannot be resolved to any IP address. Previously the empty IP list caused the validation loop to be a no-op, silently accepting unresolvable (and potentially dangerous) endpoints.
+-   **CSRF origin fail-closed for browser requests**: `SubmissionController::isValidOrigin()` now returns `false` when both `Origin` and `Referer` headers are missing, blocking cross-site browser requests that strip these headers. API clients (identified by JSON `Accept`/`Content-Type`) bypass origin checks entirely via the `isApiClient()` gate, so programmatic integrations are unaffected.
 
 #### Functionality Fixes
 
@@ -52,7 +54,7 @@ This repository contains the Joomla 5 port of the NXP Easy Forms WordPress plugi
     -   Adding `BootableExtensionInterface` and `boot()` method to both administrator and site component extension classes to register the Modal field path via `Form::addFieldPath()`.
     -   Registering the Administrator namespace in the site service provider so modal fields can be discovered when creating menu items.
     -   Creating `forms/filter_forms.xml` filter form definition for the modal list view.
-    -   Updating `components/com_nxpeasyforms/tmpl/form/default.xml` to use `type="Modal_Form"` with correct field path configuration (`addfieldpath="administrator/components/com_nxpeasyforms/models/fields"`).
+    -   Updating `components/com_nxpeasyforms/tmpl/form/default.xml` to use `type="Modal_Form"` with correct field path configuration (`addfieldpath="administrator/components/com_nxpeasyforms/src/Field"`).
     -   Changed view properties (`items`, `pagination`, `state`, `filterForm`, `activeFilters`) from `protected` to `public` in `FormsView` to allow template access.
     -   Added null checks for `filterForm` in `tmpl/forms/modal.php` to prevent errors when filter form fails to load.
 -   Restored the administrator form builder boot sequence so existing forms hydrate their saved title, fields, and settings immediately instead of flashing empty state or "Untitled form".
@@ -133,17 +135,16 @@ This repository contains the Joomla 5 port of the NXP Easy Forms WordPress plugi
 
 ### Menu item: Single Form modal selector (browse/clear)
 
-To ensure the Menus → New → NXP Easy Forms → “Form” menu type shows the standard Joomla browse/clear selector (instead of a plain text input), the menu layout now uses a modal picker with a legacy-compatible field loader that Joomla can always find during menu form rendering.
+To ensure the Menus → New → NXP Easy Forms → “Form” menu type shows the standard Joomla browse/clear selector (instead of a plain text input), the menu layout uses a modal picker backed by the namespaced `src/Field/Modal/FormField.php` field class.
 
 What’s implemented:
 
 -   Menu layout XML (`components/com_nxpeasyforms/tmpl/form/default.xml`):
-    -   Fieldset points `addfieldpath` to `administrator/components/com_nxpeasyforms/models/fields`.
-    -   The form selector field is `type="Modal_Form"` with `name="id"`.
--   Legacy field wrapper: `administrator/components/com_nxpeasyforms/models/fields/modal/form.php`.
-    -   Declares `JFormFieldModal_Form` extending Joomla’s `ModalSelectField` and wires the modal URL to the component’s Forms view (`layout=modal`).
-    -   This avoids timing issues with autoloaded, namespaced fields when Joomla builds the Menus form.
--   Optional namespace registration for completeness:
+    -   Fieldset points `addfieldpath` to `administrator/components/com_nxpeasyforms/src/Field`.
+    -   The form selector field is `type=”Modal_Form”` with `name=”id”`.
+-   Namespaced field class: `administrator/components/com_nxpeasyforms/src/Field/Modal/FormField.php`.
+    -   Extends Joomla’s `ModalSelectField` and wires the modal URL to the component’s Forms view (`layout=modal`).
+-   Namespace registration:
     -   Site service provider (`components/com_nxpeasyforms/services/provider.php`) registers the Administrator namespace to support namespaced fields and calls `boot()`.
     -   Admin component `boot()` also adds the field path via `Form::addFieldPath(...)`.
 
@@ -153,7 +154,7 @@ Verification:
 
 Troubleshooting:
 
--   If a text input still appears, Joomla likely couldn’t load the field file. Check file paths and look for errors in `/var/www/html/j5.loc/administrator/logs` (e.g. `error.php`, `everything.php`). Ensure the `addfieldpath` directory and the `modal/form.php` file exist and are readable by PHP.
+-   If a text input still appears, Joomla likely couldn’t load the field class. Check that `src/Field/Modal/FormField.php` exists and is readable, and look for errors in Joomla’s administrator logs.
 
 ### Form Duplication (Administrator)
 
@@ -164,6 +165,25 @@ Troubleshooting:
 ### Submission API
 
 -   Updated the public `SubmissionController` so JSON responses now carry the correct HTTP status codes (404 for missing forms, 4xx for validation issues, etc.) and rely on a shared responder that closes the API application cleanly. The controller also skips CSRF token checks for API calls (still enforced on the Joomla frontend) and reuses the administrator services by bootstrapping domain providers when the container is cold.
+
+### Submissions List View
+
+-   Added a filter bar to the administrator Submissions view with search (by UUID and form title), form selector dropdown, and ordering controls using Joomla's standard `joomla.searchtools.default` layout.
+-   The `SubmissionsModel` handles filter state via `populateState()`, includes filters in `getStoreId()` for correct cache keying, and applies parameterised WHERE clauses in `getListQuery()`.
+-   View properties (`items`, `pagination`, `state`, `filterForm`, `activeFilters`) are public to allow template access.
+-   The submission status column has been removed from the list view. The database column is retained for future use when full status CRUD is implemented.
+-   The form filter dropdown includes an "Orphaned (deleted form)" option that filters submissions whose parent form no longer exists, making it straightforward to locate and bulk-delete orphaned records.
+
+### Forms List View
+
+-   The status column is now a clickable publish/unpublish toggle (using `HTMLHelper::_('jgrid.published')`) instead of a static badge. Publish and Unpublish toolbar buttons are shown when the user has the `core.edit.state` permission.
+-   `FormTable` maps the `active` database column to Joomla's standard `published` alias via `setColumnAlias()`, so the inherited `AdminController::publish()` method works without custom controller code.
+
+### Joomla 5+/6+ Legacy Cleanup
+
+-   Consolidated all administrator form XML files into the standard `forms/` directory (`forms/filter_forms.xml`, `forms/filter_submissions.xml`, `forms/form.xml`), removing the legacy Joomla 3 `models/forms/` path.
+-   Removed the legacy non-namespaced `JFormFieldModal_Form` wrapper (`models/fields/modal/form.php`). The component now relies solely on the PSR-4 namespaced `src/Field/Modal/FormField.php` class registered via `Form::addFieldPath()` in the component `boot()` method.
+-   Deleted the entire `administrator/components/com_nxpeasyforms/models/` directory.
 
 ## Development Notes
 

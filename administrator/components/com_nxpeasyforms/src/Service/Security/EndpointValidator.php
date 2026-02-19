@@ -82,6 +82,10 @@ final class EndpointValidator
 
         $ips = $this->resolveHostIps($host);
 
+        if ($ips === []) {
+            return null;
+        }
+
         foreach ($ips as $ip) {
             if (!$this->isPublicIp($ip)) {
                 return null;

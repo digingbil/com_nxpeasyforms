@@ -120,6 +120,11 @@ final class HtmlView extends BaseHtmlView
             ToolbarHelper::editList('form.edit');
         }
 
+        if ($user->authorise('core.edit.state', 'com_nxpeasyforms')) {
+            ToolbarHelper::publish('forms.publish', 'JTOOLBAR_PUBLISH', true);
+            ToolbarHelper::unpublish('forms.unpublish', 'JTOOLBAR_UNPUBLISH', true);
+        }
+
         if ($user->authorise('core.delete', 'com_nxpeasyforms')) {
             ToolbarHelper::deleteList('COM_NXPEASYFORMS_CONFIRM_DELETE_FORMS', 'forms.delete');
         }

@@ -98,9 +98,9 @@ final class SubmissionController extends ApiController
             return;
         }
 
-        // Validate origin for browser requests to prevent CSRF
-        $isApiClient = $this->isApiClient();
-        if (!$isApiClient && !$this->isValidOrigin()) {
+        // Validate origin for browser requests to prevent CSRF.
+        // API clients (JSON Accept/Content-Type) bypass origin checks.
+        if (!$this->isApiClient() && !$this->isValidOrigin()) {
             $this->respond([
                 'success' => false,
                 'message' => Text::_('COM_NXPEASYFORMS_ERROR_INVALID_ORIGIN'),
@@ -172,7 +172,7 @@ final class SubmissionController extends ApiController
     /**
      * Validate the request origin to prevent CSRF attacks.
      *
-     * @return bool True if the origin is valid or cannot be determined.
+     * @return bool True if the origin matches the site host; false otherwise.
      * @since 1.0.6
      */
     private function isValidOrigin(): bool
@@ -193,8 +193,9 @@ final class SubmissionController extends ApiController
             return $refererHost === $siteHost;
         }
 
-        // No origin or referer - could be direct API call, allow with other protections
-        return true;
+        // No origin or referer — fail closed for browser requests.
+        // API clients bypass this method entirely via the isApiClient() gate.
+        return false;
     }
 
     /**

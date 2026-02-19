@@ -11,6 +11,7 @@ declare(strict_types=1);
 \defined('_JEXEC') or die;
 // phpcs:enable PSR1.Files.SideEffects
 
+use Joomla\CMS\Factory;
 use Joomla\CMS\HTML\HTMLHelper;
 use Joomla\CMS\Language\Text;
 use Joomla\CMS\Layout\LayoutHelper;
@@ -20,6 +21,8 @@ HTMLHelper::_('behavior.multiselect');
 
 $listOrder = $this->escape($this->state->get('list.ordering', 'created_at'));
 $listDirn = $this->escape($this->state->get('list.direction', 'DESC'));
+$user = Factory::getApplication()->getIdentity();
+$canChangeState = $user->authorise('core.edit.state', 'com_nxpeasyforms');
 ?>
 <form action="<?php echo Route::_('index.php?option=com_nxpeasyforms&view=forms'); ?>" method="post" name="adminForm" id="adminForm">
     <div class="row">
@@ -74,9 +77,7 @@ $listDirn = $this->escape($this->state->get('list.direction', 'DESC'));
                             </a>
                         </td>
                         <td class="text-center">
-                            <span class="badge <?php echo $item->active ? 'bg-success' : 'bg-secondary'; ?>">
-                                <?php echo $item->active ? Text::_('JENABLED') : Text::_('JDISABLED'); ?>
-                            </span>
+                            <?php echo HTMLHelper::_('jgrid.published', $item->active, $i, 'forms.', $canChangeState); ?>
                         </td>
                         <td>
                             <?php echo $item->created_at

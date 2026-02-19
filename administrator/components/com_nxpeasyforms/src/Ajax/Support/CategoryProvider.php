@@ -44,6 +44,8 @@ final class CategoryProvider
      */
     public function fetchContentCategories(): array
     {
+        $extension = 'com_content';
+
         $query = $this->db->getQuery(true)
             ->select([
                 $this->db->quoteName('id'),
@@ -54,7 +56,7 @@ final class CategoryProvider
             ->where($this->db->quoteName('extension') . ' = :extension')
             ->where($this->db->quoteName('published') . ' != -2')
             ->order($this->db->quoteName('lft') . ' ASC')
-            ->bind(':extension', 'com_content');
+            ->bind(':extension', $extension);
 
         try {
             $this->db->setQuery($query);

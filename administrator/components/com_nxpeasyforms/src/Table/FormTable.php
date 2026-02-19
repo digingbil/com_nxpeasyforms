@@ -82,6 +82,8 @@ public $updated_at = null;
     public function __construct(DatabaseDriver $db)
     {
         parent::__construct('#__nxpeasyforms_forms', 'id', $db);
+
+        $this->setColumnAlias('published', 'active');
     }
 
     /**

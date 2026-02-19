@@ -5,7 +5,7 @@
         option="COM_NXPEASYFORMS_MENU_FORM_DEFAULT_DESC"
     />
     <fields name="request">
-        <fieldset name="request" label="COM_NXPEASYFORMS_MENU_FORM_DEFAULT" addfieldpath="administrator/components/com_nxpeasyforms/models/fields">
+        <fieldset name="request" label="COM_NXPEASYFORMS_MENU_FORM_DEFAULT" addfieldpath="administrator/components/com_nxpeasyforms/src/Field">
             <field
                 name="id"
                 type="Modal_Form"
