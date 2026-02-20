@@ -7,7 +7,7 @@
     <authorUrl>https://nexusplugins.com</authorUrl>
     <copyright>Copyright (C) 2024-2025 nexusplugins.com. All rights reserved.</copyright>
     <license>GNU General Public License version 3 or later; see LICENSE.txt</license>
-    <version>1.0.10</version>
+    <version>1.0.11</version>
     <description>COM_NXPEASYFORMS_XML_DESCRIPTION</description>
 
     <namespace path="src">Joomla\Component\Nxpeasyforms</namespace>
@@ -66,7 +66,6 @@
             <folder>sql</folder>
             <folder>src</folder>
             <folder>tmpl</folder>
-            <folder>models</folder>
             <folder>forms</folder>
             <folder>language</folder>
             <filename>access.xml</filename>
